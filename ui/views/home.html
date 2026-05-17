@@ -1,25 +1,48 @@
-<div class="max-w-5xl mx-auto flex justify-end mb-6 px-6 sm:px-8">
-    <div class="relative group">
-        <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input type="text" placeholder="Search..." id="txt_search" spellcheck="false" class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-900/40 hover:bg-zinc-800/40 focus:bg-zinc-900/80 backdrop-blur-xl border border-white/5 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
-    </div>
-</div>
-<div id="list" class="max-w-5xl mx-auto px-6 sm:px-8 pb-10">
-    <div id="table">
-        <!-- Header Row -->
-        <div id="table-header" class="grid grid-cols-[3fr_2fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5"> 
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors">Song</div>
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors">Album</div>
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right">Duration</div>
-            <div></div>
+<div class="flex flex-col xl:flex-row w-full h-full gap-6 relative items-start">
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 w-full h-full">
+        <div class="max-w-5xl mx-auto w-full flex justify-end mb-6 px-6 sm:px-8 gap-3">
+            <div class="relative group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" placeholder="Search..." id="txt_search" spellcheck="false" class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-900/40 hover:bg-zinc-800/40 focus:bg-zinc-900/80 backdrop-blur-xl border border-white/5 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
+            </div>
+            <button id="toggle-queue-btn" class="flex items-center justify-center w-10 h-10 bg-zinc-900/40 hover:bg-zinc-800/40 backdrop-blur-xl border border-white/5 rounded-full text-zinc-400 hover:text-orange-400 transition-colors focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]" title="Toggle Queue">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
+            </button>
         </div>
+        <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10">
+            <div id="table">
+                <!-- Header Row -->
+                <div id="table-header" class="grid grid-cols-[3fr_2fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5"> 
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors">Song</div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors">Album</div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right">Duration</div>
+                    <div></div>
+                </div>
+        
+                <!-- Body Row -->
+                <div id="table-body" class="flex flex-col gap-1 pb-2"> 
+                    <!-- Content will be dynamically populated via Javascript -->
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- Body Row -->
-        <!-- FIX: Removed typo "round" and added pb-2 so the bottom shadow doesn't clip on the last row -->
-        <div id="table-body" class="flex flex-col gap-1 pb-2"> 
-            <!-- Content will be dynamically populated via Javascript -->
+    <!-- Queue Auxiliary Bar -->
+    <div id="queue-sidebar" class="w-full xl:w-80 flex-shrink-0 border border-white/5 bg-zinc-900/40 backdrop-blur-md rounded-2xl hidden flex-col h-[calc(100vh-180px)] sticky top-0 shadow-2xl transition-all duration-300 z-10 xl:mr-8 mb-8">
+        <div class="p-5 border-b border-white/5 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
+                Up Next
+            </h2>
+            <button id="clear-queue-btn" class="text-xs font-medium text-zinc-500 hover:text-orange-400 transition-colors focus:outline-none uppercase tracking-wider">Clear</button>
+        </div>
+        <div class="p-3 overflow-y-auto flex-1 custom-scrollbar">
+            <div id="queue-body" class="flex flex-col gap-1">
+                <p id="empty-queue-msg" class="text-sm text-zinc-500 text-center py-8">Queue is empty</p>
+            </div>
         </div>
     </div>
 </div>
@@ -51,6 +74,79 @@
 <div id="edit-song-modal-container"></div>
 
 <script>
+    // Helper function to guarantee only one active song UI at a time
+    window.set_active_song_ui = function(songData) {
+        const activeClasses = "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30";
+        
+        $(".song-row").removeClass(activeClasses);
+        $(".song-row .song-title").removeClass("text-orange-400").addClass("text-zinc-100");
+        $(".list-visualizer").remove();
+
+        if (!songData) return;
+        const fileName = songData.File || songData.file;
+
+        $(".song-row").each(function() {
+            const rowData = $(this).data("path");
+            const rowFileName = rowData ? (rowData.File || rowData.file) : null;
+            if (rowFileName === fileName) {
+                $(this).addClass(activeClasses);
+                $(this).find(".song-title").removeClass("text-zinc-100").addClass("text-orange-400");
+                $(this).find(".cover-art-container").before(`
+                    <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                    </div>
+                `);
+            }
+        });
+    };
+
+    window.queue_songs = window.queue_songs || [];
+    window.is_custom_queue = window.is_custom_queue || false;
+
+    window.update_queue_ui = function() {
+        const queueBody = $("#queue-body");
+        queueBody.find(".queue-item").remove();
+
+        if (window.queue_songs.length === 0) {
+            $("#empty-queue-msg").removeClass("hidden");
+            $("#clear-queue-btn").addClass("hidden");
+        } else {
+            $("#empty-queue-msg").addClass("hidden");
+            if (window.is_custom_queue) {
+                $("#clear-queue-btn").removeClass("hidden");
+            } else {
+                $("#clear-queue-btn").addClass("hidden");
+            }
+            window.queue_songs.forEach((song, index) => {
+                const coverArt = song.CoverArt 
+                    ? `<img src="${song.CoverArt}" class="w-full h-full object-cover">`
+                    : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+                
+                const queueItem = `
+                    <div class="queue-item flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group" data-index="${index}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}" draggable="true">
+                        <div class="w-10 h-10 rounded shadow-md overflow-hidden flex-shrink-0 relative">
+                            ${coverArt}
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                        <div class="flex flex-col overflow-hidden w-full">
+                            <span class="text-sm font-medium text-zinc-200 truncate group-hover:text-orange-400 transition-colors">${song.Title || "Unknown Title"}</span>
+                            <span class="text-xs text-zinc-500 truncate">${song.Artist || "Unknown Artist"}</span>
+                        </div>
+                        <button class="remove-queue-btn text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 focus:outline-none" title="Remove">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                `;
+                queueBody.append(queueItem);
+            });
+        }
+    };
+
     // Python -> JS
     window.song_list = function(data) {
         // Clear out any old rows
@@ -68,7 +164,10 @@
                 ? `<img src="${song.CoverArt}" class="w-full h-full object-cover">`
                 : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
 
-            const isActive = window.current_playing_song && window.current_playing_song.file === song.file;
+            // Fix case sensitivity (`File` vs `file`) preventing `undefined === undefined`
+            const currentFile = window.current_playing_song ? (window.current_playing_song.File || window.current_playing_song.file) : null;
+            const thisFile = song.File || song.file;
+            const isActive = currentFile && thisFile && (currentFile === thisFile);
             const activeClasses = isActive ? "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30" : "";
             const titleColor = isActive ? "text-orange-400" : "text-zinc-100";
             
@@ -117,6 +216,8 @@
     }
 
     $(document).ready(function(){
+        window.update_queue_ui();
+        
         $("#txt_search").on("keyup", function() {
             var value = $(this).val().toLowerCase();
             $("#table-body .song-row").filter(function() {
@@ -125,6 +226,80 @@
             });
         });
 
+        // Toggle queue sidebar
+        $("#toggle-queue-btn").on("click", function() {
+            const sidebar = $("#queue-sidebar");
+            if (sidebar.hasClass("hidden")) {
+                sidebar.removeClass("hidden").addClass("flex");
+            } else {
+                sidebar.addClass("hidden").removeClass("flex");
+            }
+        });
+
+        // Add to queue via Context Menu
+        $("#bento-add-queue-btn").on("click", function(e) {
+            e.stopPropagation();
+            const songPath = $("#bento-context-menu").data("song-path");
+            if (songPath) {
+                window.is_custom_queue = true;
+                window.queue_songs.push(songPath);
+                window.update_queue_ui();
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.add_to_queue) {
+                    window.pywebview.api.add_to_queue(songPath);
+                }
+                
+                if (typeof Notyf !== 'undefined') {
+                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                    notyf.success({ message: `Added <b>${songPath.Title}</b> to Queue`, duration: 3000 });
+                }
+                
+                $("#bento-context-menu").addClass("hidden");
+            }
+        });
+
+        // Play queue item
+        $(document).on("click", ".queue-item", async function(e) {
+            if ($(e.target).closest(".remove-queue-btn").length) return;
+            const songData = $(this).data("path");
+            if (songData) {
+                const index = $(this).data("index");
+                window.current_playing_song = songData;
+                window.set_active_song_ui(songData);
+                
+                window.queue_songs.splice(0, index + 1);
+                window.update_queue_ui();
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.jump_to_queue_index) {
+                    await window.pywebview.api.jump_to_queue_index(index);
+                }
+                
+                await window.play_button(songData);
+            }
+        });
+
+        // Remove item from queue
+        $(document).on("click", ".remove-queue-btn", function(e) {
+            e.stopPropagation();
+            const index = $(this).closest(".queue-item").data("index");
+            window.is_custom_queue = true;
+            window.queue_songs.splice(index, 1);
+            window.update_queue_ui();
+            
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.remove_from_queue) {
+                window.pywebview.api.remove_from_queue(index);
+            }
+        });
+
+        // Clear queue
+        $("#clear-queue-btn").on("click", function() {
+            window.is_custom_queue = false;
+            window.queue_songs = [];
+            window.update_queue_ui();
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.clear_queue) {
+                window.pywebview.api.clear_queue();
+            }
+        });
         
         // Hide context menu when clicking outside
         $(document).on("click", function(e) {
@@ -156,6 +331,13 @@
             const songPath = $("#bento-context-menu").data("song-path");
             if (songPath) {
                 window.current_playing_song = songPath;
+                window.set_active_song_ui(songPath);
+                
+                // Auto-populate the queue
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                    await window.pywebview.api.populate_queue(songPath);
+                }
+                
                 await window.play_button(songPath);
                 $("#bento-context-menu").addClass("hidden");
             }
@@ -230,6 +412,68 @@
                 }
             });            
         });
+        
+        // --- Queue Drag and Drop Logic ---
+        let draggedItemIndex = null;
+
+        $(document).on("dragstart", ".queue-item", function(e) {
+            draggedItemIndex = $(this).data("index");
+            $(this).addClass("opacity-50");
+            e.originalEvent.dataTransfer.effectAllowed = "move";
+            e.originalEvent.dataTransfer.setData("text/plain", draggedItemIndex);
+        });
+
+        $(document).on("dragover", ".queue-item", function(e) {
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = "move";
+            const bounding = this.getBoundingClientRect();
+            const offset = bounding.y + (bounding.height / 2);
+            $(".queue-item").removeClass("border-t-2 border-b-2 border-orange-500");
+            if (e.originalEvent.clientY > offset) {
+                $(this).addClass("border-b-2 border-orange-500");
+            } else {
+                $(this).addClass("border-t-2 border-orange-500");
+            }
+        });
+
+        $(document).on("dragleave", ".queue-item", function(e) {
+            $(this).removeClass("border-t-2 border-b-2 border-orange-500");
+        });
+
+        $(document).on("drop", ".queue-item", async function(e) {
+            e.preventDefault();
+            $(".queue-item").removeClass("border-t-2 border-b-2 border-orange-500 opacity-50");
+            
+            const targetIndex = $(this).data("index");
+            if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
+
+            const bounding = this.getBoundingClientRect();
+            const offset = bounding.y + (bounding.height / 2);
+            let insertIndex = targetIndex;
+            
+            if (e.originalEvent.clientY > offset) {
+                insertIndex++;
+            }
+            if (draggedItemIndex < insertIndex) {
+                insertIndex--;
+            }
+
+            window.is_custom_queue = true;
+            const item = window.queue_songs.splice(draggedItemIndex, 1)[0];
+            window.queue_songs.splice(insertIndex, 0, item);
+            window.update_queue_ui();
+
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.reorder_queue) {
+                await window.pywebview.api.reorder_queue(draggedItemIndex, insertIndex);
+            }
+            draggedItemIndex = null;
+        });
+
+        $(document).on("dragend", ".queue-item", function(e) {
+            $(this).removeClass("opacity-50");
+            $(".queue-item").removeClass("border-t-2 border-b-2 border-orange-500");
+            draggedItemIndex = null;
+        });
 
     });
 
@@ -239,26 +483,15 @@
         const songPath = $(this).data("path");
         if (songPath) {
             window.current_playing_song = songPath;
+            window.set_active_song_ui(songPath);
+            
+            // Auto-populate the queue with the remaining songs in the list
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                await window.pywebview.api.populate_queue(songPath);
+            }
+            
             await window.play_button(songPath);
         }
-        
-        const activeClasses = "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30";
-        $(".song-row").removeClass(activeClasses);
-        $(".song-title").removeClass("text-orange-400").addClass("text-zinc-100");
-        
-        $(this).addClass(activeClasses);
-        $(this).find(".song-title").removeClass("text-zinc-100").addClass("text-orange-400");
-        
-        // Move the visualizer to the newly clicked song
-        $(".list-visualizer").remove();
-        $(this).find(".cover-art-container").before(`
-            <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-            </div>
-        `);
     });
 
     fetch('modals/edit_song.html')

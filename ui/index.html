@@ -109,7 +109,7 @@
         <!-- Center: Buttons and Progress Slider -->
         <div class="flex flex-col items-center justify-center flex-[2] max-w-3xl gap-2">
             <div class="flex flex-row items-center justify-center gap-6 sm:gap-8 w-full">
-                <button class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5">
+                <button onclick="if(window.pywebview) window.pywebview.api.play_prev();" class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5" title="Previous Song">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path fill-rule="evenodd" d="M21 16.811c0 .864-.933 1.406-1.683.977l-7.108-4.061a1.125 1.125 0 0 1 0-1.954l7.108-4.061A1.125 1.125 0 0 1 21 8.689v8.122ZM11.25 16.811c0 .864-.933 1.406-1.683.977l-7.108-4.061a1.125 1.125 0 0 1 0-1.954l7.108-4.061a1.125 1.125 0 0 1 1.683.977v8.122Z" clip-rule="evenodd" />
                     </svg>
@@ -120,7 +120,7 @@
                         <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" />
                     </svg>
                 </button>
-                <button class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5">
+                <button onclick="if(window.pywebview) window.pywebview.api.play_next();" class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5" title="Next Song">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path fill-rule="evenodd" d="M3 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061A1.125 1.125 0 0 1 3 16.811V8.69ZM12.75 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061a1.125 1.125 0 0 1-1.683-.977V8.69Z" clip-rule="evenodd" />
                     </svg>
