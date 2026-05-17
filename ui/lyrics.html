@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyrics</title>
+    <link href="output.css" rel="stylesheet">
+    <style>
+        /* Hide scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        .lyric-line {
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        .lyric-line.active {
+            /* Spotify-like green or tailor to your theme */
+            color: #1DB954; 
+            transform: scale(1.05);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans h-screen flex flex-col items-center py-10 overflow-hidden">
+    
+    <div id="lyrics-container" class="w-full max-w-2xl text-center space-y-4 overflow-y-auto h-full px-4 scroll-smooth pb-32 pt-32">
+        <p class="text-gray-400 text-xl animate-pulse">Loading lyrics...</p>
+    </div>
+
+    <script>
+        let parsedLyrics = [];
+        const container = document.getElementById('lyrics-container');
+
+        // Parse LRC format into an array of { time: seconds, text: string }
+        function parseLRC(lrcText) {
+            const lines = lrcText.split('\n');
+            const result = [];
+            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+
+            lines.forEach(line => {
+                const match = timeRegex.exec(line);
+                if (match) {
+                    const minutes = parseInt(match[1]);
+                    const seconds = parseInt(match[2]);
+                    const milliseconds = parseInt(match[3].padEnd(3, '0'));
+                    const timeInSeconds = (minutes * 60) + seconds + (milliseconds / 1000);
+                    const text = line.replace(timeRegex, '').trim();
+                    
+                    if (text) {
+                        result.push({ time: timeInSeconds, text: text });
+                    } else {
+                        // Keeps empty lines to retain musical pauses
+                        result.push({ time: timeInSeconds, text: '♪' });
+                    }
+                }
+            });
+            return result;
+        }
+
+        function renderLyrics() {
+            container.innerHTML = '';
+            if (parsedLyrics.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-xl">No synchronized lyrics found.</p>';
+                return;
+            }
+
+            parsedLyrics.forEach((line, index) => {
+                const p = document.createElement('p');
+                p.id = `line-${index}`;
+                p.className = 'lyric-line text-2xl text-gray-500 cursor-pointer hover:text-gray-200';
+                p.innerText = line.text;
+                p.onclick = () => {
+                    // Seek song to this line's time using Pywebview API
+                    if (window.pywebview && window.pywebview.api) {
+                        window.pywebview.api.progress_slider_click(line.time);
+                    }
+                };
+                container.appendChild(p);
+            });
+        }
+
+        function updateHighlightedLine(currentTime) {
+            if (parsedLyrics.length === 0) return;
+
+            let activeIndex = -1;
+            for (let i = 0; i < parsedLyrics.length; i++) {
+                if (currentTime >= parsedLyrics[i].time) {
+                    activeIndex = i;
+                } else {
+                    break;
+                }
+            }
+
+            // Remove active class from all
+            document.querySelectorAll('.lyric-line').forEach(el => el.classList.remove('active', 'text-white'));
+            
+            // Add active class to current line and scroll it into view
+            if (activeIndex !== -1) {
+                const activeEl = document.getElementById(`line-${activeIndex}`);
+                if (activeEl) {
+                    activeEl.classList.add('active', 'text-white');
+                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        // Expose a function to be called from pywebview to populate data
+        window.load_lyrics_data = function(syncedLRC) {
+            parsedLyrics = parseLRC(syncedLRC);
+            renderLyrics();
+        };
+    </script>
+</body>
+</html>

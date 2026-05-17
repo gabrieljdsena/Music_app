@@ -12,6 +12,16 @@ import winsdk.windows.media as media
 import winsdk.windows.media.playback as playback
 import random
 import time
+import urllib.request
+import urllib.parse
+import re
+
+try:
+    import pykakasi
+    kks = pykakasi.kakasi()
+except ImportError:
+    kks = None
+    print(" [Python] 'pykakasi' not found. Run 'pip install pykakasi' to enable Romaji lyrics.")
 
 class Api:
 
@@ -26,6 +36,7 @@ class Api:
         self.current_filename = None
         self.last_play_time = 0
         self.fallback_to_general_list = True
+        self.pause_time = 0
 
         #queue
         self.song_list = []
@@ -113,6 +124,7 @@ class Api:
             if self.first_play:
                 return None
             if self.playing:
+                self.pause_time = self.get_current_pos()
                 pygame.mixer.music.pause()
                 self.playing = False
                 self.smtc.playback_status = media.MediaPlaybackStatus.PAUSED
@@ -148,6 +160,7 @@ class Api:
             if opening:
                 pygame.mixer.music.pause()
                 self.playing = False
+                self.pause_time = 0
                 self.smtc.playback_status = media.MediaPlaybackStatus.PAUSED
                 if self._window:
                     self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
@@ -173,8 +186,9 @@ class Api:
             updater.update()
 
         elif(self.playing):
+            self.pause_time = self.get_current_pos()
             pygame.mixer.music.pause()
-            self.playing = not self.playing
+            self.playing = False
             #winsdk
             self.smtc.playback_status = media.MediaPlaybackStatus.PAUSED
         else:
@@ -184,7 +198,7 @@ class Api:
                 self.last_play_time = time.time()
             else:
                 pygame.mixer.music.unpause()
-            self.playing = not self.playing
+            self.playing = True
             #winsdk
             self.smtc.playback_status = media.MediaPlaybackStatus.PLAYING
 
@@ -196,6 +210,9 @@ class Api:
     def get_current_pos(self):
         if self.first_play:
             return 0
+            
+        if not self.playing:
+            return getattr(self, 'pause_time', 0)
                     
         pos = pygame.mixer.music.get_pos()
         
@@ -229,6 +246,7 @@ class Api:
             # Fall back to playing the next consecutive song in the general list
             if not self.fallback_to_general_list:
                 self.playing = False
+                self.pause_time = 0
                 self.smtc.playback_status = media.MediaPlaybackStatus.STOPPED
                 self.current_time_offset = 0
                 if self._window:
@@ -252,6 +270,7 @@ class Api:
             else:
                 # Reached the end of the queue and the end of the playlist, stop playing
                 self.playing = False
+                self.pause_time = 0
                 self.smtc.playback_status = media.MediaPlaybackStatus.STOPPED
                 self.current_time_offset = 0
                 if self._window:
@@ -307,6 +326,7 @@ class Api:
                 self.last_play_time = time.time()
                 if not self.playing:
                     pygame.mixer.music.pause()
+                    
 
 
     #updates pygames volume
@@ -319,6 +339,34 @@ class Api:
         except Exception as e:
             print(f" [Python] Database error: {e}")
 
+    def romanize_text(self, text, is_lrc=False):
+        if not kks or not text:
+            return text
+            
+        lines = text.split('\n')
+        romanized_lines = []
+        for line in lines:
+            if is_lrc:
+                match = re.match(r'^(\[\d+:\d+\.\d+\])(.*)$', line)
+                if match:
+                    timestamp = match.group(1)
+                    content = match.group(2)
+                    
+                    converted = kks.convert(content)
+                    romaji = " ".join([item['hepburn'] for item in converted])
+                    romaji = re.sub(r'\s+', ' ', romaji).strip() # Clean up double spaces
+                    
+                    romanized_lines.append(f"{timestamp} {romaji}")
+                else:
+                    romanized_lines.append(line)
+            else:
+                converted = kks.convert(line)
+                romaji = " ".join([item['hepburn'] for item in converted])
+                romaji = re.sub(r'\s+', ' ', romaji).strip()
+                romanized_lines.append(romaji)
+                
+        return '\n'.join(romanized_lines)
+
     #change on song progress bar
     def progress_slider_click(self, sec):
         pygame.mixer.music.play(0, float(sec))
@@ -327,6 +375,7 @@ class Api:
         # If the music was paused when the user seeked, keep it paused!
         if not self.playing:
             pygame.mixer.music.pause()
+            self.pause_time = float(sec)
         
 
     def recieve_download(self, data):
@@ -533,3 +582,46 @@ class Api:
                 
         except Exception as e:
             print(f" [Python] Database error: {e}")
+
+    def get_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
+        base_url = "https://lrclib.net/api/get"
+        
+        # Build query parameters
+        params = {
+            "track_name": track_name,
+            "artist_name": artist_name
+        }
+        if duration_seconds:
+            params["duration"] = int(duration_seconds)
+
+        query_string = urllib.parse.urlencode(params)
+        url = f"{base_url}?{query_string}"
+        
+        headers = {'User-Agent': 'MyMusicPlayer/1.0'}
+        req = urllib.request.Request(url, headers=headers)
+        
+        try:
+            with urllib.request.urlopen(req) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode())
+                    
+                    synced = data.get("syncedLyrics")
+                    plain = data.get("plainLyrics")
+                    
+                    if kks:
+                        synced = self.romanize_text(synced, is_lrc=True)
+                        plain = self.romanize_text(plain, is_lrc=False)
+
+                    return {
+                        "synced": synced,
+                        "plain": plain
+                    }
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                print(f" [Python] Lyrics not found for {track_name} by {artist_name}")
+            else:
+                print(f" [Python] HTTP Error: {e.code}")
+        except Exception as e:
+            print(f" [Python] Failed to fetch lyrics: {e}")
+            
+        return None

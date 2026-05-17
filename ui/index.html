@@ -188,10 +188,19 @@
     }
 
     window.toggle_play_pause = async function() {
+        // Optimistically flip the UI so it feels completely instant
+        if (window.current_playing_song) {
+            update_play_button_ui(!window.is_currently_playing);
+        }
+
         const isPlaying = await window.pywebview.api.play_button(null);
         
         // If no song is loaded, try to play the first song in the active list
         if (isPlaying === null) {
+            // Revert the optimistic update if we didn't actually play
+            if (window.current_playing_song) {
+                update_play_button_ui(!window.is_currently_playing);
+            }
             $(".song-row").first().click();
             return;
         }
@@ -352,8 +361,11 @@
                 if (!isDraggingProgress) {
                     $("#progressSlider").val(pos);
                 }
+                if (typeof window.updateHighlightedLine === 'function' && !$("#lyrics-container-view").hasClass("hidden")) {
+                    window.updateHighlightedLine(pos);
+                }
             }
-        }, 250); // Polling 4 times a second guarantees fast response
+        }, 100); // Polling 10 times a second for snappier lyrics response
     }
 
     window.plaiyng_info = function(data) {
@@ -368,6 +380,9 @@
         // Set slider maximum to exact song duration and start the tracker
         $("#progressSlider").attr("max", duration).val(0);
         startProgressTracking();
+        if (typeof window.fetchLyricsForCurrentSong === 'function') {
+            window.fetchLyricsForCurrentSong(data);
+        }
     }
 
     window.load_settings = function(volume) {
