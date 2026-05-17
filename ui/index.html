@@ -199,7 +199,10 @@
         update_play_button_ui(isPlaying);
     }
 
+    window.is_currently_playing = false;
+
     function update_play_button_ui(isPlaying) {
+        window.is_currently_playing = isPlaying;
         const playBtn = $("#playPauseBtn");
         if (isPlaying) {
             playBtn.html(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`);
@@ -209,6 +212,15 @@
             $("#audio-visualizer, .list-visualizer").removeClass("w-4 ml-1 opacity-100").addClass("w-0 ml-0 opacity-0");
         }
     }
+
+    // Automatically sync visualizers when dynamically generated content (like home.html) is added
+    const visualizerObserver = new MutationObserver(function(mutations) {
+        if (window.is_currently_playing) {
+            $(".list-visualizer").removeClass("w-0 ml-0 opacity-0").addClass("w-4 ml-1 opacity-100");
+        } else {
+            $(".list-visualizer").removeClass("w-4 ml-1 opacity-100").addClass("w-0 ml-0 opacity-0");
+        }
+    });
 
     async function sendData() {
         const val = $('#inp').val();
@@ -300,6 +312,9 @@
 
     // Load initial view on startup
     $(document).ready(function() {
+        // Start observing the main container for dynamic content changes
+        visualizerObserver.observe(document.getElementById("main"), { childList: true, subtree: true });
+
         navigateTo("home");
         
         // Safely request Python to send the settings on startup
