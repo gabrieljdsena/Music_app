@@ -1,0 +1,7 @@
+webviewpy
+mutagen
+yt_dlp
+download
+pygame
+winsdk
+psutil

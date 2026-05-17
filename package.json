@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "jquery": "^4.0.0",
+    "notyf": "^3.10.0",
+    "sweetalert2": "^11.26.24"
+  },
+  "name": "music-player",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.3.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

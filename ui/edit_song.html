@@ -1,0 +1,85 @@
+<div id="editSongModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-transparent bg-opacity-40 backdrop-blur-sm transition-opacity">
+    <div class="bg-neutral-800 rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+        <h2 class="text-2xl font-bold mb-4 text-zinc-200 border-b border-neutral-700 pb-2">Edit Song Metadata</h2>
+        <form id="editSongForm" class="space-y-4">
+            <input type="hidden" id="edit-file" name="file">
+            
+            <div>
+                <label for="edit-title" class="block text-sm font-semibold text-gray-200">Title</label>
+                <input type="text" id="edit-title" class="mt-1 block w-full rounded-md border-neutral-700 shadow-sm focus:border-orange-400 focus:ring-orange-500 sm:text-sm px-3 py-2 border bg-neutral-700 outline-none transition-all duration-300 hover:border-neutral-500 focus:bg-neutral-600" placeholder="Song Title">
+            </div>
+            
+            <div>
+                <label for="edit-artist" class="block text-sm font-semibold text-gray-200">Artist</label>
+                <input type="text" id="edit-artist" class="mt-1 block w-full rounded-md border-neutral-700 shadow-sm focus:border-orange-400 focus:ring-orange-500 sm:text-sm px-3 py-2 border bg-neutral-700 outline-none transition-all duration-300 hover:border-neutral-500 focus:bg-neutral-600" placeholder="Artist Name">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="edit-album" class="block text-sm font-semibold text-gray-200">Album</label>
+                    <input type="text" id="edit-album" class="mt-1 block w-full rounded-md border-neutral-700 shadow-sm focus:border-orange-400 focus:ring-orange-500 sm:text-sm px-3 py-2 border bg-neutral-700 outline-none transition-all duration-300 hover:border-neutral-500 focus:bg-neutral-600" placeholder="Album Name">
+                </div>
+
+                <div>
+                    <label for="edit-year" class="block text-sm font-semibold text-gray-200">Year</label>
+                    <input type="text" id="edit-year" class="mt-1 block w-full rounded-md border-neutral-700 shadow-sm focus:border-orange-400 focus:ring-orange-500 sm:text-sm px-3 py-2 border bg-neutral-700 outline-none transition-all duration-300 hover:border-neutral-500 focus:bg-neutral-600" placeholder="Year">
+                </div>
+            </div>
+
+            <div>
+                <label for="edit-cover" class="block text-sm font-semibold text-gray-200">Cover Image</label>
+                <input type="file" id="edit-cover" accept="image/*" class="mt-1 block w-full text-sm text-zinc-300 border border-neutral-700 rounded-md cursor-pointer bg-neutral-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-500 transition-all duration-300 hover:border-neutral-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-neutral-800 file:text-zinc-200 file:hover:bg-neutral-600 file:cursor-pointer file:transition-colors shadow-sm">
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-neutral-700 mt-5">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 hover:cursor-pointer bg-gray-200 text-slate-800 font-medium rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-all duration-300 hover:scale-105 active:scale-95">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-orange-400 text-white hover:cursor-pointer font-medium rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/40">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(song) {
+        document.getElementById('edit-file').value = song.file || '';
+        document.getElementById('edit-title').value = song.Title !== 'Unknown' ? song.Title : '';
+        document.getElementById('edit-artist').value = song.Artist !== 'Unknown' ? song.Artist : '';
+        document.getElementById('edit-album').value = song.Album !== 'Unknown' ? song.Album : '';
+        document.getElementById('edit-year').value = song.Year !== 'Unknown' ? song.Year : '';
+        document.getElementById('edit-cover').value = '';
+        
+        document.getElementById('editSongModal').classList.remove('hidden');
+        document.getElementById('editSongModal').classList.add('flex');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editSongModal').classList.add('hidden');
+        document.getElementById('editSongModal').classList.remove('flex');
+    }
+
+    document.getElementById('editSongForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        let updatedData = {
+            file: document.getElementById('edit-file').value,
+            Title: document.getElementById('edit-title').value,
+            Artist: document.getElementById('edit-artist').value,
+            Album: document.getElementById('edit-album').value,
+            Year: document.getElementById('edit-year').value
+        };
+
+        const coverFile = document.getElementById('edit-cover').files[0];
+        if (coverFile) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                updatedData.CoverArt = event.target.result;
+                window.pywebview.api.update_song_metadata(updatedData);
+                closeEditModal();
+            };
+            reader.readAsDataURL(coverFile);
+        } else {
+            window.pywebview.api.update_song_metadata(updatedData);
+            closeEditModal();
+        }
+    });
+</script>

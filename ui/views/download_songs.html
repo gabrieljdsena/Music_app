@@ -1,0 +1,206 @@
+<!-- REQUIREMENTS: Tailwind CSS must be loaded in your page (e.g., <script src="https://cdn.tailwindcss.com"></script>) -->
+
+<!-- Main Song Search Card -->
+<div class="flex flex-col items-center justify-center w-full">
+
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 mb-5 shadow-lg shadow-orange-500/30">
+      <!-- Music note SVG -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+      </svg>
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-bold from-white text-orange-400">
+      Download Songs
+    </h1>
+    <p class="text-zinc-500 mt-2 text-sm sm:text-base tracking-wide">
+      Search & download
+    </p>
+  </div>
+
+  <!-- Search Section -->
+  <div class="space-y-4">
+    <!-- Search Bar -->
+    <div class="relative group">
+      <div class="absolute -inset-1 bg-gradient-to-r from-orange-400 to-orange-500 rounded-2xl opacity-0"></div>
+      <div class="relative flex items-center bg-white/[0.06] border border-white/[0.12] rounded-2xl overflow-hidden backdrop-blur-md transition-all duration-300 group-hover:border-white/[0.25] group-hover:bg-white/[0.08] focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500">
+        <!-- Search Icon (SVG) -->
+        <div class="pl-5 pr-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500 transition-colors duration-300 group-focus-within:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+        <!-- Input -->
+        <input
+          type="text"
+          id="songSearch"
+          placeholder="Search for songs, artists, or albums..."
+          class="w-full py-4 pr-4 bg-transparent text-white placeholder-gray-500 text-base border-none tracking-wide focus:ring-0 focus:outline-none transition-colors duration-300"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <!-- Clear button (hidden by default) -->
+        <button
+          id="clearBtn"
+          class="pr-4 text-gray-500 hover:text-gray-300 transition-colors duration-200 hidden"
+          onclick="clearSearch()"
+        >
+          <!-- X circle SVG -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Download Button -->
+    <button
+      id="downloadBtn" onclick="download_click()"
+      class="mt-5 w-full relative group overflow-hidden rounded-2xl font-semibold text-white text-lg py-4 transition-all duration-300 active:scale-[0.98] hover:bg-orange-500 bg-orange-400 hover:cursor-pointer">
+        <!-- Content -->
+      <span class="relative flex items-center justify-center gap-3">
+        <!-- Download SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span>Download Song</span>
+      </span>
+    </button>
+
+    <!-- Trending tags -->
+    <div class="flex flex-wrap gap-2 mt-5 justify-center">
+      <span class="text-xs text-gray-500 tracking-wider uppercase">Trending:</span>
+      <button onclick="quickSearch('Blinding Lights')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer">Blinding Lights</button>
+      <button onclick="quickSearch('Bohemian Rhapsody')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer">Bohemian Rhapsody</button>
+      <button onclick="quickSearch('Shape of You')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer">Shape of You</button>
+      <button onclick="quickSearch('Stairway to Heaven')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer">Stairway to Heaven</button>
+    </div>
+
+    <!-- Downloads Container -->
+    <div id="downloads-container" class="mt-8 w-full flex flex-col gap-3"></div>
+  </div>
+
+<!-- Custom animations & script (self-contained) -->
+<style>
+  /* Custom animations previously in tailwind.config */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+  @keyframes glow {
+    0% { box-shadow: 0 0 20px rgba(251, 146, 60, 0.3); }
+    100% { box-shadow: 0 0 40px rgba(251, 146, 60, 0.6); }
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  /* Simple spinner (no external dependency) */
+  .spinner {
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top: 3px solid #f97316; /* orange-500 */
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<script type="module">
+    // Icon SVGs for different states
+  const icons = {
+    check: `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>`,
+    clearX: `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+    spinner: `<span class="spinner"></span>`,
+    download: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>`
+  };
+
+  // Initialize Notyf
+  const notyf = new Notyf({
+    position: {
+    x: 'right',
+    y: 'bottom'
+    }
+  });
+
+    // JS -> Python
+  async function download_click() {
+    const val = $('#songSearch').val();
+    if (!val) return;
+    
+    add_progress_bar(val);
+
+    notyf.open({
+      message: `<b>Downloading:</b> ${val}`,
+      background: '#fb923c', /* Tailwind orange-400 */
+      duration: 5000,
+      dismissible: true
+    });
+    
+    $('#songSearch').val("");
+    const response = await window.pywebview.api.recieve_download(val);
+
+    setTimeout(() => remove_progress_bar(val), 3000);
+    notyf.success(`Song Downloaded: ${val}`)
+  }
+
+  function add_progress_bar(id) {
+    const safeId = btoa(encodeURIComponent(id)).replace(/[^a-zA-Z0-9]/g, '');
+    
+    if ($(`#progress-${safeId}`).length) return;
+
+    const html = `
+      <div id="progress-${safeId}" class="bg-white/[0.06] border border-white/[0.12] rounded-xl p-4 backdrop-blur-md flex flex-col gap-2 shadow-lg">
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-white font-medium truncate pr-4">${id}</span>
+          <span id="percent-${safeId}" class="text-orange-400 font-semibold w-auto whitespace-nowrap text-right">0%</span>
+        </div>
+        <div class="w-full bg-white/[0.1] rounded-full h-2.5 overflow-hidden">
+          <div id="bar-${safeId}" class="bg-gradient-to-r from-orange-400 to-orange-500 h-2.5 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(251,146,60,0.5)]" style="width: 0%"></div>
+        </div>
+      </div>
+    `;
+    
+    $('#downloads-container').append(html);
+  }
+
+  function remove_progress_bar(id) {
+    const safeId = btoa(encodeURIComponent(id)).replace(/[^a-zA-Z0-9]/g, '');
+    $(`#progress-${safeId}`).fadeOut(300, function() { $(this).remove(); });
+  }
+
+  window.update_download_progress = function(id, percent, statusText) {
+    const safeId = btoa(encodeURIComponent(id)).replace(/[^a-zA-Z0-9]/g, '');
+    
+    const progressBar = document.getElementById(`bar-${safeId}`);
+    const percentText = document.getElementById(`percent-${safeId}`);
+    
+    if (progressBar) {
+        progressBar.style.width = `${percent}%`;
+    }
+    if (percentText) {
+        if (statusText) {
+            percentText.innerText = statusText;
+        } else {
+            percentText.innerText = `${Math.floor(percent)}%`;
+        }
+    }
+  }
+
+  window.download_click = download_click;
+
+
+
+</script>
