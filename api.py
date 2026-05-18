@@ -37,6 +37,7 @@ class Api:
         self.last_play_time = 0
         self.fallback_to_general_list = True
         self.pause_time = 0
+        self.shuffle = False
 
         #queue
         self.song_list = []
@@ -86,19 +87,61 @@ class Api:
 
     def add_to_queue(self, song_data):
         self.next_songs.append(song_data)
+        if self._window:
+            self._window.evaluate_js(f"""
+                window.queue_songs = {json.dumps(self.next_songs)};
+                if (typeof window.update_queue_ui === 'function') {{ window.update_queue_ui(); }}
+            """)
+
+    def next_to_queue(self, song_data):
+        self.next_songs.insert(0, song_data)
+        if self._window:
+            self._window.evaluate_js(f"""
+                window.queue_songs = {json.dumps(self.next_songs)};
+                if (typeof window.update_queue_ui === 'function') {{ window.update_queue_ui(); }}
+            """)
 
     def clear_queue(self):
         self.next_songs.clear()
         self.fallback_to_general_list = False
+        if self._window:
+            self._window.evaluate_js(f"""
+                window.queue_songs = [];
+                if (typeof window.update_queue_ui === 'function') {{ window.update_queue_ui(); }}
+            """)
         
     def remove_from_queue(self, index):
         if 0 <= index < len(self.next_songs):
             self.next_songs.pop(index)
+            if self._window:
+                self._window.evaluate_js(f"""
+                    window.queue_songs = {json.dumps(self.next_songs)};
+                    if (typeof window.update_queue_ui === 'function') {{ window.update_queue_ui(); }}
+                """)
             
     def reorder_queue(self, old_index, new_index):
         if 0 <= old_index < len(self.next_songs) and 0 <= new_index <= len(self.next_songs):
             item = self.next_songs.pop(old_index)
             self.next_songs.insert(new_index, item)
+            if self._window:
+                self._window.evaluate_js(f"""
+                    window.queue_songs = {json.dumps(self.next_songs)};
+                    if (typeof window.update_queue_ui === 'function') {{ window.update_queue_ui(); }}
+                """)
+    
+    def toggle_shuffle(self):
+        self.shuffle = not getattr(self, 'shuffle', False)
+        if self.shuffle and self.next_songs:
+            random.shuffle(self.next_songs)
+            if self._window:
+                self._window.evaluate_js(f"""
+                    window.queue_songs = {json.dumps(self.next_songs)};
+                    if (typeof window.update_queue_ui === 'function') {{ window.update_queue_ui(); }}
+                """)
+        elif not self.shuffle:
+            if self.last_song and self.last_song.get('File'):
+                self.populate_queue(self.last_song)
+        return self.shuffle
         
 
 
@@ -254,7 +297,13 @@ class Api:
                 return
 
             next_song = None
-            if self.current_filename and self.song_list:
+            if getattr(self, 'shuffle', False) and self.song_list:
+                available_songs = [s for s in self.song_list if s.get('File') != self.current_filename]
+                if available_songs:
+                    next_song = random.choice(available_songs)
+                elif self.song_list:
+                    next_song = self.song_list[0]
+            elif self.current_filename and self.song_list:
                 for i, song in enumerate(self.song_list):
                     if song.get('File') == self.current_filename:
                         if i + 1 < len(self.song_list):
