@@ -230,6 +230,69 @@
         });
     };
 
+    // Initialize a small cache to save RAM while scrolling up/down
+    window._coverCache = window._coverCache || new Map();
+
+    // Setup the Intersection Observer for lazy loading covers
+    window.lazyCoverObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            const container = entry.target;
+            const fileName = container.getAttribute('data-filename');
+            
+            if (entry.isIntersecting) {
+                if (fileName && !container.hasAttribute('data-loaded')) {
+                    // Store the fallback HTML if not already stored
+                    if (!container.hasAttribute('data-fallback')) {
+                        container._fallbackHTML = container.innerHTML;
+                        container.setAttribute('data-fallback', 'true');
+                    }
+                    
+                    // Debounce fetching: wait 150ms before asking Python to prevent IPC flooding
+                    container._loadTimeout = setTimeout(() => {
+                        container.setAttribute('data-loaded', 'true');
+                        
+                        // Check JS memory cache first
+                        if (window._coverCache.has(fileName)) {
+                            container.innerHTML = `<img src="${window._coverCache.get(fileName)}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
+                            return;
+                        }
+                        
+                        if (window.pywebview && window.pywebview.api) {
+                            window.pywebview.api.get_cover_art_base64(fileName).then(base64 => {
+                                if (base64) {
+                                    // Limit cache size to ~30 images to free up memory
+                                    if (window._coverCache.size > 30) {
+                                        const firstKey = window._coverCache.keys().next().value;
+                                        window._coverCache.delete(firstKey);
+                                    }
+                                    window._coverCache.set(fileName, base64);
+                                    
+                                    if (container.hasAttribute('data-loaded')) {
+                                        container.innerHTML = `<img src="${base64}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
+                                    }
+                                }
+                            }).catch(e => console.error(e));
+                        }
+                    }, 150);
+                }
+            } else {
+                // Cancel pending load if user scrolled past it quickly
+                if (container._loadTimeout) {
+                    clearTimeout(container._loadTimeout);
+                    container._loadTimeout = null;
+                }
+                
+                // Unload the image when it goes off screen to free up memory
+                if (container.hasAttribute('data-loaded')) {
+                    container.removeAttribute('data-loaded');
+                    if (container.hasAttribute('data-fallback') && container._fallbackHTML) {
+                        container.innerHTML = container._fallbackHTML;
+                    }
+                }
+            }
+        });
+    }, { rootMargin: "100px" }); // Reduced margin to avoid loading too many off-screen elements
+
     window.queue_songs = window.queue_songs || [];
     window.is_custom_queue = window.is_custom_queue || false;
 
@@ -247,10 +310,11 @@
             } else {
                 $("#clear-queue-btn").addClass("hidden");
             }
+            let queueHtmlBuffer = "";
             window.queue_songs.forEach((song, index) => {
                 const coverArt = song.CoverArt 
-                    ? `<img src="${song.CoverArt}" class="w-full h-full object-cover">`
-                    : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+                    ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
+                    : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
                 
                 const queueItem = `
                     <div class="queue-item flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group" data-index="${index}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}" draggable="true">
@@ -269,16 +333,20 @@
                         </button>
                     </div>
                 `;
-                queueBody.append(queueItem);
+                queueHtmlBuffer += queueItem;
             });
+            queueBody.append(queueHtmlBuffer);
         }
+        
+        $("#queue-body .lazy-cover").each(function() {
+            if (window.lazyCoverObserver) window.lazyCoverObserver.observe(this);
+        });
     };
 
     // Python -> JS
     window.song_list = function(data) {
-        // Clear out any old rows
-        $("#table-body").empty();
-
+        
+        let tableHtmlBuffer = "";
         data.forEach(song => {
             // Format the duration into MM:SS
             const durationSecs = Math.floor(song.Duration || 0);
@@ -288,8 +356,8 @@
             
             // Build the Cover Art image or a fallback icon
             const coverArt = song.CoverArt 
-                ? `<img src="${song.CoverArt}" class="w-full h-full object-cover">`
-                : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+                ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
+                : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
 
             const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
             const thisFile = song.File;
@@ -337,19 +405,31 @@
                 </div>
             </div>`;
             
-            $("#table-body").append(songRow);
+            tableHtmlBuffer += songRow;
+        });
+        
+        // Append the entire HTML string at once to prevent layout thrashing
+        $("#table-body").html(tableHtmlBuffer);
+        
+        $("#table-body .lazy-cover").each(function() {
+            if (window.lazyCoverObserver) window.lazyCoverObserver.observe(this);
         });
     }
 
     $(document).ready(function(){
         window.update_queue_ui();
         
+        let searchTimeout;
         $("#txt_search").on("keyup", function() {
-            var value = $(this).val().toLowerCase();
-            $("#table-body .song-row").filter(function() {
-                var title = $(this).find(".song-title").text().toLowerCase();
-                $(this).toggle(title.indexOf(value) > -1);
-            });
+            clearTimeout(searchTimeout);
+            const value = $(this).val().toLowerCase();
+            
+            searchTimeout = setTimeout(function() {
+                $("#table-body .song-row").each(function() {
+                    const title = $(this).find(".song-title").text().toLowerCase();
+                    $(this).toggle(title.indexOf(value) > -1);
+                });
+            }, 150); // 150ms debounce prevents lag when typing quickly
         });
 
         // Toggle queue sidebar

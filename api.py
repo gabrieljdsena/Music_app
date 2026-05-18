@@ -183,6 +183,21 @@ class Api:
 
         self.current_filename = current_song.get('File')
         last_filename = self.last_song.get('File')
+        
+        # Retrieve CoverArt dynamically so it isn't needed in the main JSON payload
+        if 'CoverArt' not in current_song or not current_song['CoverArt']:
+            file_path = os.path.join(settings.path, self.current_filename)
+            if os.path.exists(file_path):
+                try:
+                    song_file = ID3(file_path)
+                    for key in song_file.keys():
+                        if key.startswith('APIC'):
+                            apic = song_file[key]
+                            img_data = base64.b64encode(apic.data).decode('utf-8')
+                            current_song['CoverArt'] = f"data:{apic.mime};base64,{img_data}"
+                            break
+                except Exception:
+                    pass
 
         if(str(last_filename) != str(self.current_filename)):
             pygame.mixer.music.stop()
@@ -460,7 +475,7 @@ class Api:
             print(f" [Python] Error: {e}")
             return f"Error: {e}"
         
-    def get_song_metadata(self, file_path, file_name):
+    def get_song_metadata(self, file_path, file_name, include_cover=False):
         song_data = {
             'File': file_name,
             'Artist': 'Unknown',
@@ -480,12 +495,13 @@ class Api:
                 song_data['Year'] = str(song.get('TDRC')) if 'TDRC' in song else 'Unknown'
                 song_data['Duration'] = song_mp3.info.length
                 
-                for key in song.keys():
-                    if key.startswith('APIC'):
-                        apic = song[key]
-                        img_data = base64.b64encode(apic.data).decode('utf-8')
-                        song_data['CoverArt'] = f"data:{apic.mime};base64,{img_data}"
-                        break
+                if include_cover:
+                    for key in song.keys():
+                        if key.startswith('APIC'):
+                            apic = song[key]
+                            img_data = base64.b64encode(apic.data).decode('utf-8')
+                            song_data['CoverArt'] = f"data:{apic.mime};base64,{img_data}"
+                            break
             except Exception as e:
                 print(f" [Python] Failed to load metadata for {file_name}: {e}")
         return song_data
@@ -630,7 +646,7 @@ class Api:
                 if data and data[0]:
                     file = data[0]
                     file_path = os.path.join(settings.path, file)
-                    song_data = self.get_song_metadata(file_path, file)
+                    song_data = self.get_song_metadata(file_path, file, include_cover=True)
                     self.play_button(song_data, True)
                     self.populate_queue(song_data)
                 
@@ -678,4 +694,19 @@ class Api:
         except Exception as e:
             print(f" [Python] Failed to fetch lyrics: {e}")
             
+        return None
+        
+    def get_cover_art_base64(self, file_name):
+        """Endpoint that the frontend can call to lazy-load cover arts asynchronously"""
+        file_path = os.path.join(settings.path, file_name)
+        if os.path.exists(file_path):
+            try:
+                song_file = ID3(file_path)
+                for key in song_file.keys():
+                    if key.startswith('APIC'):
+                        apic = song_file[key]
+                        img_data = base64.b64encode(apic.data).decode('utf-8')
+                        return f"data:{apic.mime};base64,{img_data}"
+            except Exception:
+                pass
         return None

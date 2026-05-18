@@ -54,19 +54,30 @@
       </div>
     </div>
 
-    <!-- Search Button -->
-    <button
-      id="searchBtn" onclick="search_click()"
-      class="mt-5 w-full relative group overflow-hidden rounded-2xl font-semibold text-white text-lg py-4 transition-all duration-300 active:scale-[0.98] hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/30 hover:bg-orange-600 bg-orange-500 hover:cursor-pointer">
-        <!-- Content -->
-      <span class="relative flex items-center justify-center gap-3">
-        <!-- Search SVG -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <span>Search Songs</span>
-      </span>
-    </button>
+    <!-- Search and Import Buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 mt-5 w-full">
+      <button
+        id="searchBtn" onclick="search_click()"
+        class="flex-1 relative group overflow-hidden rounded-2xl font-semibold text-white text-lg py-4 transition-all duration-300 active:scale-[0.98] hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/30 hover:bg-orange-600 bg-orange-500 hover:cursor-pointer">
+          <!-- Content -->
+        <span class="relative flex items-center justify-center gap-3">
+          <!-- Search SVG -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Search Songs</span>
+        </span>
+      </button>
+
+      <button onclick="document.getElementById('txtFileInput').click()" 
+        class="sm:w-auto relative group overflow-hidden rounded-2xl font-semibold text-orange-400 text-lg py-4 px-6 transition-all duration-300 active:scale-[0.98] hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/30 hover:bg-orange-500/10 bg-white/[0.06] border border-orange-500/30 hover:border-orange-500 hover:cursor-pointer flex items-center justify-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span class="whitespace-nowrap">Import .txt</span>
+      </button>
+      <input type="file" id="txtFileInput" accept=".txt" class="hidden">
+    </div>
 
     <!-- Trending tags -->
     <div id="trending-tags" class="flex flex-wrap gap-2 mt-5 justify-center items-center min-h-[28px]">
@@ -145,7 +156,7 @@
         const results = await window.pywebview.api.search_yt(val);
         
         container.empty();
-        if (!results || results.length === 0) {
+        if (!Array.isArray(results) || results.length === 0) {
             container.html('<p class="text-zinc-500 text-center py-4">No results found.</p>');
             return;
         }
@@ -193,13 +204,6 @@
     if (!val) return;
     
     window.add_progress_bar(val);
-
-    notyf.open({
-      message: `<b>Downloading:</b> ${val}`,
-      background: '#fb923c',
-      duration: 5000,
-      dismissible: true
-    });
     
     $('#songSearch').val("");
     const response = await window.pywebview.api.recieve_download(val);
@@ -349,5 +353,80 @@
   window.download_click = download_click;
 
 
+  
+
+  // File Import Logic
+  document.getElementById('txtFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        const text = event.target.result;
+        const songs = text.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+        
+        if (songs.length === 0) {
+            notyf.error('No songs found in the file.');
+            e.target.value = ''; // Reset input
+            return;
+        }
+
+        notyf.success(`Starting import of ${songs.length} songs`);
+        e.target.value = ''; // Reset input
+
+        await processBatchDownloads(songs, 1);
+        notyf.success('Batch import completed!');
+    };
+    reader.readAsText(file);
+  });
+
+  async function processBatchDownloads(songs, concurrency) {
+    let index = 0;
+
+    async function worker() {
+        while (index < songs.length) {
+            const songIndex = index++;
+            const song = songs[songIndex];
+            let currentBarId = song;
+            
+            try {
+                  // Show an initial searching state
+                  window.add_progress_bar(currentBarId, `Searching: ${song}`);
+                  window.update_download_progress(currentBarId, 10, 'Searching...');
+                  
+                  const results = await window.pywebview.api.search_yt(song);
+                  if (Array.isArray(results) && results.length > 0) {
+                      const bestResult = results[0];
+                      const url = `https://www.youtube.com/watch?v=${bestResult.id}`;
+                      
+                      // Swap progress bar to the actual video title and URL ID
+                      window.remove_progress_bar(currentBarId);
+                      currentBarId = url;
+                      window.add_progress_bar(currentBarId, bestResult.title);
+                      
+                      await window.pywebview.api.recieve_download(url);
+                  } else {
+                      notyf.error(`No results found for: ${song}`);
+                      window.update_download_progress(currentBarId, 100, 'Failed');
+                  }
+            } catch (e) {
+                console.error("Error downloading " + song, e);
+                notyf.error(`Failed: ${song}`);
+                window.update_download_progress(currentBarId, 100, 'Failed');
+            } finally {
+                setTimeout(() => window.remove_progress_bar(currentBarId), 3000);
+                // Add a small delay so YouTube doesn't block the connection
+                await new Promise(r => setTimeout(r, 1500));
+            }
+        }
+    }
+
+    const workers = [];
+    for (let i = 0; i < concurrency; i++) {
+        workers.push(worker());
+    }
+
+    await Promise.all(workers);
+  }
 
 </script>
