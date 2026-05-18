@@ -182,7 +182,7 @@ class MusicDownloader:
                     )
                 )
             
-            audio.save()
+            audio.save(v2_version=3)
             print(f"Metadata applied")
 
             # Rename file to match title

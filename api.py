@@ -520,7 +520,7 @@ class Api:
                     )
                 )
             
-            audio.save()
+            audio.save(v2_version=3)
             
             new_title = song_data.get('Title', '')
             new_file_name = filename
@@ -536,6 +536,8 @@ class Api:
                 self.last_song['File'] = new_file_name
                 self.last_song['Title'] = song_data.get('Title', self.last_song.get('Title', 'Unknown'))
                 self.last_song['Artist'] = song_data.get('Artist', self.last_song.get('Artist', 'Unknown'))
+                self.last_song['Album'] = song_data.get('Album', self.last_song.get('Album', 'Unknown'))
+                self.last_song['Year'] = song_data.get('Year', self.last_song.get('Year', 'Unknown'))
                 if song_data.get('CoverArt'):
                     self.last_song['CoverArt'] = song_data['CoverArt']
                 

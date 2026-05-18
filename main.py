@@ -56,7 +56,7 @@ except Exception:
 
 # 3. Create window and pass the api instance
 window = webview.create_window(
-    title='Music App',
+    title='Hathor',
     url=html_file,
     js_api=api,
     width=settings.window_size['width'],

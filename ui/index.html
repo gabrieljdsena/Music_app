@@ -59,40 +59,63 @@
         .visualizer-bar:nth-child(4) { animation-duration: 0.8s; animation-delay: 0.2s; }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-orange-500/30">
+<body class="bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-orange-500/30 h-screen w-screen relative z-0">
+
+    <!-- Ambient Background Glows -->
+    <div class="absolute -top-[15%] -left-[5%] w-[45vw] h-[45vw] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none z-[-1]"></div>
+    <div class="absolute -bottom-[15%] right-[15%] w-[35vw] h-[35vw] bg-orange-600/10 rounded-full blur-[120px] pointer-events-none z-[-1]"></div>
+
     <!-- FIX: Added w-full to ensure the page container respects the screen width -->
     <div id="page" class="flex flex-row w-full">
-        <aside id="sidebar" class="w-64 flex-shrink-0 flex flex-col gap-y-6 border-r border-white/5 bg-zinc-900/40 backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-10 relative">
-            <button class="text-zinc-400 hover:text-white mt-4 mr-4 ml-auto p-2 rounded-xl hover:bg-white/5 transition-all duration-300" id="sidebar-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 transition-transform duration-300 ease-in-out">
-                    <path fill-rule="evenodd" d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" clip-rule="evenodd" />
-                </svg>
-            </button>
-            <div class="p-2 justify-left" id="sidebar-content">
-                <!-- Sidebar content goes here -->
-                <a href="#" data-target="home" class="nav-link flex p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 mb-4" title="Home">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 mr-2 flex-shrink-0">
+        <aside id="sidebar" class="w-64 flex-shrink-0 flex flex-col border-r border-orange-500/10 bg-black/40 backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-10 relative shadow-[4px_0_24px_rgba(0,0,0,0.5)] overflow-hidden">
+            <!-- Glassmorphism glare effect -->
+            <div class="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none"></div>
+            
+            <!-- Sidebar Header -->
+            <div id="sidebar-header" class="p-5 flex items-center justify-between border-b border-white/5 relative h-20 flex-shrink-0">
+                <div class="flex items-center gap-3 overflow-hidden transition-opacity duration-300" id="brand-container">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-white">
+                            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.5A2.25 2.25 0 0 0 2.25 9.75v4.5a2.25 2.25 0 0 0 2.25 2.25h2.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06ZM18.75 12c0-1.24-.51-2.35-1.34-3.14a.75.75 0 1 0-1.03 1.1c.41.38.67.92.67 1.51s-.26 1.13-.67 1.51a.75.75 0 1 0 1.03 1.1c.83-.79 1.34-1.9 1.34-3.14Zm2.25 0c0-2.32-.94-4.42-2.45-5.94a.75.75 0 1 0-1.06 1.06A6.73 6.73 0 0 1 19.5 12c0 1.91-.79 3.63-2.06 4.88a.75.75 0 1 0 1.06 1.06A8.23 8.23 0 0 0 21 12Z" />
+                        </svg>
+                    </div>
+                    <span class="nav-text text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-400 tracking-wide truncate">Hathor</span>
+                </div>
+                <button class="text-zinc-500 hover:text-orange-400 p-1.5 rounded-xl hover:bg-white/10 transition-all duration-300 flex-shrink-0 outline-none" id="sidebar-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 transition-transform duration-300 ease-in-out">
+                        <path fill-rule="evenodd" d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex flex-col flex-1 p-4 gap-2 overflow-y-auto custom-scrollbar relative" id="sidebar-content">
+                <a href="#" data-target="home" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden" title="Home">
+                    <div class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:text-orange-400">
                         <path d="M11.47 3.84a.75.75 0 011.06 0l8.99 8.99a.75.75 0 11-1.06 1.06L12 5.43 3.53 13.89a.75.75 0 11-1.06-1.06L11.47 3.84z" />
                         <path d="M4.5 12.93v7.32c0 .41.34.75.75.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h2.5a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-7.32l-7.5-7.5-7.5 7.5z" />
                     </svg>
-                    <span class="nav-text">Home</span>
+                    <span class="nav-text font-medium tracking-wide">Home</span>
                 </a>
-                <a href="#" data-target="download_songs" class="nav-link flex items-left p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 mb-4" title="Download">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 mr-2 flex-shrink-0">
+                <a href="#" data-target="download_songs" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden" title="Download">
+                    <div class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:text-orange-400">
                         <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zM6 17.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
                     </svg>
-                    <span class="nav-text">Download</span>
+                    <span class="nav-text font-medium tracking-wide">Download</span>
                 </a>
-                <a href="#" data-target="settings" class="nav-link flex items-left p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 mb-4" title="Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 mr-2 flex-shrink-0">
+                <a href="#" data-target="settings" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden mt-auto" title="Settings">
+                    <div class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:text-orange-400">
                         <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 00-2.282.819l-.922 1.597a1.875 1.875 0 00.432 2.385l1.093.832c.12.09.19.228.21.365a7.484 7.484 0 000 1.002c-.02.137-.09.275-.21.365l-1.093.832a1.875 1.875 0 00-.432 2.385l.922 1.597a1.875 1.875 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 002.28-.819l.923-1.597a1.875 1.875 0 00-.432-2.385l-1.093-.832c-.12-.09-.19-.228-.21-.365a7.484 7.484 0 000-1.002c.02-.137.09-.275.21-.365l1.093-.832a1.875 1.875 0 00.432-2.385l-.922-1.597a1.875 1.875 0 00-2.282-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 00-1.85-1.567h-1.843zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" />
                     </svg>
-                    <span class="nav-text">Settings</span>
+                    <span class="nav-text font-medium tracking-wide">Settings</span>
                 </a>
             </div>
         </aside>
         
-        <div class="flex flex-col flex-grow min-w-0 p-8 lg:p-12 main-content-area bg-gradient-to-b from-zinc-900/30 to-zinc-950 relative">
+        <div class="flex flex-col flex-grow min-w-0 p-8 lg:p-12 main-content-area bg-transparent relative">
             
             <div class="overflow-y-auto overflow-x-hidden flex-grow" id="main">
                 <!-- Content will be dynamically loaded here by jQuery. -->
@@ -101,7 +124,7 @@
     </div>
 
     <!-- The fixed controller is outside the main flex container to avoid affecting its layout -->
-    <div class="fixed bottom-0 left-0 right-0 flex flex-row items-center justify-between h-28 border-t border-white/5 bg-zinc-900/80 backdrop-blur-2xl px-6 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]" id="controls">
+    <div class="fixed bottom-0 left-0 right-0 flex flex-row items-center justify-between h-28 border-t border-orange-500/10 bg-black/40 backdrop-blur-2xl px-6 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" id="controls">
         
         <!-- Left Side: Empty for now -->
         <div id="song_plaiyng_div" class="flex-1 flex items-center min-w-0"></div>
@@ -109,23 +132,23 @@
         <!-- Center: Buttons and Progress Slider -->
         <div class="flex flex-col items-center justify-center flex-[2] max-w-3xl gap-2">
             <div class="flex flex-row items-center justify-center gap-6 sm:gap-8 w-full">
-                <button onclick="if(window.pywebview) window.pywebview.api.play_prev();" class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5" title="Previous Song">
+                <button onclick="if(window.pywebview) window.pywebview.api.play_prev();" class="hover:cursor-pointer text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5" title="Previous Song">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path fill-rule="evenodd" d="M21 16.811c0 .864-.933 1.406-1.683.977l-7.108-4.061a1.125 1.125 0 0 1 0-1.954l7.108-4.061A1.125 1.125 0 0 1 21 8.689v8.122ZM11.25 16.811c0 .864-.933 1.406-1.683.977l-7.108-4.061a1.125 1.125 0 0 1 0-1.954l7.108-4.061a1.125 1.125 0 0 1 1.683.977v8.122Z" clip-rule="evenodd" />
                     </svg>
                 </button>
 
-                <button id="playPauseBtn" onclick="window.toggle_play_pause();" class="flex items-center justify-center w-14 h-14 bg-white text-zinc-950 hover:bg-orange-400 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(251,146,60,0.4)]">
+                <button id="playPauseBtn" onclick="window.toggle_play_pause();" class="hover:cursor-pointer flex items-center justify-center w-14 h-14 bg-white text-zinc-950 hover:bg-orange-400 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(251,146,60,0.4)]">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 ml-1">
                         <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" />
                     </svg>
                 </button>
-                <button onclick="if(window.pywebview) window.pywebview.api.play_next();" class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5" title="Next Song">
+                <button onclick="if(window.pywebview) window.pywebview.api.play_next();" class="hover:cursor-pointer text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5" title="Next Song">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path fill-rule="evenodd" d="M3 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061A1.125 1.125 0 0 1 3 16.811V8.69ZM12.75 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061a1.125 1.125 0 0 1-1.683-.977V8.69Z" clip-rule="evenodd" />
                     </svg>
                 </button>
-                <button class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5">
+                <button class="hover:cursor-pointer text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path fill-rule="evenodd" d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z" clip-rule="evenodd" />
                         <path fill-rule="evenodd" d="M11.47 7.72a.75.75 0 0 1 1.06 0l7.5 7.5a.75.75 0 1 1-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 0 1-1.06-1.06l7.5-7.5Z" clip-rule="evenodd" />
@@ -274,16 +297,18 @@
 
     function hideSideBar(){
         $("#sidebar-toggle svg").addClass("rotate-180");
-        $("#sidebar").removeClass("w-64");
-        $("#sidebar").addClass("w-20");
-        $("#sidebar-content .nav-text").addClass("hidden");
+        $("#sidebar").removeClass("w-64").addClass("w-20");
+        $(".nav-text").addClass("hidden");
+        $("#brand-container").addClass("hidden");
+        $("#sidebar-header").removeClass("justify-between").addClass("justify-center");
     } 
 
     function showSidebar(){
-        $("#sidebar").removeClass("w-20");
-        $("#sidebar").addClass("w-64");
+        $("#sidebar").removeClass("w-20").addClass("w-64");
         $("#sidebar-toggle svg").removeClass("rotate-180");
-        $("#sidebar-content .nav-text").removeClass("hidden");
+        $(".nav-text").removeClass("hidden");
+        $("#brand-container").removeClass("hidden");
+        $("#sidebar-header").removeClass("justify-center").addClass("justify-between");
     } 
 
     // --- Dynamic Content Routing ---
