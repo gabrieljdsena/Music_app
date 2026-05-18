@@ -9,6 +9,32 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, APIC, TCON
 
 class MusicDownloader:
+    def search_yt(self, search_query, limit=5):
+        """Searches YouTube and returns a list of results without downloading."""
+        ydl_opts = {
+            'extract_flat': True,
+            'skip_download': True,
+            'quiet': True
+        }
+        try:
+            with YoutubeDL(ydl_opts) as ydl:
+                # Extract info for top search results
+                info = ydl.extract_info(f"ytsearch{limit}:{search_query}", download=False)
+                results = []
+                if 'entries' in info:
+                    for entry in info['entries']:
+                        results.append({
+                            'id': entry.get('id'),
+                            'title': entry.get('title'),
+                            'uploader': entry.get('uploader'),
+                            'duration': entry.get('duration', 0),
+                            'thumbnail': entry.get('thumbnails', [{}])[-1].get('url', '') if entry.get('thumbnails') else ''
+                        })
+                return results
+        except Exception as e:
+            print(f" [Python] Search Error: {str(e)}")
+            return []
+
     def download_song(self, search, progress_callback=None):
         ffmpeg_path = os.path.join(os.path.dirname(__file__), 'ffmpeg', 'bin')
         
@@ -33,7 +59,9 @@ class MusicDownloader:
             
         try:
             with YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(f"ytsearch1:{search} audio", download=True)
+                # If the search is a direct YouTube URL, use it directly. Otherwise, do a search.
+                query = search if search.startswith('http') else f"ytsearch1:{search} audio"
+                info = ydl.extract_info(query, download=True)
                 if 'entries' in info and len(info['entries']) > 0:
                     info = info['entries'][0]
                     

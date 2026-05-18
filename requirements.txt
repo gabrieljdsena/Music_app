@@ -5,3 +5,4 @@ download
 pygame
 winsdk
 psutil
+pykakasi

@@ -1,4 +1,4 @@
-<div class="flex flex-col xl:flex-row w-full h-full gap-6 relative items-start">
+<div class="flex flex-col xl:flex-row w-full h-full relative items-start">
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0 w-full h-full">
         <div class="max-w-5xl mx-auto w-full flex justify-end mb-6 px-6 sm:px-8 gap-3">
@@ -33,7 +33,7 @@
         </div>
         
         <!-- Lyrics Container (Hidden by Default) -->
-        <div id="lyrics-container-view" class="hidden max-w-5xl w-full h-full mx-auto px-6 sm:px-8 pb-10 flex-col items-center overflow-hidden relative">
+        <div id="lyrics-container-view" class="hidden max-w-7xl w-full h-full mx-auto px-6 sm:px-8 pb-10 flex-col items-center overflow-hidden relative">
             <div id="lyrics-container" class="w-full max-w-2xl text-center space-y-4 overflow-y-auto h-full px-4 scroll-smooth pb-32 pt-32 custom-scrollbar">
                 <p class="text-zinc-500 text-xl animate-pulse">Select a song to load lyrics...</p>
             </div>
@@ -41,17 +41,19 @@
     </div>
 
     <!-- Queue Auxiliary Bar -->
-    <div id="queue-sidebar" class="w-full xl:w-80 flex-shrink-0 border border-white/5 bg-zinc-900/40 backdrop-blur-md rounded-2xl hidden flex-col h-[calc(100vh-180px)] sticky top-0 shadow-2xl transition-all duration-300 z-10 xl:mr-8 mb-8">
-        <div class="p-5 border-b border-white/5 flex items-center justify-between">
-            <h2 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
-                <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
-                Up Next
-            </h2>
-            <button id="clear-queue-btn" class="text-xs font-medium text-zinc-500 hover:text-orange-400 transition-colors focus:outline-none uppercase tracking-wider">Clear</button>
-        </div>
-        <div class="p-3 overflow-y-auto flex-1 custom-scrollbar">
-            <div id="queue-body" class="flex flex-col gap-1">
-                <p id="empty-queue-msg" class="text-sm text-zinc-500 text-center py-8">Queue is empty</p>
+    <div id="queue-sidebar" class="w-full xl:w-80 flex-shrink-0 border bg-zinc-900/40 backdrop-blur-md rounded-2xl flex flex-col h-[calc(100vh-180px)] sticky top-0 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-10 overflow-hidden max-w-0 max-h-0 opacity-0 invisible border-transparent m-0 p-0">
+        <div class="flex flex-col w-[100vw] xl:w-[320px] h-[calc(100vh-180px)] flex-shrink-0">
+            <div class="p-5 border-b border-white/5 flex items-center justify-between">
+                <h2 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
+                    Up Next
+                </h2>
+                <button id="clear-queue-btn" class="text-xs font-medium text-zinc-500 hover:text-orange-400 transition-colors focus:outline-none uppercase tracking-wider">Clear</button>
+            </div>
+            <div class="p-3 overflow-y-auto flex-1 custom-scrollbar">
+                <div id="queue-body" class="flex flex-col gap-1">
+                    <p id="empty-queue-msg" class="text-sm text-zinc-500 text-center py-8">Queue is empty</p>
+                </div>
             </div>
         </div>
     </div>
@@ -349,10 +351,13 @@
         // Toggle queue sidebar
         $("#toggle-queue-btn").on("click", function() {
             const sidebar = $("#queue-sidebar");
-            if (sidebar.hasClass("hidden")) {
-                sidebar.removeClass("hidden").addClass("flex");
+            if (sidebar.hasClass("max-w-0") || sidebar.hasClass("hidden")) {
+                sidebar.removeClass("max-w-0 max-h-0 opacity-0 invisible border-transparent m-0 p-0")
+                       .removeClass("hidden")
+                       .addClass("max-w-full xl:max-w-xs max-h-[calc(100vh-180px)] opacity-100 visible border-white/5 mt-6 xl:mt-0 ml-0 xl:ml-6 xl:mr-8 mb-8");
             } else {
-                sidebar.addClass("hidden").removeClass("flex");
+                sidebar.removeClass("max-w-full xl:max-w-xs max-h-[calc(100vh-180px)] opacity-100 visible border-white/5 mt-6 xl:mt-0 ml-0 xl:ml-6 xl:mr-8 mb-8")
+                       .addClass("max-w-0 max-h-0 opacity-0 invisible border-transparent m-0 p-0");
             }
         });
 

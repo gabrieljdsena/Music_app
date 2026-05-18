@@ -376,6 +376,9 @@ class Api:
         if not self.playing:
             pygame.mixer.music.pause()
             self.pause_time = float(sec)
+                
+    def search_yt(self, query):
+        return self.downloader.search_yt(query)
         
 
     def recieve_download(self, data):
