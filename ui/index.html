@@ -57,6 +57,19 @@
         .visualizer-bar:nth-child(2) { animation-duration: 0.7s; animation-delay: 0.1s; }
         .visualizer-bar:nth-child(3) { animation-duration: 0.6s; animation-delay: 0.4s; }
         .visualizer-bar:nth-child(4) { animation-duration: 0.8s; animation-delay: 0.2s; }
+
+        /* Sidebar active state */
+        .active-nav {
+            background-color: rgba(249, 115, 22, 0.1) !important; /* matches bg-orange-500/10 */
+            color: white !important;
+        }
+        .active-nav .nav-indicator {
+            transform: scaleY(1) !important;
+        }
+        .active-nav svg {
+            color: rgb(251, 146, 60) !important; /* matches text-orange-400 */
+            transform: scale(1.1) !important;
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-orange-500/30 h-screen w-screen relative z-0">
@@ -90,8 +103,8 @@
 
             <!-- Navigation Links -->
             <div class="flex flex-col flex-1 p-4 gap-2 overflow-y-auto custom-scrollbar relative" id="sidebar-content">
-                <a href="#" data-target="home" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden" title="Home">
-                    <div class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
+                <a href="#" data-target="home" class="nav-link active-nav group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden" title="Home">
+                    <div class="nav-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:text-orange-400">
                         <path d="M11.47 3.84a.75.75 0 011.06 0l8.99 8.99a.75.75 0 11-1.06 1.06L12 5.43 3.53 13.89a.75.75 0 11-1.06-1.06L11.47 3.84z" />
                         <path d="M4.5 12.93v7.32c0 .41.34.75.75.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h2.5a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-7.32l-7.5-7.5-7.5 7.5z" />
@@ -99,14 +112,14 @@
                     <span class="nav-text font-medium tracking-wide">Home</span>
                 </a>
                 <a href="#" data-target="download_songs" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden" title="Download">
-                    <div class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
+                    <div class="nav-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:text-orange-400">
                         <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zM6 17.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
                     </svg>
                     <span class="nav-text font-medium tracking-wide">Download</span>
                 </a>
                 <a href="#" data-target="settings" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden mt-auto" title="Settings">
-                    <div class="absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
+                    <div class="nav-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center"></div>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:text-orange-400">
                         <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 00-2.282.819l-.922 1.597a1.875 1.875 0 00.432 2.385l1.093.832c.12.09.19.228.21.365a7.484 7.484 0 000 1.002c-.02.137-.09.275-.21.365l-1.093.832a1.875 1.875 0 00-.432 2.385l.922 1.597a1.875 1.875 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 002.28-.819l.923-1.597a1.875 1.875 0 00-.432-2.385l-1.093-.832c-.12-.09-.19-.228-.21-.365a7.484 7.484 0 000-1.002c.02-.137.09-.275.21-.365l1.093-.832a1.875 1.875 0 00.432-2.385l-.922-1.597a1.875 1.875 0 00-2.282-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 00-1.85-1.567h-1.843zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" />
                     </svg>
@@ -119,6 +132,13 @@
             
             <div class="overflow-y-auto overflow-x-hidden flex-grow" id="main">
                 <!-- Content will be dynamically loaded here by jQuery. -->
+            </div>
+            
+            <!-- Global Lyrics Container (Hidden by Default) -->
+            <div id="lyrics-container-view" class="hidden absolute inset-0 z-40 bg-zinc-950/95 backdrop-blur-3xl flex-col items-center overflow-hidden">
+                <div id="lyrics-container" class="relative w-full max-w-8xl text-center space-y-6 md:space-y-10 overflow-y-auto overflow-x-hidden break-words h-full px-4 md:px-12 scroll-smooth pb-32 pt-32 custom-scrollbar">
+                    <p class="text-zinc-500 text-2xl md:text-xl font-semibold animate-pulse">Select a song to load lyrics...</p>
+                </div>
             </div>
         </div>
 
@@ -191,13 +211,18 @@
 
         <!-- Right Side: Volume -->
         <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+            <!-- Lyrics Button -->
+            <button id="toggle-lyrics-btn" class="cursor-pointer text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5 focus:outline-none" title="Toggle Lyrics">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+            </button>
+
             <!-- Queue Button -->
-            <button id="toggle-queue-btn" class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5 focus:outline-none" title="Toggle Queue">
+            <button id="toggle-queue-btn" class="cursor-pointer text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5 focus:outline-none" title="Toggle Queue">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
             </button>
 
             <!-- Volume Icon Button -->
-            <button class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5">
+            <button class="cursor-pointer text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5 focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
                     <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.5A2.25 2.25 0 0 0 2.25 9.75v4.5a2.25 2.25 0 0 0 2.25 2.25h2.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06ZM18.75 12c0-1.24-.51-2.35-1.34-3.14a.75.75 0 1 0-1.03 1.1c.41.38.67.92.67 1.51s-.26 1.13-.67 1.51a.75.75 0 1 0 1.03 1.1c.83-.79 1.34-1.9 1.34-3.14Zm2.25 0c0-2.32-.94-4.42-2.45-5.94a.75.75 0 1 0-1.06 1.06A6.73 6.73 0 0 1 19.5 12c0 1.91-.79 3.63-2.06 4.88a.75.75 0 1 0 1.06 1.06A8.23 8.23 0 0 0 21 12Z" />
                 </svg>
@@ -376,6 +401,9 @@
         e.preventDefault();
         const targetPage = $(this).data("target");
         if (targetPage) {
+            $(".nav-link").removeClass("active-nav");
+            $(this).addClass("active-nav");
+            
             navigateTo(targetPage);
         }
     });
@@ -541,6 +569,127 @@
         });
     }, { rootMargin: '300px' });
 
+    // --- Global Lyrics Logic ---
+    window.parsedLyrics = [];
+    
+    window.parseLRC = function(lrcText) {
+        const lines = lrcText.split('\n');
+        const result = [];
+        const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+
+        lines.forEach(line => {
+            const match = timeRegex.exec(line);
+            if (match) {
+                const minutes = parseInt(match[1]);
+                const seconds = parseInt(match[2]);
+                const milliseconds = parseInt(match[3].padEnd(3, '0'));
+                const timeInSeconds = (minutes * 60) + seconds + (milliseconds / 1000);
+                const text = line.replace(timeRegex, '').trim();
+                
+                if (text) {
+                    result.push({ time: timeInSeconds, text: text });
+                } else {
+                    result.push({ time: timeInSeconds, text: '♪' });
+                }
+            }
+        });
+        return result;
+    };
+
+    window.renderLyrics = function() {
+        const container = document.getElementById('lyrics-container');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        if (window.parsedLyrics.length === 0) {
+            container.innerHTML = '<p class="text-zinc-500 text-2xl md:text-4xl font-semibold">No synchronized lyrics found.</p>';
+            return;
+        }
+
+        window.parsedLyrics.forEach((line, index) => {
+            const p = document.createElement('p');
+            p.id = `lyric-line-${index}`;
+            p.className = 'lyric-line text-3xl md:text-5xl lg:text-6xl font-bold text-zinc-600 cursor-pointer hover:text-zinc-400 transition-all duration-300';
+            p.innerText = line.text;
+            p.onclick = () => {
+                if (window.pywebview && window.pywebview.api) {
+                    window.pywebview.api.progress_slider_click(line.time);
+                }
+            };
+            container.appendChild(p);
+        });
+    };
+
+    window.updateHighlightedLine = function(currentTime) {
+        if (!window.parsedLyrics || window.parsedLyrics.length === 0) return;
+
+        let activeIndex = -1;
+        for (let i = 0; i < window.parsedLyrics.length; i++) {
+            if (currentTime >= window.parsedLyrics[i].time) {
+                activeIndex = i;
+            } else {
+                break;
+            }
+        }
+
+        if (activeIndex !== -1) {
+            const currentActive = document.querySelector('.lyric-line.active-lyric');
+            const newActive = document.getElementById(`lyric-line-${activeIndex}`);
+            
+            if (currentActive !== newActive) {
+                if (currentActive) {
+                    currentActive.classList.remove('active-lyric', 'text-white', 'scale-105');
+                    currentActive.classList.add('text-zinc-600');
+                }
+                if (newActive) {
+                    newActive.classList.remove('text-zinc-600');
+                    newActive.classList.add('active-lyric', 'text-white', 'scale-105');
+                    
+                    // Replace scrollIntoView with precise container scrolling to prevent page shift
+                    const container = document.getElementById('lyrics-container');
+                    if (container) {
+                        const topPos = newActive.offsetTop - (container.clientHeight / 2) + (newActive.clientHeight / 2);
+                        container.scrollTo({
+                            top: Math.max(0, topPos),
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            }
+        }
+    };
+
+    window.fetchLyricsForCurrentSong = async function(songData) {
+        const container = document.getElementById('lyrics-container');
+        if (!container) return;
+        
+        songData = songData || window.current_playing_song;
+        if (!songData) return;
+
+        container.innerHTML = `<p class="text-zinc-500 text-2xl md:text-4xl font-semibold animate-pulse">Loading lyrics for ${songData.Title}...</p>`;
+        window.parsedLyrics = [];
+
+        try {
+            const lyricsData = await window.pywebview.api.get_lyrics(
+                songData.Title, 
+                songData.Artist, 
+                songData.Album, 
+                songData.Duration
+            );
+            
+            if (lyricsData && lyricsData.synced) {
+                window.parsedLyrics = window.parseLRC(lyricsData.synced);
+                window.renderLyrics();
+            } else if (lyricsData && lyricsData.plain) {
+                container.innerHTML = `<div class="text-zinc-300 text-md md:text-xl lg:text-2xl font-bold whitespace-pre-line leading-relaxed md:leading-loose pt-8 pb-16">${lyricsData.plain}</div>`;
+            } else {
+                container.innerHTML = '<p class="text-zinc-500 text-2xl md:text-4xl font-semibold">No lyrics found for this song.</p>';
+            }
+        } catch (error) {
+            container.innerHTML = '<p class="text-red-400 text-2xl md:text-4xl font-semibold">Failed to load lyrics.</p>';
+        }
+    };
+
     window.update_queue_ui = function() {
         const queueBody = $("#queue-body");
         queueBody.find(".queue-item, .queue-item-container").remove();
@@ -579,6 +728,24 @@
             } else {
                 sidebar.removeClass("max-w-full xl:max-w-xs xl:max-h-[calc(100vh-180px)] opacity-100 visible xl:mr-8 translate-x-0")
                        .addClass("max-w-0 xl:max-h-0 opacity-0 invisible translate-x-full xl:translate-x-0");
+            }
+        });
+
+        // Toggle lyrics view
+        $(document).on("click", "#toggle-lyrics-btn", function() {
+            const lyricsView = $("#lyrics-container-view");
+            const btn = $(this);
+            if (lyricsView.hasClass("hidden")) {
+                lyricsView.removeClass("hidden").addClass("flex");
+                btn.html(`<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>`);
+                btn.removeClass("text-zinc-400 hover:text-white").addClass("text-orange-500 hover:text-orange-400");
+                if (window.current_playing_song && window.parsedLyrics.length === 0) {
+                    window.fetchLyricsForCurrentSong(window.current_playing_song);
+                }
+            } else {
+                lyricsView.addClass("hidden").removeClass("flex");
+                btn.html(`<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>`);
+                btn.removeClass("text-orange-500 hover:text-orange-400").addClass("text-zinc-400 hover:text-white");
             }
         });
 

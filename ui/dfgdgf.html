@@ -15,7 +15,7 @@
         }
         .lyric-line.active {
             /* Spotify-like green or tailor to your theme */
-            color: #1DB954; 
+            color: #f06c00; 
             transform: scale(1.05);
             font-weight: 800;
         }
@@ -23,7 +23,7 @@
 </head>
 <body class="bg-gray-900 text-white font-sans h-screen flex flex-col items-center py-10 overflow-hidden">
     
-    <div id="lyrics-container" class="w-full max-w-6xl lg:max-w-7xl text-center space-y-8 md:space-y-12 overflow-y-auto h-full px-6 md:px-12 scroll-smooth pb-32 pt-32">
+    <div id="lyrics-container" class="relative w-full max-w-6xl lg:max-w-7xl text-center space-y-8 md:space-y-12 overflow-y-auto h-full px-6 md:px-12 scroll-smooth pb-32 pt-32">
         <p class="text-gray-400 text-3xl md:text-4xl font-bold animate-pulse">Loading lyrics...</p>
     </div>
 
@@ -99,7 +99,12 @@
                 const activeEl = document.getElementById(`line-${activeIndex}`);
                 if (activeEl) {
                     activeEl.classList.add('active', 'text-white');
-                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    const topPos = activeEl.offsetTop - (container.clientHeight / 2) + (activeEl.clientHeight / 2);
+                    container.scrollTo({
+                        top: Math.max(0, topPos),
+                        behavior: 'smooth'
+                    });
                 }
             }
         }

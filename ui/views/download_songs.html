@@ -206,10 +206,20 @@
     window.add_progress_bar(val);
     
     $('#songSearch').val("");
-    const response = await window.pywebview.api.recieve_download(val);
-
-    setTimeout(() => window.remove_progress_bar(val), 3000);
-    notyf.success(`Song Downloaded: ${val}`)
+    try {
+        const response = await window.pywebview.api.recieve_download(val);
+        if (typeof response === 'string' && response.startsWith('Error:')) {
+            notyf.error(`Failed to download: ${val}`);
+            if (typeof window.update_download_progress === 'function') window.update_download_progress(val, 100, 'Failed');
+        } else {
+            notyf.success(`Song Downloaded: ${val}`);
+        }
+    } catch (e) {
+        notyf.error(`Download error: ${val}`);
+        if (typeof window.update_download_progress === 'function') window.update_download_progress(val, 100, 'Failed');
+    } finally {
+        setTimeout(() => window.remove_progress_bar(val), 3000);
+    }
   }
 
   window.add_progress_bar = function(id, display_text) {
@@ -280,11 +290,21 @@
       dismissible: true
     });
     
-    // Pass the direct URL to the backend
-    const response = await window.pywebview.api.recieve_download(url);
-
-    setTimeout(() => window.remove_progress_bar(url), 3000);
-    notyf.success(`Song Downloaded: ${title}`);
+    try {
+        // Pass the direct URL to the backend
+        const response = await window.pywebview.api.recieve_download(url);
+        if (typeof response === 'string' && response.startsWith('Error:')) {
+            notyf.error(`Failed to download: ${title}`);
+            if (typeof window.update_download_progress === 'function') window.update_download_progress(url, 100, 'Failed');
+        } else {
+            notyf.success(`Song Downloaded: ${title}`);
+        }
+    } catch (e) {
+        notyf.error(`Failed to download: ${title}`);
+        if (typeof window.update_download_progress === 'function') window.update_download_progress(url, 100, 'Failed');
+    } finally {
+        setTimeout(() => window.remove_progress_bar(url), 3000);
+    }
   };
 
   // Trigger search on Enter key press
@@ -404,7 +424,11 @@
                       currentBarId = url;
                       window.add_progress_bar(currentBarId, bestResult.title);
                       
-                      await window.pywebview.api.recieve_download(url);
+                      const response = await window.pywebview.api.recieve_download(url);
+                      if (typeof response === 'string' && response.startsWith('Error:')) {
+                          notyf.error(`Failed: ${bestResult.title}`);
+                          window.update_download_progress(currentBarId, 100, 'Failed');
+                      }
                   } else {
                       notyf.error(`No results found for: ${song}`);
                       window.update_download_progress(currentBarId, 100, 'Failed');

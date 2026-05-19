@@ -8,9 +8,6 @@
                 </svg>
                 <input type="text" placeholder="Search..." id="txt_search" spellcheck="false" class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-900/40 hover:bg-zinc-800/40 focus:bg-zinc-900/80 backdrop-blur-xl border border-white/5 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
             </div>
-            <button id="toggle-lyrics-btn" class="flex items-center justify-center w-10 h-10 bg-zinc-900/40 hover:bg-zinc-800/40 backdrop-blur-xl border border-white/5 rounded-full focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-transform hover:scale-105 active:scale-95" title="Toggle Lyrics">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
-            </button>
         </div>
         <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10">
             <div id="table">
@@ -26,13 +23,6 @@
                 <div id="table-body" class="flex flex-col gap-1 pb-2"> 
                     <!-- Content will be dynamically populated via Javascript -->
                 </div>
-            </div>
-        </div>
-        
-        <!-- Lyrics Container (Hidden by Default) -->
-        <div id="lyrics-container-view" class="hidden max-w-7xl w-full h-full mx-auto px-6 sm:px-8 pb-10 flex-col items-center overflow-hidden relative">
-            <div id="lyrics-container" class="w-full max-w-2xl text-center space-y-4 overflow-y-auto h-full px-4 scroll-smooth pb-32 pt-32 custom-scrollbar">
-                <p class="text-zinc-500 text-xl animate-pulse">Select a song to load lyrics...</p>
             </div>
         </div>
     </div>
@@ -73,8 +63,6 @@
 <div id="edit-song-modal-container"></div>
 
 <script>
-    window.parsedLyrics = [];
-    
     window.generateSongRowHtml = function(song) {
         const durationSecs = Math.floor(song.Duration || 0);
         const minutes = Math.floor(durationSecs / 60);
@@ -159,115 +147,6 @@
             }
         });
     }, { rootMargin: '300px' });
-
-    function parseLRC(lrcText) {
-        const lines = lrcText.split('\n');
-        const result = [];
-        const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
-
-        lines.forEach(line => {
-            const match = timeRegex.exec(line);
-            if (match) {
-                const minutes = parseInt(match[1]);
-                const seconds = parseInt(match[2]);
-                const milliseconds = parseInt(match[3].padEnd(3, '0'));
-                const timeInSeconds = (minutes * 60) + seconds + (milliseconds / 1000);
-                const text = line.replace(timeRegex, '').trim();
-                
-                if (text) {
-                    result.push({ time: timeInSeconds, text: text });
-                } else {
-                    result.push({ time: timeInSeconds, text: '♪' });
-                }
-            }
-        });
-        return result;
-    }
-
-    function renderLyrics() {
-        const container = document.getElementById('lyrics-container');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        if (window.parsedLyrics.length === 0) {
-            container.innerHTML = '<p class="text-zinc-500 text-xl">No synchronized lyrics found.</p>';
-            return;
-        }
-
-        window.parsedLyrics.forEach((line, index) => {
-            const p = document.createElement('p');
-            p.id = `lyric-line-${index}`;
-            p.className = 'lyric-line text-2xl text-zinc-500 cursor-pointer hover:text-zinc-300 transition-all duration-300';
-            p.innerText = line.text;
-            p.onclick = () => {
-                if (window.pywebview && window.pywebview.api) {
-                    window.pywebview.api.progress_slider_click(line.time);
-                }
-            };
-            container.appendChild(p);
-        });
-    }
-
-    window.updateHighlightedLine = function(currentTime) {
-        if (!window.parsedLyrics || window.parsedLyrics.length === 0) return;
-
-        let activeIndex = -1;
-        for (let i = 0; i < window.parsedLyrics.length; i++) {
-            if (currentTime >= window.parsedLyrics[i].time) {
-                activeIndex = i;
-            } else {
-                break;
-            }
-        }
-
-        if (activeIndex !== -1) {
-            const currentActive = document.querySelector('.lyric-line.active-lyric');
-            const newActive = document.getElementById(`lyric-line-${activeIndex}`);
-            
-            if (currentActive !== newActive) {
-                if (currentActive) {
-                    currentActive.classList.remove('active-lyric', 'text-white', 'scale-105', 'font-bold');
-                    currentActive.classList.add('text-zinc-500');
-                }
-                if (newActive) {
-                    newActive.classList.remove('text-zinc-500');
-                    newActive.classList.add('active-lyric', 'text-white', 'scale-105', 'font-bold');
-                    newActive.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        }
-    };
-
-    window.fetchLyricsForCurrentSong = async function(songData) {
-        const container = document.getElementById('lyrics-container');
-        if (!container) return;
-        
-        songData = songData || window.current_playing_song;
-        if (!songData) return;
-
-        container.innerHTML = `<p class="text-zinc-500 text-xl animate-pulse">Loading lyrics for ${songData.Title}...</p>`;
-        window.parsedLyrics = [];
-
-        try {
-            const lyricsData = await window.pywebview.api.get_lyrics(
-                songData.Title, 
-                songData.Artist, 
-                songData.Album, 
-                songData.Duration
-            );
-            
-            if (lyricsData && lyricsData.synced) {
-                window.parsedLyrics = parseLRC(lyricsData.synced);
-                renderLyrics();
-            } else if (lyricsData && lyricsData.plain) {
-                container.innerHTML = `<div class="text-zinc-300 text-lg whitespace-pre-line leading-loose pt-8">${lyricsData.plain}</div>`;
-            } else {
-                container.innerHTML = '<p class="text-zinc-500 text-xl">No lyrics found for this song.</p>';
-            }
-        } catch (error) {
-            container.innerHTML = '<p class="text-red-400 text-xl">Failed to load lyrics.</p>';
-        }
-    };
 
     // Helper function to guarantee only one active song UI at a time
     window.set_active_song_ui = function(songData) {
@@ -427,24 +306,6 @@
                     $(this).toggle(title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1);
                 });
             }, 150); // 150ms debounce prevents lag when typing quickly
-        });
-
-        // Toggle lyrics view
-        $("#toggle-lyrics-btn").on("click", function() {
-            const list = $("#list");
-            const lyricsView = $("#lyrics-container-view");
-            if (lyricsView.hasClass("hidden")) {
-                list.addClass("hidden");
-                lyricsView.removeClass("hidden").addClass("flex");
-                $(this).html(`<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>`);
-                if (window.current_playing_song && window.parsedLyrics.length === 0) {
-                    window.fetchLyricsForCurrentSong(window.current_playing_song);
-                }
-            } else {
-                lyricsView.addClass("hidden").removeClass("flex");
-                list.removeClass("hidden");
-                $(this).html(`<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-orange-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>`);
-            }
         });
 
         // Event Delegation for Queue Context Menu Items
