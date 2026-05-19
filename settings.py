@@ -10,6 +10,7 @@ path = os.path.expandvars(r'%appdata%\musicPlayer')
 volume = 0.7
 window_size = {'width': 1280, 'height': 720}
 background = ""
+browser = "firefox"
 
 if os.path.exists(db_path):
     with sqlite3.connect(db_path) as conn:

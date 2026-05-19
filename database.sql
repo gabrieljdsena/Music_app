@@ -29,8 +29,9 @@ create table if not exists Settings(
     window_height int,
     background_path varchar(255),
     songs_path varchar(255),
+    browser varchar(50),
     FOREIGN KEY (current_song) REFERENCES Songs(file)
 );
 
-INSERT OR IGNORE INTO Settings(id,current_song, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path)
-values (1,null,null,null,null,null,null,null,null)
+INSERT OR IGNORE INTO Settings(id,current_song, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path, browser)
+values (1,null,null,null,null,null,null,null,null,null)

@@ -537,6 +537,12 @@ class Api:
         if os.path.exists(total_path):
             try:
                 os.remove(total_path)
+                # Keep backend memory synced with deletions without full reload
+                self.song_list = [s for s in getattr(self, 'song_list', []) if s.get('File') != filename]
+                self.next_songs = [s for s in getattr(self, 'next_songs', []) if s.get('File') != filename]
+                self.prev_songs = [s for s in getattr(self, 'prev_songs', []) if s.get('File') != filename]
+                if self._window:
+                    self._window.evaluate_js(f"window.queue_songs = {json.dumps(self.next_songs)}; if (typeof window.update_queue_ui === 'function') window.update_queue_ui();")
             except Exception as e:
                 print(f" [Python] Error deleting file: {e}")
 
@@ -576,6 +582,11 @@ class Api:
                 audio.tags['TDRC'] = TDRC(encoding=3, text=[str(song_data['Year'])])
             
             if song_data.get('CoverArt') and song_data['CoverArt'].startswith('data:'):
+                # Remove any existing cover art to avoid multiple stacked APIC frames
+                keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
+                for k in keys_to_remove:
+                    audio.tags.pop(k)
+
                 header, encoded = song_data['CoverArt'].split(',', 1)
                 mime = header.split(';')[0].split(':')[1]
                 img_data = base64.b64decode(encoded)
@@ -606,8 +617,8 @@ class Api:
                 if song_data.get('CoverArt'):
                     self.last_song['CoverArt'] = song_data['CoverArt']
                 
-                safe_name = json.dumps(new_file_name)
-                self._window.evaluate_js(f"if (window.current_playing_song) window.current_playing_song.file = {safe_name};")
+                safe_song = json.dumps(self.last_song)
+                self._window.evaluate_js(f"window.current_playing_song = {safe_song}; if (typeof window.set_active_song_ui === 'function') window.set_active_song_ui(window.current_playing_song); if (typeof window.plaiyng_info === 'function') window.plaiyng_info(window.current_playing_song);")
                 
                 pygame.mixer.music.load(os.path.join(settings.path, new_file_name))
                 pygame.mixer.music.play(0, resume_pos)
@@ -624,7 +635,23 @@ class Api:
                 updater.music_properties.artist = str(self.last_song.get('Artist', 'Unknown'))
                 updater.update()
 
-            self.send_song_list()
+            # Update backend memory to avoid full reload
+            for lst in [getattr(self, 'song_list', []), getattr(self, 'next_songs', []), getattr(self, 'prev_songs', [])]:
+                for s in lst:
+                    if s.get('File') == filename:
+                        s['File'] = new_file_name
+                        if 'Title' in song_data: s['Title'] = song_data['Title']
+                        if 'Artist' in song_data: s['Artist'] = song_data['Artist']
+                        if 'Album' in song_data: s['Album'] = song_data['Album']
+                        if 'Year' in song_data: s['Year'] = song_data['Year']
+                        if song_data.get('CoverArt'): s['CoverArt'] = song_data['CoverArt']
+
+            if self._window:
+                updated_song = next((s for s in getattr(self, 'song_list', []) if s.get('File') == new_file_name), song_data)
+                safe_updated = json.dumps(updated_song)
+                self._window.evaluate_js(f"if (typeof window.update_song_row_ui === 'function') window.update_song_row_ui({json.dumps(filename)}, {safe_updated});")
+                self._window.evaluate_js(f"window.queue_songs = {json.dumps(getattr(self, 'next_songs', []))}; if (typeof window.update_queue_ui === 'function') window.update_queue_ui();")
+
             return True
         except Exception as e:
             print(f" [Python] Error updating metadata: {str(e)}")
@@ -696,6 +723,21 @@ class Api:
             
         return None
         
+    def search_itunes_metadata(self, title, artist=None):
+        try:
+            # Clean up default artist names to improve search accuracy
+            artist_str = artist if artist and artist not in ['Unknown', 'Unknown Artist'] else None
+            metadata = self.downloader.search_itunes(title, artist_str)
+            if metadata:
+                # Convert the raw bytes artwork into a base64 Data URI for the frontend
+                if metadata.get('artwork'):
+                    img_data = base64.b64encode(metadata['artwork']).decode('utf-8')
+                    metadata['artwork'] = f"data:image/jpeg;base64,{img_data}"
+                return metadata
+        except Exception as e:
+            print(f" [Python] iTunes Search Error: {str(e)}")
+        return None
+
     def get_cover_art_base64(self, file_name):
         """Endpoint that the frontend can call to lazy-load cover arts asynchronously"""
         file_path = os.path.join(settings.path, file_name)

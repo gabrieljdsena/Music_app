@@ -65,6 +65,10 @@
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         Play
     </button>
+    <button id="bento-search-metadata-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        Search Metadata
+    </button>
     <button id="bento-next-to-queue-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
         Play Next
@@ -92,6 +96,144 @@
 <script>
     window.parsedLyrics = [];
     
+    window.generateSongRowHtml = function(song) {
+        const durationSecs = Math.floor(song.Duration || 0);
+        const minutes = Math.floor(durationSecs / 60);
+        const seconds = (durationSecs % 60).toString().padStart(2, '0');
+        const formattedDuration = `${minutes}:${seconds}`;
+        
+        const coverArt = song.CoverArt 
+            ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
+            : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+
+        const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
+        const thisFile = song.File;
+        const isActive = currentFile && thisFile && (currentFile === thisFile);
+        const activeClasses = isActive ? "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30" : "";
+        const titleColor = isActive ? "text-orange-400" : "text-zinc-100";
+        
+        const visualizerHtml = isActive ? `
+            <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+                <div class="visualizer-bar"></div>
+            </div>
+        ` : '';
+
+        return `
+        <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group ${activeClasses}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+            <div class="flex items-center gap-3 overflow-hidden">
+                ${visualizerHtml}
+                <div class="w-10 h-10 rounded-md bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md cover-art-container">
+                    ${coverArt}
+                </div>
+                <div class="flex flex-col overflow-hidden">
+                    <div class="song-title font-medium ${titleColor} group-hover:text-orange-400 transition-colors truncate">${song.Title || "Unknown Title"}</div>
+                    <div class="cursor-pointer hover:text-zinc-400 transition-colors text-sm truncate">${song.Artist || "Unknown Artist"}</div>
+                </div>
+            </div>
+            <div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${song.Album || "Unknown Album"}</span></div>
+            <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
+            <div class="flex items-center justify-end">
+                <button class="bento-btn p-2 hover:bg-white/10 hover:cursor-pointer rounded-full transition-colors focus:outline-none" aria-label="Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="5" r="1.5"/>
+                        <circle cx="12" cy="5" r="1.5"/>
+                        <circle cx="19" cy="5" r="1.5"/>
+                        <circle cx="5" cy="12" r="1.5"/>
+                        <circle cx="12" cy="12" r="1.5"/>
+                        <circle cx="19" cy="12" r="1.5"/>
+                        <circle cx="5" cy="19" r="1.5"/>
+                        <circle cx="12" cy="19" r="1.5"/>
+                        <circle cx="19" cy="19" r="1.5"/>
+                    </svg>
+                </button>
+            </div>
+        </div>`;
+    };
+
+    window.generateQueueItemHtml = function(song, index) {
+        const coverArt = song.CoverArt 
+            ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
+            : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+        
+        return `
+            <div class="queue-item flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group" data-index="${index}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+                <div class="w-10 h-10 rounded shadow-md overflow-hidden flex-shrink-0 relative">
+                    ${coverArt}
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+                <div class="flex flex-col overflow-hidden w-full">
+                    <span class="text-sm font-medium text-zinc-200 truncate group-hover:text-orange-400 transition-colors">${song.Title || "Unknown Title"}</span>
+                    <span class="text-xs text-zinc-500 truncate">${song.Artist || "Unknown Artist"}</span>
+                </div>
+                <button class="remove-queue-btn text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 focus:outline-none" title="Remove">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `;
+    };
+
+    if (window.lazyRowObserver) window.lazyRowObserver.disconnect();
+    window.lazyRowObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const container = entry.target;
+            if (entry.isIntersecting) {
+                if (!container.hasAttribute('data-rendered')) {
+                    const songDataStr = container.getAttribute('data-path');
+                    if (songDataStr) {
+                        const songData = JSON.parse(songDataStr);
+                        container.innerHTML = window.generateSongRowHtml(songData);
+                        container.setAttribute('data-rendered', 'true');
+                        
+                        const cover = container.querySelector('.lazy-cover');
+                        if (cover && window.lazyCoverObserver) {
+                            window.lazyCoverObserver.observe(cover);
+                        }
+                    }
+                }
+            } else {
+                if (container.hasAttribute('data-rendered')) {
+                    container.style.minHeight = container.offsetHeight + 'px';
+                    container.innerHTML = '';
+                    container.removeAttribute('data-rendered');
+                }
+            }
+        });
+    }, { rootMargin: '300px' });
+
+    if (window.lazyQueueObserver) window.lazyQueueObserver.disconnect();
+    window.lazyQueueObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const container = entry.target;
+            if (entry.isIntersecting) {
+                if (!container.hasAttribute('data-rendered')) {
+                    const songDataStr = container.getAttribute('data-path');
+                    const index = container.getAttribute('data-index');
+                    if (songDataStr) {
+                        const songData = JSON.parse(songDataStr);
+                        container.innerHTML = window.generateQueueItemHtml(songData, index);
+                        container.setAttribute('data-rendered', 'true');
+                        
+                        const cover = container.querySelector('.lazy-cover');
+                        if (cover && window.lazyCoverObserver) {
+                            window.lazyCoverObserver.observe(cover);
+                        }
+                    }
+                }
+            } else {
+                if (container.hasAttribute('data-rendered')) {
+                    container.style.minHeight = container.offsetHeight + 'px';
+                    container.innerHTML = '';
+                    container.removeAttribute('data-rendered');
+                }
+            }
+        });
+    }, { rootMargin: '300px' });
+
     function parseLRC(lrcText) {
         const lines = lrcText.split('\n');
         const result = [];
@@ -312,97 +454,54 @@
             }
             let queueHtmlBuffer = "";
             window.queue_songs.forEach((song, index) => {
-                const coverArt = song.CoverArt 
-                    ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
-                    : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
-                
-                const queueItem = `
-                    <div class="queue-item flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group" data-index="${index}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}" draggable="true">
-                        <div class="w-10 h-10 rounded shadow-md overflow-hidden flex-shrink-0 relative">
-                            ${coverArt}
-                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
-                        </div>
-                        <div class="flex flex-col overflow-hidden w-full">
-                            <span class="text-sm font-medium text-zinc-200 truncate group-hover:text-orange-400 transition-colors">${song.Title || "Unknown Title"}</span>
-                            <span class="text-xs text-zinc-500 truncate">${song.Artist || "Unknown Artist"}</span>
-                        </div>
-                        <button class="remove-queue-btn text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 focus:outline-none" title="Remove">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-                `;
-                queueHtmlBuffer += queueItem;
+                queueHtmlBuffer += `<div class="queue-item-container" style="min-height: 56px;" data-index="${index}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}" draggable="true"></div>`;
             });
             queueBody.append(queueHtmlBuffer);
         }
         
-        $("#queue-body .lazy-cover").each(function() {
-            if (window.lazyCoverObserver) window.lazyCoverObserver.observe(this);
+        $("#queue-body .queue-item-container").each(function() {
+            if (window.lazyQueueObserver) window.lazyQueueObserver.observe(this);
         });
+    };
+
+    window.update_song_row_ui = function(oldFilename, newSongData) {
+        $('.song-row-container').filter(function() {
+            const pathData = $(this).data("path");
+            const rawDataStr = $(this).attr("data-path");
+            let rawData = null;
+            try { rawData = JSON.parse(rawDataStr); } catch(e) {}
+            return (pathData && pathData.File === oldFilename) || (rawData && rawData.File === oldFilename);
+        }).each(function() {
+            $(this).attr('data-path', JSON.stringify(newSongData).replace(/"/g, '&quot;'));
+            $(this).data("path", newSongData);
+            if ($(this).attr('data-rendered') === 'true') {
+                $(this).html(window.generateSongRowHtml(newSongData));
+                const cover = $(this).find('.lazy-cover')[0];
+                if (cover && window.lazyCoverObserver) {
+                    window.lazyCoverObserver.observe(cover);
+                }
+            }
+        });
+        
+        if (window._coverCache) {
+            if (newSongData.CoverArt) {
+                if (newSongData.File !== oldFilename) window._coverCache.delete(oldFilename);
+                window._coverCache.set(newSongData.File, newSongData.CoverArt);
+            } else if (newSongData.File !== oldFilename && window._coverCache.has(oldFilename)) {
+                const oldCover = window._coverCache.get(oldFilename);
+                window._coverCache.delete(oldFilename);
+                window._coverCache.set(newSongData.File, oldCover);
+            }
+        }
     };
 
     // Python -> JS
     window.song_list = function(data) {
-        
+        if (window._coverCache) window._coverCache.clear(); // Clear cover cache on refresh
         let tableHtmlBuffer = "";
         data.forEach(song => {
-            // Format the duration into MM:SS
-            const durationSecs = Math.floor(song.Duration || 0);
-            const minutes = Math.floor(durationSecs / 60);
-            const seconds = (durationSecs % 60).toString().padStart(2, '0');
-            const formattedDuration = `${minutes}:${seconds}`;
-            
-            // Build the Cover Art image or a fallback icon
-            const coverArt = song.CoverArt 
-                ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
-                : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
-
-            const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
-            const thisFile = song.File;
-            const isActive = currentFile && thisFile && (currentFile === thisFile);
-            const activeClasses = isActive ? "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30" : "";
-            const titleColor = isActive ? "text-orange-400" : "text-zinc-100";
-            
-            const visualizerHtml = isActive ? `
-                <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                    <div class="visualizer-bar"></div>
-                </div>
-            ` : '';
-
             const songRow = `
-            <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group ${activeClasses}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
-                <div class="flex items-center gap-3 overflow-hidden">
-                    ${visualizerHtml}
-                    <div class="w-10 h-10 rounded-md bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md cover-art-container">
-                        ${coverArt}
-                    </div>
-                    <div class="flex flex-col overflow-hidden">
-                        <div class="song-title font-medium ${titleColor} group-hover:text-orange-400 transition-colors truncate">${song.Title || "Unknown Title"}</div>
-                        <div class="cursor-pointer hover:text-zinc-400 transition-colors text-sm truncate">${song.Artist || "Unknown Artist"}</div>
-                    </div>
-                </div>
-                <div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${song.Album || "Unknown Album"}</span></div>
-                <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
-                <div class="flex items-center justify-end">
-                    <button class="bento-btn p-2 hover:bg-white/10 hover:cursor-pointer rounded-full transition-colors focus:outline-none" aria-label="Menu">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="5" cy="5" r="1.5"/>
-                            <circle cx="12" cy="5" r="1.5"/>
-                            <circle cx="19" cy="5" r="1.5"/>
-                            <circle cx="5" cy="12" r="1.5"/>
-                            <circle cx="12" cy="12" r="1.5"/>
-                            <circle cx="19" cy="12" r="1.5"/>
-                            <circle cx="5" cy="19" r="1.5"/>
-                            <circle cx="12" cy="19" r="1.5"/>
-                            <circle cx="19" cy="19" r="1.5"/>
-                        </svg>
-                    </button>
-                </div>
+            <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
             </div>`;
             
             tableHtmlBuffer += songRow;
@@ -411,8 +510,8 @@
         // Append the entire HTML string at once to prevent layout thrashing
         $("#table-body").html(tableHtmlBuffer);
         
-        $("#table-body .lazy-cover").each(function() {
-            if (window.lazyCoverObserver) window.lazyCoverObserver.observe(this);
+        $("#table-body .song-row-container").each(function() {
+            if (window.lazyRowObserver) window.lazyRowObserver.observe(this);
         });
     }
 
@@ -425,9 +524,12 @@
             const value = $(this).val().toLowerCase();
             
             searchTimeout = setTimeout(function() {
-                $("#table-body .song-row").each(function() {
-                    const title = $(this).find(".song-title").text().toLowerCase();
-                    $(this).toggle(title.indexOf(value) > -1);
+                $("#table-body .song-row-container").each(function() {
+                    const songData = JSON.parse($(this).attr('data-path') || '{}');
+                    const title = (songData.Title || "").toLowerCase();
+                    const artist = (songData.Artist || "").toLowerCase();
+                    const album = (songData.Album || "").toLowerCase();
+                    $(this).toggle(title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1);
                 });
             }, 150); // 150ms debounce prevents lag when typing quickly
         });
@@ -592,6 +694,75 @@
             }
         });
 
+        // Handle Search Metadata click from context menu
+        $("#bento-search-metadata-btn").on("click", async function(e) {
+            e.stopPropagation();
+            const songPath = $("#bento-context-menu").data("song-path");
+            $("#bento-context-menu").addClass("hidden");
+            
+            if (songPath) {
+                Swal.fire({
+                    title: 'Searching Metadata...',
+                    text: 'Please wait while we search iTunes for metadata.',
+                    allowOutsideClick: false,
+                    background: '#1a1a1a',
+                    color: '#f9fafb',
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    const metadata = await window.pywebview.api.search_itunes_metadata(songPath.Title, songPath.Artist);
+                    Swal.close();
+
+                    if (metadata) {
+                        // Clone the current song data and update it with the fetched metadata
+                        const updatedSong = { ...songPath };
+                        if (metadata.title) updatedSong.Title = metadata.title;
+                        if (metadata.artist) updatedSong.Artist = metadata.artist;
+                        if (metadata.album) updatedSong.Album = metadata.album;
+                        if (metadata.year) updatedSong.Year = metadata.year;
+                        if (metadata.artwork) updatedSong.CoverArt = metadata.artwork;
+                        
+                        window.openEditModal(updatedSong);
+
+                        // Programmatically create a File from the base64 artwork and set it in the file input
+                        if (metadata.artwork) {
+                            setTimeout(async () => {
+                                try {
+                                    const res = await fetch(metadata.artwork);
+                                    const blob = await res.blob();
+                                    const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
+                                    const dataTransfer = new DataTransfer();
+                                    dataTransfer.items.add(file);
+                                    
+                                    // Find the file input in the modal (fallback to generic file input if specific ID is not used)
+                                    const fileInput = document.getElementById('edit-cover-input') || document.querySelector('#edit-song-modal-container input[type="file"]');
+                                    if (fileInput) {
+                                        fileInput.files = dataTransfer.files;
+                                        // Trigger change so your preview updates natively
+                                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
+                                } catch (e) {
+                                    console.error("Failed to set file input:", e);
+                                }
+                            }, 200); // Small delay to ensure the modal is rendered
+                        }
+                        
+                        if (typeof notyf !== 'undefined') notyf.success('Metadata found! Review and save changes.');
+                    } else {
+                        if (typeof notyf !== 'undefined') notyf.error('No metadata found for this song.');
+                        window.openEditModal(songPath);
+                    }
+                } catch (err) {
+                    Swal.close();
+                    if (typeof notyf !== 'undefined') notyf.error('Error searching metadata.');
+                    window.openEditModal(songPath);
+                }
+            }
+        });
+
         $("#bento-edit-btn").on("click", async function(e) {
             e.stopPropagation();
             const songPath = $("#bento-context-menu").data("song-path");
@@ -640,7 +811,7 @@
                         await window.pywebview.api.delete_song(songPath);
 
                         // Hide the specific song row visually and remove it from the DOM
-                        $('.song-row').filter(function() {
+                        $('.song-row-container').filter(function() {
                             return $(this).data("path").File === songPath.File;
                         }).slideUp("fast", function() { $(this).remove(); });
                     }
@@ -665,19 +836,19 @@
         // --- Queue Drag and Drop Logic ---
         let draggedItemIndex = null;
 
-        $(document).on("dragstart", ".queue-item", function(e) {
+        $(document).on("dragstart", ".queue-item-container", function(e) {
             draggedItemIndex = $(this).data("index");
             $(this).addClass("opacity-50");
             e.originalEvent.dataTransfer.effectAllowed = "move";
             e.originalEvent.dataTransfer.setData("text/plain", draggedItemIndex);
         });
 
-        $(document).on("dragover", ".queue-item", function(e) {
+        $(document).on("dragover", ".queue-item-container", function(e) {
             e.preventDefault();
             e.originalEvent.dataTransfer.dropEffect = "move";
             const bounding = this.getBoundingClientRect();
             const offset = bounding.y + (bounding.height / 2);
-            $(".queue-item").removeClass("border-t-2 border-b-2 border-orange-500");
+            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500");
             if (e.originalEvent.clientY > offset) {
                 $(this).addClass("border-b-2 border-orange-500");
             } else {
@@ -685,13 +856,13 @@
             }
         });
 
-        $(document).on("dragleave", ".queue-item", function(e) {
+        $(document).on("dragleave", ".queue-item-container", function(e) {
             $(this).removeClass("border-t-2 border-b-2 border-orange-500");
         });
 
-        $(document).on("drop", ".queue-item", async function(e) {
+        $(document).on("drop", ".queue-item-container", async function(e) {
             e.preventDefault();
-            $(".queue-item").removeClass("border-t-2 border-b-2 border-orange-500 opacity-50");
+            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500 opacity-50");
             
             const targetIndex = $(this).data("index");
             if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
@@ -718,9 +889,9 @@
             draggedItemIndex = null;
         });
 
-        $(document).on("dragend", ".queue-item", function(e) {
+        $(document).on("dragend", ".queue-item-container", function(e) {
             $(this).removeClass("opacity-50");
-            $(".queue-item").removeClass("border-t-2 border-b-2 border-orange-500");
+            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500");
             draggedItemIndex = null;
         });
 
