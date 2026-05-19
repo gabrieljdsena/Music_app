@@ -121,6 +121,27 @@
                 <!-- Content will be dynamically loaded here by jQuery. -->
             </div>
         </div>
+
+        <!-- Global Queue Sidebar -->
+        <div id="queue-sidebar" class="fixed right-0 bottom-28 top-0 xl:relative xl:top-auto xl:bottom-auto w-full sm:w-80 flex-shrink-0 border-l xl:border border-white/10 xl:border-transparent bg-zinc-950/95 xl:bg-zinc-900/40 backdrop-blur-3xl xl:backdrop-blur-md xl:rounded-2xl flex flex-col h-[calc(100vh-112px)] xl:h-[calc(100vh-180px)] xl:my-8 shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-50 xl:z-10 overflow-hidden max-w-0 xl:max-h-0 opacity-0 invisible translate-x-full xl:translate-x-0 m-0 p-0">
+            <div class="flex flex-col w-full sm:w-[320px] xl:w-[320px] h-full flex-shrink-0">
+                <div class="p-5 border-b border-white/5 flex items-center justify-between">
+                    <h2 class="text-base font-semibold text-zinc-100 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
+                        Up Next
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="clear-queue-btn" class="text-xs font-medium text-zinc-500 hover:text-orange-400 transition-colors focus:outline-none uppercase tracking-wider hidden">Clear</button>
+                        <button id="close-queue-btn-mobile" class="xl:hidden text-zinc-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors focus:outline-none"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    </div>
+                </div>
+                <div class="p-3 overflow-y-auto flex-1 custom-scrollbar">
+                    <div id="queue-body" class="flex flex-col gap-1">
+                        <p id="empty-queue-msg" class="text-sm text-zinc-500 text-center py-8">Queue is empty</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- The fixed controller is outside the main flex container to avoid affecting its layout -->
@@ -170,6 +191,11 @@
 
         <!-- Right Side: Volume -->
         <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+            <!-- Queue Button -->
+            <button id="toggle-queue-btn" class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5 focus:outline-none" title="Toggle Queue">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
+            </button>
+
             <!-- Volume Icon Button -->
             <button class="text-zinc-400 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-full hover:bg-white/5">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -387,21 +413,32 @@
         if (progressTimer) clearInterval(progressTimer);
         
         progressTimer = setInterval(async () => {
-            const pos = await window.pywebview.api.get_current_pos();
-            if (pos >= 0) {
-                const mins = Math.floor(pos / 60);
-                const secs = Math.floor(pos % 60).toString().padStart(2, '0');
-                $("#current_time").text(`${mins}:${secs}`);
-                
-                if (!isDraggingProgress) {
-                    $("#progressSlider").val(pos);
+            try {
+                if (!window.pywebview || !window.pywebview.api) return;
+                const pos = await window.pywebview.api.get_current_pos();
+                if (pos >= 0) {
+                    const mins = Math.floor(pos / 60);
+                    const secs = Math.floor(pos % 60).toString().padStart(2, '0');
+                    $("#current_time").text(`${mins}:${secs}`);
+                    
+                    if (!isDraggingProgress) {
+                        $("#progressSlider").val(pos);
+                    }
+                    if (typeof window.updateHighlightedLine === 'function' && !$("#lyrics-container-view").hasClass("hidden")) {
+                        window.updateHighlightedLine(pos);
+                    }
                 }
-                if (typeof window.updateHighlightedLine === 'function' && !$("#lyrics-container-view").hasClass("hidden")) {
-                    window.updateHighlightedLine(pos);
-                }
+            } catch (err) {
+                // Window was likely closed or python object disposed mid-call
+                clearInterval(progressTimer);
             }
         }, 100); // Polling 10 times a second for snappier lyrics response
     }
+
+    // Clean up background polling when the user closes the window
+    $(window).on("beforeunload", function() {
+        if (progressTimer) clearInterval(progressTimer);
+    });
 
     window.plaiyng_info = function(data) {
         window.current_playing_song = data;
@@ -446,6 +483,210 @@
             </div>`;
         $("#song_plaiyng_div").html(html);
     }
+
+    // --- Global Queue Logic ---
+    window.queue_songs = window.queue_songs || [];
+    window.is_custom_queue = window.is_custom_queue || false;
+
+    window.generateQueueItemHtml = function(song, index) {
+        const coverArt = song.CoverArt 
+            ? `<img src="${song.CoverArt}" loading="lazy" class="w-full h-full object-cover">`
+            : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+        
+        return `
+            <div class="queue-item flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group" data-index="${index}" data-path='${JSON.stringify(song).replace(/'/g, '&apos;')}'>
+                <div class="w-10 h-10 rounded shadow-md overflow-hidden flex-shrink-0 relative">
+                    ${coverArt}
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+                <div class="flex flex-col overflow-hidden w-full">
+                    <span class="text-sm font-medium text-zinc-200 truncate group-hover:text-orange-400 transition-colors">${song.Title || "Unknown Title"}</span>
+                    <span class="text-xs text-zinc-500 truncate">${song.Artist || "Unknown Artist"}</span>
+                </div>
+                <button class="remove-queue-btn text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 focus:outline-none" title="Remove">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        `;
+    };
+
+    if (window.lazyQueueObserver) window.lazyQueueObserver.disconnect();
+    window.lazyQueueObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const container = entry.target;
+            if (entry.isIntersecting) {
+                if (!container.hasAttribute('data-rendered')) {
+                    const songDataStr = container.getAttribute('data-path');
+                    const index = container.getAttribute('data-index');
+                    if (songDataStr) {
+                        const songData = JSON.parse(songDataStr.replace(/&apos;/g, "'"));
+                        container.innerHTML = window.generateQueueItemHtml(songData, index);
+                        container.setAttribute('data-rendered', 'true');
+                        
+                        const cover = container.querySelector('.lazy-cover');
+                        if (cover && window.lazyCoverObserver) {
+                            window.lazyCoverObserver.observe(cover);
+                        }
+                    }
+                }
+            } else {
+                if (container.hasAttribute('data-rendered')) {
+                    container.style.minHeight = container.offsetHeight + 'px';
+                    container.innerHTML = '';
+                    container.removeAttribute('data-rendered');
+                }
+            }
+        });
+    }, { rootMargin: '300px' });
+
+    window.update_queue_ui = function() {
+        const queueBody = $("#queue-body");
+        queueBody.find(".queue-item, .queue-item-container").remove();
+
+        if (window.queue_songs.length === 0) {
+            $("#empty-queue-msg").removeClass("hidden");
+            $("#clear-queue-btn").addClass("hidden");
+        } else {
+            $("#empty-queue-msg").addClass("hidden");
+            if (window.is_custom_queue) {
+                $("#clear-queue-btn").removeClass("hidden");
+            } else {
+                $("#clear-queue-btn").addClass("hidden");
+            }
+            let queueHtmlBuffer = "";
+            window.queue_songs.forEach((song, index) => {
+                queueHtmlBuffer += `<div class="queue-item-container" style="min-height: 56px;" data-index="${index}" data-path='${JSON.stringify(song).replace(/'/g, '&apos;')}' draggable="true"></div>`;
+            });
+            queueBody.append(queueHtmlBuffer);
+        }
+        
+        $("#queue-body .queue-item-container").each(function() {
+            if (window.lazyQueueObserver) window.lazyQueueObserver.observe(this);
+        });
+    };
+
+    $(document).ready(function() {
+        window.update_queue_ui();
+
+        // Toggle queue sidebar
+        $(document).on("click", "#toggle-queue-btn, #close-queue-btn-mobile", function() {
+            const sidebar = $("#queue-sidebar");
+            if (sidebar.hasClass("max-w-0")) {
+                sidebar.removeClass("max-w-0 xl:max-h-0 opacity-0 invisible translate-x-full xl:translate-x-0")
+                       .addClass("max-w-full xl:max-w-xs xl:max-h-[calc(100vh-180px)] opacity-100 visible xl:mr-8 translate-x-0");
+            } else {
+                sidebar.removeClass("max-w-full xl:max-w-xs xl:max-h-[calc(100vh-180px)] opacity-100 visible xl:mr-8 translate-x-0")
+                       .addClass("max-w-0 xl:max-h-0 opacity-0 invisible translate-x-full xl:translate-x-0");
+            }
+        });
+
+        // Play queue item
+        $(document).on("click", ".queue-item", async function(e) {
+            if ($(e.target).closest(".remove-queue-btn").length) return;
+            const songData = JSON.parse($(this).closest(".queue-item-container").attr("data-path").replace(/&apos;/g, "'"));
+            if (songData) {
+                const index = $(this).closest(".queue-item-container").data("index");
+                window.current_playing_song = songData;
+                if (window.set_active_song_ui) window.set_active_song_ui(songData);
+                
+                window.queue_songs.splice(0, index + 1);
+                window.update_queue_ui();
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.jump_to_queue_index) {
+                    await window.pywebview.api.jump_to_queue_index(index);
+                }
+                
+                await window.play_button(songData);
+            }
+        });
+
+        // Remove item from queue
+        $(document).on("click", ".remove-queue-btn", function(e) {
+            e.stopPropagation();
+            const index = $(this).closest(".queue-item-container").data("index");
+            window.is_custom_queue = true;
+            window.queue_songs.splice(index, 1);
+            window.update_queue_ui();
+            
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.remove_from_queue) {
+                window.pywebview.api.remove_from_queue(index);
+            }
+        });
+
+        // Clear queue
+        $(document).on("click", "#clear-queue-btn", function() {
+            window.is_custom_queue = false;
+            window.queue_songs = [];
+            window.update_queue_ui();
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.clear_queue) {
+                window.pywebview.api.clear_queue();
+            }
+        });
+        
+        // --- Queue Drag and Drop Logic ---
+        let draggedItemIndex = null;
+
+        $(document).on("dragstart", ".queue-item-container", function(e) {
+            draggedItemIndex = $(this).data("index");
+            $(this).addClass("opacity-50");
+            e.originalEvent.dataTransfer.effectAllowed = "move";
+            e.originalEvent.dataTransfer.setData("text/plain", draggedItemIndex);
+        });
+
+        $(document).on("dragover", ".queue-item-container", function(e) {
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = "move";
+            const bounding = this.getBoundingClientRect();
+            const offset = bounding.y + (bounding.height / 2);
+            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500");
+            if (e.originalEvent.clientY > offset) {
+                $(this).addClass("border-b-2 border-orange-500");
+            } else {
+                $(this).addClass("border-t-2 border-orange-500");
+            }
+        });
+
+        $(document).on("dragleave", ".queue-item-container", function(e) {
+            $(this).removeClass("border-t-2 border-b-2 border-orange-500");
+        });
+
+        $(document).on("drop", ".queue-item-container", async function(e) {
+            e.preventDefault();
+            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500 opacity-50");
+            
+            const targetIndex = $(this).data("index");
+            if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
+
+            const bounding = this.getBoundingClientRect();
+            const offset = bounding.y + (bounding.height / 2);
+            let insertIndex = targetIndex;
+            
+            if (e.originalEvent.clientY > offset) {
+                insertIndex++;
+            }
+            if (draggedItemIndex < insertIndex) {
+                insertIndex--;
+            }
+
+            window.is_custom_queue = true;
+            const item = window.queue_songs.splice(draggedItemIndex, 1)[0];
+            window.queue_songs.splice(insertIndex, 0, item);
+            window.update_queue_ui();
+
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.reorder_queue) {
+                await window.pywebview.api.reorder_queue(draggedItemIndex, insertIndex);
+            }
+            draggedItemIndex = null;
+        });
+
+        $(document).on("dragend", ".queue-item-container", function(e) {
+            $(this).removeClass("opacity-50");
+            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500");
+            draggedItemIndex = null;
+        });
+    });
 
 </script>
 </body>
