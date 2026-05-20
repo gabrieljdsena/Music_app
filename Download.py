@@ -12,7 +12,6 @@ class MusicDownloader:
     def search_yt(self, search_query, limit=5):
         """Searches YouTube and returns a list of results without downloading."""
         ydl_opts = {
-            'cookiesfrombrowser': (settings.browser,), 
             'extract_flat': True,
             'skip_download': True,
             'quiet': True,
@@ -46,7 +45,6 @@ class MusicDownloader:
         
         ydl_opts = {
             'format': 'bestaudio/best',
-            'cookiesfrombrowser': (settings.browser,), 
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',

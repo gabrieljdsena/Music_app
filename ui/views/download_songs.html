@@ -1,5 +1,3 @@
-<!-- REQUIREMENTS: Tailwind CSS must be loaded in your page (e.g., <script src="https://cdn.tailwindcss.com"></script>) -->
-
 <!-- Main Song Search Card -->
 <div class="flex flex-col items-center justify-start w-full pt-12">
 
@@ -208,7 +206,8 @@
     $('#songSearch').val("");
     try {
         const response = await window.pywebview.api.recieve_download(val);
-        if (typeof response === 'string' && response.startsWith('Error:')) {
+        const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
+        if (isError) {
             notyf.error(`Failed to download: ${val}`);
             if (typeof window.update_download_progress === 'function') window.update_download_progress(val, 100, 'Failed');
         } else {
@@ -293,7 +292,8 @@
     try {
         // Pass the direct URL to the backend
         const response = await window.pywebview.api.recieve_download(url);
-        if (typeof response === 'string' && response.startsWith('Error:')) {
+        const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
+        if (isError) {
             notyf.error(`Failed to download: ${title}`);
             if (typeof window.update_download_progress === 'function') window.update_download_progress(url, 100, 'Failed');
         } else {
@@ -394,7 +394,7 @@
         notyf.success(`Starting import of ${songs.length} songs`);
         e.target.value = ''; // Reset input
 
-        await processBatchDownloads(songs, 1);
+        await processBatchDownloads(songs, 3);
         notyf.success('Batch import completed!');
     };
     reader.readAsText(file);
@@ -425,7 +425,8 @@
                       window.add_progress_bar(currentBarId, bestResult.title);
                       
                       const response = await window.pywebview.api.recieve_download(url);
-                      if (typeof response === 'string' && response.startsWith('Error:')) {
+                      const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
+                      if (isError) {
                           notyf.error(`Failed: ${bestResult.title}`);
                           window.update_download_progress(currentBarId, 100, 'Failed');
                       }
