@@ -81,8 +81,8 @@ def on_start(window):
     pygame.mixer.init()
     
     # Start the resource monitor in a background thread so it doesn't block the app
-    monitor_thread = threading.Thread(target=monitor.monitor_usage, daemon=True)
-    monitor_thread.start()
+    #monitor_thread = threading.Thread(target=monitor.monitor_usage, daemon=True)
+    #monitor_thread.start()
     
     api.load_current_song()
 

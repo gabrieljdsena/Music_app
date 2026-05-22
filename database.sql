@@ -23,6 +23,7 @@ create table if not exists Settings(
     id int not null PRIMARY KEY,
     current_song varchar(255),
     current_volume float,
+    limit_downloads int,
     standardize_volume boolean,
     current_tab varchar(255),
     window_width int,
@@ -33,5 +34,5 @@ create table if not exists Settings(
     FOREIGN KEY (current_song) REFERENCES Songs(file)
 );
 
-INSERT OR IGNORE INTO Settings(id,current_song, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path, browser)
-values (1,null,null,null,null,null,null,null,null,null)
+INSERT OR IGNORE INTO Settings(id,current_song, limit_downloads, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path, browser)
+values (1,null,null,null,null,null,null,null,null,null,null)

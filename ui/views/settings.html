@@ -15,7 +15,6 @@
     </div>
 
     <!-- Settings Container (Tinted Glass) -->
-    <div class="bg-zinc-900/50 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-3 sm:p-5 shadow-2xl relative overflow-hidden">
         <!-- Subtle gradient overlay to enhance the glass effect -->
         <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none"></div>
 
@@ -33,7 +32,7 @@
                         <p class="text-xs text-zinc-500 mt-0.5">Location where your songs are saved</p>
                     </div>
                 </div>
-                <button class="px-5 py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                <button class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
                     Change Folder
                 </button>
             </div>
@@ -51,10 +50,22 @@
                         <p class="text-xs text-zinc-500 mt-0.5">Customize the app's visual appearance</p>
                     </div>
                 </div>
-                <button class="px-5 py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                <button class="px-5 hover:cursor-pointer py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
                     Browse Images
                 </button>
             </div>
-        </div>
+
+            <!-- Setting Row 3 -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+                <div class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                </div>
+                <div class="flex flex-row gap-20">
+                    <label class="text-white font-medium" for="txt_download_per_batch">Download Limit Per Batch:</label>
+                    <input id="txt_download_per_batch" type="text" class="w-full py-2 lg:max-w-xl md:max-w-md sm:max-w-sm rounded-md bg-orange-400/5 focus:border-orange-400 focus:ring-orange-500 border-neutral-700  text-md text-white px-1 focus:ring-1">
+                </div>
+            </div>
     </div>
 </div>
