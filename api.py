@@ -48,15 +48,15 @@ class Api:
         self.downloader = Download.MusicDownloader()
         
         #winsdk
-        self.media_player = playback.MediaPlayer()
-        self.smtc = self.media_player.system_media_transport_controls
-        self.smtc.is_play_enabled = True
-        self.smtc.is_pause_enabled = True
-        self.smtc.is_next_enabled = True
-        self.smtc.is_previous_enabled = True
+        self._media_player = playback.MediaPlayer()
+        self._smtc = self._media_player.system_media_transport_controls
+        self._smtc.is_play_enabled = True
+        self._smtc.is_pause_enabled = True
+        self._smtc.is_next_enabled = True
+        self._smtc.is_previous_enabled = True
         
         #winsdk
-        self.smtc.add_button_pressed(self.on_smtc_button_pressed)
+        self._smtc.add_button_pressed(self.on_smtc_button_pressed)
         
     def populate_queue(self, current_song):
         self.next_songs.clear()
@@ -170,7 +170,7 @@ class Api:
                 self.pause_time = self.get_current_pos()
                 pygame.mixer.music.pause()
                 self.playing = False
-                self.smtc.playback_status = media.MediaPlaybackStatus.PAUSED
+                self._smtc.playback_status = media.MediaPlaybackStatus.PAUSED
             else:
                 if pygame.mixer.music.get_pos() == -1:
                     pygame.mixer.music.play()
@@ -178,7 +178,7 @@ class Api:
                 else:
                     pygame.mixer.music.unpause()
                 self.playing = True
-                self.smtc.playback_status = media.MediaPlaybackStatus.PLAYING
+                self._smtc.playback_status = media.MediaPlaybackStatus.PLAYING
             return self.playing
 
         self.current_filename = current_song.get('File')
@@ -219,14 +219,14 @@ class Api:
                 pygame.mixer.music.pause()
                 self.playing = False
                 self.pause_time = 0
-                self.smtc.playback_status = media.MediaPlaybackStatus.PAUSED
+                self._smtc.playback_status = media.MediaPlaybackStatus.PAUSED
                 if self._window:
                     self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
                     # Trigger your frontend's visualizer pause logic
                     self._window.evaluate_js("if (typeof stop_visualizer === 'function') { stop_visualizer(); }")
             else:
                 self.playing = True
-                self.smtc.playback_status = media.MediaPlaybackStatus.PLAYING
+                self._smtc.playback_status = media.MediaPlaybackStatus.PLAYING
                 if self._window:
                     self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(true); }")
 
@@ -237,7 +237,7 @@ class Api:
                 print(f" [Python] Database error: {e}")
             
             # Update Windows Media Overlay with current song info!
-            updater = self.smtc.display_updater
+            updater = self._smtc.display_updater
             updater.type = media.MediaPlaybackType.MUSIC
             updater.music_properties.title = str(current_song.get('Title', 'Unknown'))
             updater.music_properties.artist = str(current_song.get('Artist', 'Unknown'))
@@ -248,7 +248,7 @@ class Api:
             pygame.mixer.music.pause()
             self.playing = False
             #winsdk
-            self.smtc.playback_status = media.MediaPlaybackStatus.PAUSED
+            self._smtc.playback_status = media.MediaPlaybackStatus.PAUSED
         else:
             if pygame.mixer.music.get_pos() == -1:
                 pygame.mixer.music.play()
@@ -258,7 +258,7 @@ class Api:
                 pygame.mixer.music.unpause()
             self.playing = True
             #winsdk
-            self.smtc.playback_status = media.MediaPlaybackStatus.PLAYING
+            self._smtc.playback_status = media.MediaPlaybackStatus.PLAYING
 
         self.last_song = current_song
         self.first_play = False
@@ -305,7 +305,7 @@ class Api:
             if not self.fallback_to_general_list:
                 self.playing = False
                 self.pause_time = 0
-                self.smtc.playback_status = media.MediaPlaybackStatus.STOPPED
+                self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
                 self.current_time_offset = 0
                 if self._window:
                     self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
@@ -335,7 +335,7 @@ class Api:
                 # Reached the end of the queue and the end of the playlist, stop playing
                 self.playing = False
                 self.pause_time = 0
-                self.smtc.playback_status = media.MediaPlaybackStatus.STOPPED
+                self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
                 self.current_time_offset = 0
                 if self._window:
                     self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
@@ -531,7 +531,7 @@ class Api:
                 pygame.mixer.music.unload()
             self.playing = False
             self.first_play = True
-            self.smtc.playback_status = media.MediaPlaybackStatus.STOPPED
+            self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
             self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
 
         if os.path.exists(total_path):
@@ -630,7 +630,7 @@ class Api:
                     self.playing = True
                     
                 # Update Windows overlay metadata
-                updater = self.smtc.display_updater
+                updater = self._smtc.display_updater
                 updater.music_properties.title = str(self.last_song.get('Title', 'Unknown'))
                 updater.music_properties.artist = str(self.last_song.get('Artist', 'Unknown'))
                 updater.update()

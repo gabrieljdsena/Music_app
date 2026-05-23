@@ -57,15 +57,18 @@
 
             <!-- Setting Row 3 -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
-                <div class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                    </svg>
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <label class="text-zinc-200 font-medium block cursor-pointer" for="txt_download_per_batch">Download Limit Per Batch</label>
+                        <p class="text-xs text-zinc-500 mt-0.5">Maximum concurrent downloads</p>
+                    </div>
                 </div>
-                <div class="flex flex-row gap-20">
-                    <label class="text-white font-medium" for="txt_download_per_batch">Download Limit Per Batch:</label>
-                    <input id="txt_download_per_batch" type="text" class="w-full py-2 lg:max-w-xl md:max-w-md sm:max-w-sm rounded-md bg-orange-400/5 focus:border-orange-400 focus:ring-orange-500 border-neutral-700  text-md text-white px-1 focus:ring-1">
-                </div>
+                <input id="txt_download_per_batch" type="number" min="1" max="10" class="w-24 px-3 py-2 text-center text-sm font-medium text-zinc-200 bg-white/5 border border-white/10 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg transition-all duration-300 shadow-md">
             </div>
     </div>
 </div>
