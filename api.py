@@ -403,6 +403,30 @@ class Api:
         except Exception as e:
             print(f" [Python] Database error: {e}")
 
+    def update_download_limit(self, limit):
+        settings.limit_downloads = str(limit)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET limit_downloads = ?", (limit,))
+        except Exception as e:
+            print(f" [Python] Database error: {e}")
+
+    def update_background(self, background):
+        settings.background = str(background)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET background_path = ?", (background,))
+        except Exception as e:
+            print(f" [Python] Database error: {e}")
+
+    def update_songs_path(self, songs_path):
+        settings.path = str(songs_path)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET songs_path = ?", (songs_path,))
+        except Exception as e:
+            print(f" [Python] Database error: {e}")
+
     def romanize_text(self, text, is_lrc=False):
         if not kks or not text:
             return text
@@ -518,7 +542,9 @@ class Api:
         self._window.evaluate_js(f"song_list({json.dumps(self.song_list)})")
     
     def load_settings(self):
-        self._window.evaluate_js(f"window.load_settings({settings.volume}, {settings.limit_downloads})")
+        safe_bg = json.dumps(settings.background)
+        safe_path = json.dumps(settings.path)
+        self._window.evaluate_js(f"if (typeof window.load_settings === 'function') window.load_settings({settings.volume}, {settings.limit_downloads}, {safe_bg}, {safe_path});")
 
     def delete_song(self, song_data):
         filename = song_data.get('File')
@@ -751,4 +777,43 @@ class Api:
                         return f"data:{apic.mime};base64,{img_data}"
             except Exception:
                 pass
+        return None
+
+    def get_local_image_base64(self, file_path):
+        import mimetypes
+        if file_path and os.path.exists(file_path):
+            try:
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    mime_type, _ = mimetypes.guess_type(file_path)
+                    if not mime_type:
+                        mime_type = "image/jpeg"
+                    return f"data:{mime_type};base64,{encoded_string}"
+            except Exception as e:
+                print(f" [Python] Error loading local image: {e}")
+        return None
+
+    def pick_folder(self):
+        import webview
+        if self._window:
+            result = self._window.create_file_dialog(
+                webview.FOLDER_DIALOG,
+                allow_multiple=False
+            )
+            if result and len(result) > 0:
+                self.update_songs_path(result[0])
+                return result[0]
+        return None
+
+    def pick_background(self):
+        import webview
+        if self._window:
+            result = self._window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=('Image Files (*.bmp;*.jpg;*.jpeg;*.gif;*.png)', 'All files (*.*)')
+            )
+            if result and len(result) > 0:
+                self.update_background(result[0])
+                return result[0]
         return None

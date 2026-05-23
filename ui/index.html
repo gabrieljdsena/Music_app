@@ -3,74 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <link href="./output.css" rel="stylesheet">
-    <script src="./jquery.min.js"></script>
     <link href="../notyf.min.css" rel="stylesheet">
     <script src="../notyf.min.js"></script>
     <link rel="stylesheet" href="./css.css">
     <!-- SweetAlert2 (Local) -->
     <script src="../sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="../cdn.min.js"></script>
     <!-- Notyf for notifications -->
-    <style>
-        :root {
-            --controller-height: 112px; /* h-28 = 7rem = 112px */
-        }
-        .main-content-area {
-            height: calc(100vh - var(--controller-height));
-        }
-        
-        /* Modern Dark Mode Scrollbar */
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: #3f3f46 transparent; /* zinc-700 thumb, transparent track */
-        }
-        
-        /* WebKit Browsers (Chrome, Safari, Edge) */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background-color: #3f3f46; /* zinc-700 */
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background-color: #52525b; /* zinc-600 */
-        }
-
-        /* Mini Audio Visualizer */
-        @keyframes visualizer-bounce {
-            0%, 100% { transform: scaleY(0.3); }
-            50% { transform: scaleY(1); }
-        }
-        .visualizer-bar {
-            width: 3px;
-            height: 16px;
-            background-color: #f97316; /* Tailwind orange-500 */
-            border-radius: 9999px;
-            animation: visualizer-bounce 1s infinite ease-in-out;
-            transform-origin: bottom;
-        }
-        .visualizer-bar:nth-child(1) { animation-duration: 0.5s; }
-        .visualizer-bar:nth-child(2) { animation-duration: 0.7s; animation-delay: 0.1s; }
-        .visualizer-bar:nth-child(3) { animation-duration: 0.6s; animation-delay: 0.4s; }
-        .visualizer-bar:nth-child(4) { animation-duration: 0.8s; animation-delay: 0.2s; }
-
-        /* Sidebar active state */
-        .active-nav {
-            background-color: rgba(249, 115, 22, 0.1) !important; /* matches bg-orange-500/10 */
-            color: white !important;
-        }
-        .active-nav .nav-indicator {
-            transform: scaleY(1) !important;
-        }
-        .active-nav svg {
-            color: rgb(251, 146, 60) !important; /* matches text-orange-400 */
-            transform: scale(1.1) !important;
-        }
-    </style>
 </head>
 <body class="bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-orange-500/30 h-screen w-screen relative z-0">
 
@@ -239,20 +179,17 @@
 
 <script>
 
-
-
     // JS -> Python
 
-    $(document).on("change", "#volumeSlider", async function() {
-        const volume = $(this).val();
-        await window.pywebview.api.volume_slider(volume);
+    document.addEventListener("change", async function(e) {
+        if (e.target && e.target.id === "volumeSlider") {
+            await window.pywebview.api.volume_slider(e.target.value);
+        }
+        if (e.target && e.target.id === "progressSlider") {
+            await window.pywebview.api.progress_slider_click(e.target.value);
+        }
     });
 
-    // Using "change" ensures it works for both clicking and dragging!
-    $(document).on("change", "#progressSlider", async function() {
-        const time = $(this).val();
-        await window.pywebview.api.progress_slider_click(time);
-    });
 
     
     window.play_button = async function(current_song) {
@@ -274,7 +211,8 @@
             if (window.current_playing_song) {
                 update_play_button_ui(!window.is_currently_playing);
             }
-            $(".song-row").first().click();
+            const firstSong = document.querySelector(".song-row");
+            if (firstSong) firstSong.click();
             return;
         }
         
@@ -283,11 +221,13 @@
 
     window.toggle_shuffle = async function() {
         const isShuffled = await window.pywebview.api.toggle_shuffle();
-        const btn = $("#shuffleBtn");
+        const btn = document.getElementById("shuffleBtn");
         if (isShuffled) {
-            btn.removeClass("text-zinc-400 hover:text-white").addClass("text-orange-500 hover:text-orange-400 bg-white/15");
+            btn.classList.remove("text-zinc-400", "hover:text-white");
+            btn.classList.add("text-orange-500", "hover:text-orange-400", "bg-white/15");
         } else {
-            btn.removeClass("text-orange-500 hover:text-orange-400 bg-white/15").addClass("text-zinc-400 hover:text-white");
+            btn.classList.remove("text-orange-500", "hover:text-orange-400", "bg-white/15");
+            btn.classList.add("text-zinc-400", "hover:text-white");
         }
     }
 
@@ -295,27 +235,30 @@
 
     function update_play_button_ui(isPlaying) {
         window.is_currently_playing = isPlaying;
-        const playBtn = $("#playPauseBtn");
+        const playBtn = document.getElementById("playPauseBtn");
+        const visualizers = document.querySelectorAll("#audio-visualizer, .list-visualizer");
+        
         if (isPlaying) {
-            playBtn.html(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`);
-            $("#audio-visualizer, .list-visualizer").removeClass("w-0 ml-0 opacity-0").addClass("w-4 ml-1 opacity-100");
+            playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
+            visualizers.forEach(v => { v.classList.remove("w-0", "ml-0", "opacity-0"); v.classList.add("w-4", "ml-1", "opacity-100"); });
         } else {
-            playBtn.html(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>`);
-            $("#audio-visualizer, .list-visualizer").removeClass("w-4 ml-1 opacity-100").addClass("w-0 ml-0 opacity-0");
+            playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>`;
+            visualizers.forEach(v => { v.classList.remove("w-4", "ml-1", "opacity-100"); v.classList.add("w-0", "ml-0", "opacity-0"); });
         }
     }
 
     // Automatically sync visualizers when dynamically generated content (like home.html) is added
     const visualizerObserver = new MutationObserver(function(mutations) {
+        const visualizers = document.querySelectorAll(".list-visualizer");
         if (window.is_currently_playing) {
-            $(".list-visualizer").removeClass("w-0 ml-0 opacity-0").addClass("w-4 ml-1 opacity-100");
+            visualizers.forEach(v => { v.classList.remove("w-0", "ml-0", "opacity-0"); v.classList.add("w-4", "ml-1", "opacity-100"); });
         } else {
-            $(".list-visualizer").removeClass("w-4 ml-1 opacity-100").addClass("w-0 ml-0 opacity-0");
+            visualizers.forEach(v => { v.classList.remove("w-4", "ml-1", "opacity-100"); v.classList.add("w-0", "ml-0", "opacity-0"); });
         }
     });
 
     async function sendData() {
-        const val = $('#inp').val();
+        const val = document.getElementById('inp').value;
         const response = await window.pywebview.api.send_to_python(val);
     }
 
@@ -338,17 +281,17 @@
     // Initialize Notyf globally
     const notyf = new Notyf();
 
-    $(window).on('resize', function() {
-        if($(window).width() <= 700){
+    window.addEventListener('resize', function() {
+        if(window.innerWidth <= 700){
             hideSideBar();
-            $("#sidebar-toggle").addClass("hidden");
+            document.getElementById("sidebar-toggle").classList.add("hidden");
         }else{
-            $("#sidebar-toggle").removeClass("hidden");
+            document.getElementById("sidebar-toggle").classList.remove("hidden");
         }
     });
 
-    $("#sidebar-toggle").click(function() {
-        if($("#sidebar").hasClass("w-64")){
+    document.getElementById("sidebar-toggle").addEventListener("click", function() {
+        if(document.getElementById("sidebar").classList.contains("w-64")){
             hideSideBar();
         }else{
             showSidebar();
@@ -356,59 +299,62 @@
     });
 
     function hideSideBar(){
-        $("#sidebar-toggle svg").addClass("rotate-180");
-        $("#sidebar").removeClass("w-64").addClass("w-20");
-        $(".nav-text").addClass("hidden");
-        $("#brand-container").addClass("hidden");
-        $("#sidebar-header").removeClass("justify-between").addClass("justify-center");
+        document.querySelector("#sidebar-toggle svg").classList.add("rotate-180");
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.remove("w-64"); sidebar.classList.add("w-20");
+        document.querySelectorAll(".nav-text").forEach(el => el.classList.add("hidden"));
+        document.getElementById("brand-container").classList.add("hidden");
+        const header = document.getElementById("sidebar-header");
+        header.classList.remove("justify-between"); header.classList.add("justify-center");
     } 
 
     function showSidebar(){
-        $("#sidebar").removeClass("w-20").addClass("w-64");
-        $("#sidebar-toggle svg").removeClass("rotate-180");
-        $(".nav-text").removeClass("hidden");
-        $("#brand-container").removeClass("hidden");
-        $("#sidebar-header").removeClass("justify-center").addClass("justify-between");
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.remove("w-20"); sidebar.classList.add("w-64");
+        document.querySelector("#sidebar-toggle svg").classList.remove("rotate-180");
+        document.querySelectorAll(".nav-text").forEach(el => el.classList.remove("hidden"));
+        document.getElementById("brand-container").classList.remove("hidden");
+        const header = document.getElementById("sidebar-header");
+        header.classList.remove("justify-center"); header.classList.add("justify-between");
     } 
 
     // --- Dynamic Content Routing ---
-    function navigateTo(page) {
-        // Fade out current content for a smooth transition
-        $("#main").fadeOut(100, function() {
-            // Load the HTML snippet from the views folder
-            $(this).load("./views/" + page + ".html", function(response, status, xhr) {
-                if (status === "error") {
-                    $(this).html("<div class='p-4 text-red-500'>Error loading " + page + ".html: " + xhr.status + " " + xhr.statusText + "</div>");
-                }
-                $(this).fadeIn(150);
+    async function navigateTo(page) {
+        const main = document.getElementById("main");
+        main.style.transition = 'opacity 0.1s';
+        main.style.opacity = '0';
+        
+        setTimeout(async () => {
+            try {
+                const response = await fetch(`./views/${page}.html`);
+                if (!response.ok) throw new Error(response.statusText);
+                const html = await response.text();
+                main.innerHTML = html;
                 
-                if (page === "home") {
-                    if (window.pywebview && window.pywebview.api) {
-                        window.pywebview.api.send_song_list();
-                    } else {
-                        window.addEventListener('pywebviewready', function() {
-                            window.pywebview.api.send_song_list();
-                        }, { once: true });
-                    }
+                // Execute embedded scripts
+                const scripts = main.getElementsByTagName('script');
+                for (let i = 0; i < scripts.length; i++) {
+                    window.eval(scripts[i].innerText);
                 }
-            });
-        });
+            } catch (err) {
+                main.innerHTML = `<div class='p-4 text-red-500'>Error loading ${page}.html: ${err.message}</div>`;
+            }
+            main.style.opacity = '1';
+                
+            if (page === "home") {
+                if (window.pywebview && window.pywebview.api) {
+                    window.pywebview.api.send_song_list();
+                } else {
+                    window.addEventListener('pywebviewready', function() {
+                        window.pywebview.api.send_song_list();
+                    }, { once: true });
+                }
+            }
+        }, 100);
     }
 
-    // Handle sidebar link clicks
-    $(document).on("click", ".nav-link", function(e) {
-        e.preventDefault();
-        const targetPage = $(this).data("target");
-        if (targetPage) {
-            $(".nav-link").removeClass("active-nav");
-            $(this).addClass("active-nav");
-            
-            navigateTo(targetPage);
-        }
-    });
-
     // Load initial view on startup
-    $(document).ready(function() {
+    document.addEventListener("DOMContentLoaded", function() {
         // Start observing the main container for dynamic content changes
         visualizerObserver.observe(document.getElementById("main"), { childList: true, subtree: true });
 
@@ -428,12 +374,18 @@
     let isDraggingProgress = false;
 
     // Prevent UI jumps if the user grabs the slider (useful when you add seeking later)
-    $(document).on("mousedown touchstart", "#progressSlider", function() {
-        isDraggingProgress = true;
+    document.addEventListener("mousedown", function(e) {
+        if (e.target && e.target.id === "progressSlider") isDraggingProgress = true;
+    });
+    document.addEventListener("touchstart", function(e) {
+        if (e.target && e.target.id === "progressSlider") isDraggingProgress = true;
     });
 
-    $(document).on("mouseup touchend", "#progressSlider", function() {
-        isDraggingProgress = false;
+    document.addEventListener("mouseup", function(e) {
+        if (e.target && e.target.id === "progressSlider") isDraggingProgress = false;
+    });
+    document.addEventListener("touchend", function(e) {
+        if (e.target && e.target.id === "progressSlider") isDraggingProgress = false;
     });
 
     function startProgressTracking() {
@@ -446,12 +398,12 @@
                 if (pos >= 0) {
                     const mins = Math.floor(pos / 60);
                     const secs = Math.floor(pos % 60).toString().padStart(2, '0');
-                    $("#current_time").text(`${mins}:${secs}`);
+                    document.getElementById("current_time").innerText = `${mins}:${secs}`;
                     
                     if (!isDraggingProgress) {
-                        $("#progressSlider").val(pos);
+                        document.getElementById("progressSlider").value = pos;
                     }
-                    if (typeof window.updateHighlightedLine === 'function' && !$("#lyrics-container-view").hasClass("hidden")) {
+                    if (typeof window.updateHighlightedLine === 'function' && !document.getElementById("lyrics-container-view").classList.contains("hidden")) {
                         window.updateHighlightedLine(pos);
                     }
                 }
@@ -463,7 +415,7 @@
     }
 
     // Clean up background polling when the user closes the window
-    $(window).on("beforeunload", function() {
+    window.addEventListener("beforeunload", function() {
         if (progressTimer) clearInterval(progressTimer);
     });
 
@@ -474,25 +426,58 @@
         const durationSecs = Math.floor(duration);
         const minutes = Math.floor(durationSecs / 60);
         const seconds = (durationSecs % 60).toString().padStart(2, '0');
-        $("#total_time").text(`${minutes}:${seconds}`);
+        document.getElementById("total_time").innerText = `${minutes}:${seconds}`;
         
         // Set slider maximum to exact song duration and start the tracker
-        $("#progressSlider").attr("max", duration).val(0);
+        const progressSlider = document.getElementById("progressSlider");
+        progressSlider.max = duration;
+        progressSlider.value = 0;
         startProgressTracking();
         if (typeof window.fetchLyricsForCurrentSong === 'function') {
             window.fetchLyricsForCurrentSong(data);
         }
     }
 
-    window.load_settings = function(volume, limit_downloads) {
-        $("#volumeSlider").val(parseFloat(volume));
+    window.apply_background = async function(background_path) {
+        if (!background_path) return;
+        try {
+            const base64Image = await window.pywebview.api.get_local_image_base64(background_path);
+            if (base64Image) {
+                document.body.style.backgroundImage = `linear-gradient(rgba(9, 9, 11, 0.47), rgba(9, 9, 11, 0.47)), url('${base64Image}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundRepeat = 'no-repeat';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+        } catch (e) {
+            console.error("Failed to apply background", e);
+        }
+    };
+
+    window.load_settings = function(volume, limit_downloads, background, path) {
+        document.getElementById("volumeSlider").value = parseFloat(volume);
         window.limit_downloads = parseInt(limit_downloads) || 3;
+        if(background){
+            window.apply_background(background);
+        }
+        
+        // Update settings UI if it's currently open
+        const folderPathEl = document.getElementById('current-folder-path');
+        if (folderPathEl && path) {
+            folderPathEl.innerText = path;
+            folderPathEl.title = path;
+        }
+        const bgPathEl = document.getElementById('current-bg-path');
+        if (bgPathEl && background) {
+            bgPathEl.innerText = background;
+            bgPathEl.title = background;
+        }
     }
 
     window.playing_view = function(current_song) {
-        const altText = `Album cover art for ${title} by ${artist}.`; // Added "Album cover art"
+        const altText = `Album cover art for ${current_song.Title || "Unknown Title"} by ${current_song.Artist || "Unknown Artist"}.`; // Added "Album cover art"
         const coverArt = current_song.CoverArt
-            ? `<img src="${current_song.CoverArt}" class="w-full h-full object-cover" alt="${altText}"`
+            ? `<img src="${current_song.CoverArt}" class="w-full h-full object-cover" alt="${altText}">`
             : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
         const html = `
             <div class="flex items-center gap-3 overflow-hidden">
@@ -510,7 +495,8 @@
                     <div class="cursor-pointer truncate hover:text-zinc-400 transition-colors text-sm truncate">${current_song.Artist || "Unknown Artist"}</div>
                 </div>
             </div>`;
-        $("#song_plaiyng_div").html(html);
+        const container = document.getElementById("song_plaiyng_div");
+        if (container) container.innerHTML = html;
     }
 
     // --- Global Queue Logic ---
@@ -518,8 +504,8 @@
     window.is_custom_queue = window.is_custom_queue || false;
 
     window.generateQueueItemHtml = function(song, index) {
-        const coverArt = current_song.CoverArt
-            ? `<img src="${current_song.CoverArt}" class="w-full h-full object-cover" alt="${altText}"`
+        const coverArt = song.CoverArt
+            ? `<img src="${song.CoverArt}" class="w-full h-full object-cover" alt="${song.Title}">`
             : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
         
         return `
@@ -692,70 +678,98 @@
     };
 
     window.update_queue_ui = function() {
-        const queueBody = $("#queue-body");
-        queueBody.find(".queue-item, .queue-item-container").remove();
+        const queueBody = document.getElementById("queue-body");
+        if (!queueBody) return;
+        
+        document.querySelectorAll("#queue-body .queue-item, #queue-body .queue-item-container").forEach(el => el.remove());
+
+        const emptyMsg = document.getElementById("empty-queue-msg");
+        const clearBtn = document.getElementById("clear-queue-btn");
 
         if (window.queue_songs.length === 0) {
-            $("#empty-queue-msg").removeClass("hidden");
-            $("#clear-queue-btn").addClass("hidden");
+            if (emptyMsg) emptyMsg.classList.remove("hidden");
+            if (clearBtn) clearBtn.classList.add("hidden");
         } else {
-            $("#empty-queue-msg").addClass("hidden");
+            if (emptyMsg) emptyMsg.classList.add("hidden");
             if (window.is_custom_queue) {
-                $("#clear-queue-btn").removeClass("hidden");
+                if (clearBtn) clearBtn.classList.remove("hidden");
             } else {
-                $("#clear-queue-btn").addClass("hidden");
+                if (clearBtn) clearBtn.classList.add("hidden");
             }
             let queueHtmlBuffer = "";
             window.queue_songs.forEach((song, index) => {
                 queueHtmlBuffer += `<div class="queue-item-container" style="min-height: 56px;" data-index="${index}" data-path='${JSON.stringify(song).replace(/'/g, '&apos;')}' draggable="true"></div>`;
             });
-            queueBody.append(queueHtmlBuffer);
+            queueBody.insertAdjacentHTML('beforeend', queueHtmlBuffer);
         }
         
-        $("#queue-body .queue-item-container").each(function() {
-            if (window.lazyQueueObserver) window.lazyQueueObserver.observe(this);
+        document.querySelectorAll("#queue-body .queue-item-container").forEach(el => {
+            if (window.lazyQueueObserver) window.lazyQueueObserver.observe(el);
         });
     };
 
-    $(document).ready(function() {
+    document.addEventListener("DOMContentLoaded", function() {
         window.update_queue_ui();
+    });
+
+    // --- Global Click Event Delegation ---
+    document.addEventListener("click", async function(e) {
+        // Handle nav link clicks
+        const navLink = e.target.closest(".nav-link");
+        if (navLink) {
+            e.preventDefault();
+            const targetPage = navLink.getAttribute("data-target");
+            if (targetPage) {
+                document.querySelectorAll(".nav-link").forEach(el => el.classList.remove("active-nav"));
+                navLink.classList.add("active-nav");
+                navigateTo(targetPage);
+            }
+        }
 
         // Toggle queue sidebar
-        $(document).on("click", "#toggle-queue-btn, #close-queue-btn-mobile", function() {
-            const sidebar = $("#queue-sidebar");
-            if (sidebar.hasClass("max-w-0")) {
-                sidebar.removeClass("max-w-0 xl:max-h-0 opacity-0 invisible translate-x-full xl:translate-x-0")
-                       .addClass("max-w-full xl:max-w-xs xl:max-h-[calc(100vh-180px)] opacity-100 visible xl:mr-8 translate-x-0");
+        if (e.target.closest("#toggle-queue-btn") || e.target.closest("#close-queue-btn-mobile")) {
+            const sidebar = document.getElementById("queue-sidebar");
+            if (sidebar.classList.contains("max-w-0")) {
+                sidebar.classList.remove("max-w-0", "xl:max-h-0", "opacity-0", "invisible", "translate-x-full", "xl:translate-x-0");
+                sidebar.classList.add("max-w-full", "xl:max-w-xs", "xl:max-h-[calc(100vh-180px)]", "opacity-100", "visible", "xl:mr-8", "translate-x-0");
             } else {
-                sidebar.removeClass("max-w-full xl:max-w-xs xl:max-h-[calc(100vh-180px)] opacity-100 visible xl:mr-8 translate-x-0")
-                       .addClass("max-w-0 xl:max-h-0 opacity-0 invisible translate-x-full xl:translate-x-0");
+                sidebar.classList.remove("max-w-full", "xl:max-w-xs", "xl:max-h-[calc(100vh-180px)]", "opacity-100", "visible", "xl:mr-8", "translate-x-0");
+                sidebar.classList.add("max-w-0", "xl:max-h-0", "opacity-0", "invisible", "translate-x-full", "xl:translate-x-0");
             }
-        });
+        }
 
         // Toggle lyrics view
-        $(document).on("click", "#toggle-lyrics-btn", function() {
-            const lyricsView = $("#lyrics-container-view");
-            const btn = $(this);
-            if (lyricsView.hasClass("hidden")) {
-                lyricsView.removeClass("hidden").addClass("flex");
-                btn.html(`<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>`);
-                btn.removeClass("text-zinc-400 hover:text-white").addClass("text-orange-500 hover:text-orange-400");
+        const toggleLyricsBtn = e.target.closest("#toggle-lyrics-btn");
+        if (toggleLyricsBtn) {
+            const lyricsView = document.getElementById("lyrics-container-view");
+            if (lyricsView.classList.contains("hidden")) {
+                lyricsView.classList.remove("hidden");
+                lyricsView.classList.add("flex");
+                toggleLyricsBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>`;
+                toggleLyricsBtn.classList.remove("text-zinc-400", "hover:text-white");
+                toggleLyricsBtn.classList.add("text-orange-500", "hover:text-orange-400");
                 if (window.current_playing_song && window.parsedLyrics.length === 0) {
                     window.fetchLyricsForCurrentSong(window.current_playing_song);
                 }
             } else {
-                lyricsView.addClass("hidden").removeClass("flex");
-                btn.html(`<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>`);
-                btn.removeClass("text-orange-500 hover:text-orange-400").addClass("text-zinc-400 hover:text-white");
+                lyricsView.classList.add("hidden");
+                lyricsView.classList.remove("flex");
+                toggleLyricsBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>`;
+                toggleLyricsBtn.classList.remove("text-orange-500", "hover:text-orange-400");
+                toggleLyricsBtn.classList.add("text-zinc-400", "hover:text-white");
             }
-        });
+        }
 
         // Play queue item
-        $(document).on("click", ".queue-item", async function(e) {
-            if ($(e.target).closest(".remove-queue-btn").length) return;
-            const songData = JSON.parse($(this).closest(".queue-item-container").attr("data-path").replace(/&apos;/g, "'"));
+        const queueItem = e.target.closest(".queue-item");
+        if (queueItem) {
+            if (e.target.closest(".remove-queue-btn")) return;
+            const container = queueItem.closest(".queue-item-container");
+            const songDataStr = container.getAttribute("data-path");
+            if (!songDataStr) return;
+            const songData = JSON.parse(songDataStr.replace(/&apos;/g, "'"));
             if (songData) {
-                const index = $(this).closest(".queue-item-container").data("index");
+                const index = parseInt(container.getAttribute("data-index"));
                 window.current_playing_song = songData;
                 if (window.set_active_song_ui) window.set_active_song_ui(songData);
                 
@@ -768,12 +782,14 @@
                 
                 await window.play_button(songData);
             }
-        });
+        }
 
         // Remove item from queue
-        $(document).on("click", ".remove-queue-btn", function(e) {
+        const removeQueueBtn = e.target.closest(".remove-queue-btn");
+        if (removeQueueBtn) {
             e.stopPropagation();
-            const index = $(this).closest(".queue-item-container").data("index");
+            const container = removeQueueBtn.closest(".queue-item-container");
+            const index = parseInt(container.getAttribute("data-index"));
             window.is_custom_queue = true;
             window.queue_songs.splice(index, 1);
             window.update_queue_ui();
@@ -781,57 +797,69 @@
             if (window.pywebview && window.pywebview.api && window.pywebview.api.remove_from_queue) {
                 window.pywebview.api.remove_from_queue(index);
             }
-        });
+        }
 
         // Clear queue
-        $(document).on("click", "#clear-queue-btn", function() {
+        if (e.target.closest("#clear-queue-btn")) {
             window.is_custom_queue = false;
             window.queue_songs = [];
             window.update_queue_ui();
             if (window.pywebview && window.pywebview.api && window.pywebview.api.clear_queue) {
                 window.pywebview.api.clear_queue();
             }
-        });
+        }
+    });
         
-        // --- Queue Drag and Drop Logic ---
-        let draggedItemIndex = null;
+    // --- Queue Drag and Drop Logic ---
+    let draggedItemIndex = null;
 
-        $(document).on("dragstart", ".queue-item-container", function(e) {
-            draggedItemIndex = $(this).data("index");
-            $(this).addClass("opacity-50");
-            e.originalEvent.dataTransfer.effectAllowed = "move";
-            e.originalEvent.dataTransfer.setData("text/plain", draggedItemIndex);
-        });
+    document.addEventListener("dragstart", function(e) {
+        const container = e.target.closest(".queue-item-container");
+        if (container) {
+            draggedItemIndex = parseInt(container.getAttribute("data-index"));
+            container.classList.add("opacity-50");
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", draggedItemIndex);
+        }
+    });
 
-        $(document).on("dragover", ".queue-item-container", function(e) {
+    document.addEventListener("dragover", function(e) {
+        const container = e.target.closest(".queue-item-container");
+        if (container) {
             e.preventDefault();
-            e.originalEvent.dataTransfer.dropEffect = "move";
-            const bounding = this.getBoundingClientRect();
+            e.dataTransfer.dropEffect = "move";
+            const bounding = container.getBoundingClientRect();
             const offset = bounding.y + (bounding.height / 2);
-            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500");
-            if (e.originalEvent.clientY > offset) {
-                $(this).addClass("border-b-2 border-orange-500");
+            document.querySelectorAll(".queue-item-container").forEach(el => el.classList.remove("border-t-2", "border-b-2", "border-orange-500"));
+            if (e.clientY > offset) {
+                container.classList.add("border-b-2", "border-orange-500");
             } else {
-                $(this).addClass("border-t-2 border-orange-500");
+                container.classList.add("border-t-2", "border-orange-500");
             }
-        });
+        }
+    });
 
-        $(document).on("dragleave", ".queue-item-container", function(e) {
-            $(this).removeClass("border-t-2 border-b-2 border-orange-500");
-        });
+    document.addEventListener("dragleave", function(e) {
+        const container = e.target.closest(".queue-item-container");
+        if (container) {
+            container.classList.remove("border-t-2", "border-b-2", "border-orange-500");
+        }
+    });
 
-        $(document).on("drop", ".queue-item-container", async function(e) {
+    document.addEventListener("drop", async function(e) {
+        const container = e.target.closest(".queue-item-container");
+        if (container) {
             e.preventDefault();
-            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500 opacity-50");
+            document.querySelectorAll(".queue-item-container").forEach(el => el.classList.remove("border-t-2", "border-b-2", "border-orange-500", "opacity-50"));
             
-            const targetIndex = $(this).data("index");
+            const targetIndex = parseInt(container.getAttribute("data-index"));
             if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
 
-            const bounding = this.getBoundingClientRect();
+            const bounding = container.getBoundingClientRect();
             const offset = bounding.y + (bounding.height / 2);
             let insertIndex = targetIndex;
             
-            if (e.originalEvent.clientY > offset) {
+            if (e.clientY > offset) {
                 insertIndex++;
             }
             if (draggedItemIndex < insertIndex) {
@@ -847,13 +875,16 @@
                 await window.pywebview.api.reorder_queue(draggedItemIndex, insertIndex);
             }
             draggedItemIndex = null;
-        });
+        }
+    });
 
-        $(document).on("dragend", ".queue-item-container", function(e) {
-            $(this).removeClass("opacity-50");
-            $(".queue-item-container").removeClass("border-t-2 border-b-2 border-orange-500");
+    document.addEventListener("dragend", function(e) {
+        const container = e.target.closest(".queue-item-container");
+        if (container) {
+            container.classList.remove("opacity-50");
+        }
+        document.querySelectorAll(".queue-item-container").forEach(el => el.classList.remove("border-t-2", "border-b-2", "border-orange-500"));
             draggedItemIndex = null;
-        });
     });
 
 </script>

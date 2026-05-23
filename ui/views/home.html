@@ -150,29 +150,46 @@
 
     // Helper function to guarantee only one active song UI at a time
     window.set_active_song_ui = function(songData) {
-        const activeClasses = "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30";
+        const activeClasses = ["bg-orange-500/10", "scale-[1.02]", "shadow-xl", "relative", "z-10", "ring-1", "ring-orange-500/30"];
         
-        $(".song-row").removeClass(activeClasses);
-        $(".song-row .song-title").removeClass("text-orange-400").addClass("text-zinc-100");
-        $(".list-visualizer").remove();
+        document.querySelectorAll(".song-row").forEach(row => {
+            row.classList.remove(...activeClasses);
+            const title = row.querySelector(".song-title");
+            if (title) {
+                title.classList.remove("text-orange-400");
+                title.classList.add("text-zinc-100");
+            }
+        });
+        document.querySelectorAll(".list-visualizer").forEach(vis => vis.remove());
 
         if (!songData) return;
         const fileName = songData.File;
 
-        $(".song-row").each(function() {
-            const rowData = $(this).data("path");
-            const rowFileName = rowData ? rowData.File : null;
-            if (rowFileName === fileName) {
-                $(this).addClass(activeClasses);
-                $(this).find(".song-title").removeClass("text-zinc-100").addClass("text-orange-400");
-                $(this).find(".cover-art-container").before(`
+        document.querySelectorAll(".song-row").forEach(row => {
+            const rawDataStr = row.getAttribute("data-path");
+            if (rawDataStr) {
+                try {
+                    const rowData = JSON.parse(rawDataStr.replace(/&quot;/g, '"'));
+                    if (rowData.File === fileName) {
+                        row.classList.add(...activeClasses);
+                        const title = row.querySelector(".song-title");
+                        if (title) {
+                            title.classList.remove("text-zinc-100");
+                            title.classList.add("text-orange-400");
+                        }
+                        const coverContainer = row.querySelector(".cover-art-container");
+                        if (coverContainer) {
+                            coverContainer.insertAdjacentHTML('beforebegin', `
                     <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
                         <div class="visualizer-bar"></div>
                         <div class="visualizer-bar"></div>
                         <div class="visualizer-bar"></div>
                         <div class="visualizer-bar"></div>
                     </div>
-                `);
+                            `);
+                        }
+                    }
+                } catch(e) {}
             }
         });
     };
@@ -241,20 +258,23 @@
     }, { rootMargin: "100px" }); // Reduced margin to avoid loading too many off-screen elements
 
     window.update_song_row_ui = function(oldFilename, newSongData) {
-        $('.song-row-container').filter(function() {
-            const pathData = $(this).data("path");
-            const rawDataStr = $(this).attr("data-path");
-            let rawData = null;
-            try { rawData = JSON.parse(rawDataStr); } catch(e) {}
-            return (pathData && pathData.File === oldFilename) || (rawData && rawData.File === oldFilename);
-        }).each(function() {
-            $(this).attr('data-path', JSON.stringify(newSongData).replace(/"/g, '&quot;'));
-            $(this).data("path", newSongData);
-            if ($(this).attr('data-rendered') === 'true') {
-                $(this).html(window.generateSongRowHtml(newSongData));
-                const cover = $(this).find('.lazy-cover')[0];
-                if (cover && window.lazyCoverObserver) {
-                    window.lazyCoverObserver.observe(cover);
+        document.querySelectorAll('.song-row-container').forEach(container => {
+            let cData = container._songData;
+            if (!cData) {
+                const raw = container.getAttribute("data-path");
+                if (raw) {
+                    try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch(e) {}
+                }
+            }
+            if (cData && cData.File === oldFilename) {
+                container.setAttribute('data-path', JSON.stringify(newSongData).replace(/"/g, '&quot;'));
+                container._songData = newSongData;
+                if (container.getAttribute('data-rendered') === 'true') {
+                    container.innerHTML = window.generateSongRowHtml(newSongData);
+                    const cover = container.querySelector('.lazy-cover');
+                    if (cover && window.lazyCoverObserver) {
+                        window.lazyCoverObserver.observe(cover);
+                    }
                 }
             }
         });
@@ -283,273 +303,277 @@
             tableHtmlBuffer += songRow;
         });
         
-        // Append the entire HTML string at once to prevent layout thrashing
-        $("#table-body").html(tableHtmlBuffer);
-        
-        $("#table-body .song-row-container").each(function() {
-            if (window.lazyRowObserver) window.lazyRowObserver.observe(this);
-        });
+        const tableBody = document.getElementById("table-body");
+        if (tableBody) {
+            tableBody.innerHTML = tableHtmlBuffer;
+            const containers = tableBody.querySelectorAll(".song-row-container");
+            containers.forEach(container => {
+                if (window.lazyRowObserver) window.lazyRowObserver.observe(container);
+            });
+        }
     }
 
-    $(document).ready(function(){
+    if (!window.homeEventHandlersAttached) {
+        window.homeEventHandlersAttached = true;
+        
         let searchTimeout;
-        $("#txt_search").on("keyup", function() {
-            clearTimeout(searchTimeout);
-            const value = $(this).val().toLowerCase();
-            
-            searchTimeout = setTimeout(function() {
-                $("#table-body .song-row-container").each(function() {
-                    const songData = JSON.parse($(this).attr('data-path') || '{}');
-                    const title = (songData.Title || "").toLowerCase();
-                    const artist = (songData.Artist || "").toLowerCase();
-                    const album = (songData.Album || "").toLowerCase();
-                    $(this).toggle(title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1);
-                });
-            }, 150); // 150ms debounce prevents lag when typing quickly
-        });
-
-        // Event Delegation for Queue Context Menu Items
-        $(document).on("click", "#bento-next-to-queue-btn", function(e) {
-            e.stopPropagation();
-            const songPath = $("#bento-context-menu").data("song-path");
-            if (songPath) {
-                window.is_custom_queue = true;
-                window.queue_songs.unshift(songPath);
-                window.update_queue_ui();
+        document.addEventListener("keyup", function(e) {
+            if (e.target && e.target.id === "txt_search") {
+                clearTimeout(searchTimeout);
+                const value = e.target.value.toLowerCase();
                 
-                if (window.pywebview && window.pywebview.api && window.pywebview.api.next_to_queue) {
-                    window.pywebview.api.next_to_queue(songPath);
-                }
-                
-                if (typeof Notyf !== 'undefined') {
-                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                    notyf.success({ message: `<b>${songPath.Title}</b> will play next`, duration: 3000 });
-                }
-                
-                $("#bento-context-menu").addClass("hidden");
-            }
-        });
-
-        $(document).on("click", "#bento-add-queue-btn", function(e) {
-            e.stopPropagation();
-            const songPath = $("#bento-context-menu").data("song-path");
-            if (songPath) {
-                window.is_custom_queue = true;
-                window.queue_songs.push(songPath);
-                window.update_queue_ui();
-                
-                if (window.pywebview && window.pywebview.api && window.pywebview.api.add_to_queue) {
-                    window.pywebview.api.add_to_queue(songPath);
-                }
-                
-                if (typeof Notyf !== 'undefined') {
-                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                    notyf.success({ message: `Added <b>${songPath.Title}</b> to Queue`, duration: 3000 });
-                }
-                
-                $("#bento-context-menu").addClass("hidden");
-            }
-        });
-
-        // Hide context menu when clicking outside
-        $(document).on("click", function(e) {
-            if (!$(e.target).closest("#bento-context-menu").length && !$(e.target).closest(".bento-btn").length) {
-                $("#bento-context-menu").addClass("hidden");
-            }
-        });
-
-        // Show context menu and position it dynamically
-        $(document).on("click", ".bento-btn", function(e) {
-            e.stopPropagation();
-            const songPath = $(this).closest(".song-row").data("path");
-            const menu = $("#bento-context-menu");
-            
-            // Store target song in the menu's data for later reference
-            menu.data("song-path", songPath);
-
-            // Use viewport-relative positioning since the menu is `fixed`
-            const buttonRect = this.getBoundingClientRect();
-            menu.removeClass("hidden").css({
-                top: buttonRect.bottom + 5,
-                left: buttonRect.right - menu.outerWidth()
-            });
-        });
-
-        // Handle Play click from context menu
-        $("#bento-play-btn").on("click", async function(e) {
-            e.stopPropagation();
-            const songPath = $("#bento-context-menu").data("song-path");
-            if (songPath) {
-                window.current_playing_song = songPath;
-                window.set_active_song_ui(songPath);
-                
-                // Auto-populate the queue
-                if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
-                    await window.pywebview.api.populate_queue(songPath);
-                }
-                
-                await window.play_button(songPath);
-                $("#bento-context-menu").addClass("hidden");
-            }
-        });
-
-        // Handle Search Metadata click from context menu
-        $("#bento-search-metadata-btn").on("click", async function(e) {
-            e.stopPropagation();
-            const songPath = $("#bento-context-menu").data("song-path");
-            $("#bento-context-menu").addClass("hidden");
-            
-            if (songPath) {
-                Swal.fire({
-                    title: 'Searching Metadata...',
-                    text: 'Please wait while we search iTunes for metadata.',
-                    allowOutsideClick: false,
-                    background: '#1a1a1a',
-                    color: '#f9fafb',
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                try {
-                    const metadata = await window.pywebview.api.search_itunes_metadata(songPath.Title, songPath.Artist);
-                    Swal.close();
-
-                    if (metadata) {
-                        // Clone the current song data and update it with the fetched metadata
-                        const updatedSong = { ...songPath };
-                        if (metadata.title) updatedSong.Title = metadata.title;
-                        if (metadata.artist) updatedSong.Artist = metadata.artist;
-                        if (metadata.album) updatedSong.Album = metadata.album;
-                        if (metadata.year) updatedSong.Year = metadata.year;
-                        if (metadata.artwork) updatedSong.CoverArt = metadata.artwork;
-                        
-                        window.openEditModal(updatedSong);
-
-                        // Programmatically create a File from the base64 artwork and set it in the file input
-                        if (metadata.artwork) {
-                            setTimeout(async () => {
-                                try {
-                                    const res = await fetch(metadata.artwork);
-                                    const blob = await res.blob();
-                                    const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
-                                    const dataTransfer = new DataTransfer();
-                                    dataTransfer.items.add(file);
-                                    
-                                    // Find the file input in the modal (fallback to generic file input if specific ID is not used)
-                                    const fileInput = document.getElementById('edit-cover-input') || document.querySelector('#edit-song-modal-container input[type="file"]');
-                                    if (fileInput) {
-                                        fileInput.files = dataTransfer.files;
-                                        // Trigger change so your preview updates natively
-                                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                    }
-                                } catch (e) {
-                                    console.error("Failed to set file input:", e);
-                                }
-                            }, 200); // Small delay to ensure the modal is rendered
+                searchTimeout = setTimeout(function() {
+                    const containers = document.querySelectorAll("#table-body .song-row-container");
+                    containers.forEach(container => {
+                        const rawStr = container.getAttribute('data-path');
+                        let songData = {};
+                        if (rawStr) {
+                            try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch(err) {}
                         }
-                        
-                        if (typeof notyf !== 'undefined') notyf.success('Metadata found! Review and save changes.');
-                    } else {
-                        if (typeof notyf !== 'undefined') notyf.error('No metadata found for this song.');
+                        const title = (songData.Title || "").toLowerCase();
+                        const artist = (songData.Artist || "").toLowerCase();
+                        const album = (songData.Album || "").toLowerCase();
+                        if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
+                            container.style.display = "";
+                        } else {
+                            container.style.display = "none";
+                        }
+                    });
+                }, 150);
+            }
+        });
+        let contextMenuDataPath = null;
+        const contextMenu = document.getElementById("bento-context-menu");
+
+        document.addEventListener("click", async function(e) {
+            if (e.target.closest("#bento-next-to-queue-btn")) {
+                e.stopPropagation();
+                const songPath = contextMenuDataPath;
+                if (songPath) {
+                    window.is_custom_queue = true;
+                    window.queue_songs.unshift(songPath);
+                    if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
+                    
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.next_to_queue) {
+                        window.pywebview.api.next_to_queue(songPath);
+                    }
+                    
+                    if (typeof Notyf !== 'undefined') {
+                        const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                        notyf.success({ message: `<b>${songPath.Title}</b> will play next`, duration: 3000 });
+                    }
+                    contextMenu.classList.add("hidden");
+                }
+            } else if (e.target.closest("#bento-add-queue-btn")) {
+                e.stopPropagation();
+                const songPath = contextMenuDataPath;
+                if (songPath) {
+                    window.is_custom_queue = true;
+                    window.queue_songs.push(songPath);
+                    if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
+                    
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.add_to_queue) {
+                        window.pywebview.api.add_to_queue(songPath);
+                    }
+                    
+                    if (typeof Notyf !== 'undefined') {
+                        const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                        notyf.success({ message: `Added <b>${songPath.Title}</b> to Queue`, duration: 3000 });
+                    }
+                    contextMenu.classList.add("hidden");
+                }
+            } else if (e.target.closest("#bento-play-btn")) {
+                e.stopPropagation();
+                const songPath = contextMenuDataPath;
+                if (songPath) {
+                    window.current_playing_song = songPath;
+                    window.set_active_song_ui(songPath);
+                    
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                        await window.pywebview.api.populate_queue(songPath);
+                    }
+                    await window.play_button(songPath);
+                    contextMenu.classList.add("hidden");
+                }
+            } else if (e.target.closest("#bento-search-metadata-btn")) {
+                e.stopPropagation();
+                const songPath = contextMenuDataPath;
+                contextMenu.classList.add("hidden");
+                
+                if (songPath) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Searching Metadata...',
+                            text: 'Please wait while we search iTunes for metadata.',
+                            allowOutsideClick: false,
+                            background: '#1a1a1a',
+                            color: '#f9fafb',
+                            didOpen: () => { Swal.showLoading(); }
+                        });
+                    }
+
+                    try {
+                        const metadata = await window.pywebview.api.search_itunes_metadata(songPath.Title, songPath.Artist);
+                        if (typeof Swal !== 'undefined') Swal.close();
+
+                        if (metadata) {
+                            const updatedSong = { ...songPath };
+                            if (metadata.title) updatedSong.Title = metadata.title;
+                            if (metadata.artist) updatedSong.Artist = metadata.artist;
+                            if (metadata.album) updatedSong.Album = metadata.album;
+                            if (metadata.year) updatedSong.Year = metadata.year;
+                            if (metadata.artwork) updatedSong.CoverArt = metadata.artwork;
+                            
+                            window.openEditModal(updatedSong);
+
+                            if (metadata.artwork) {
+                                setTimeout(async () => {
+                                    try {
+                                        const res = await fetch(metadata.artwork);
+                                        const blob = await res.blob();
+                                        const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
+                                        const dataTransfer = new DataTransfer();
+                                        dataTransfer.items.add(file);
+                                        
+                                        const fileInput = document.getElementById('edit-cover-input') || document.querySelector('#edit-song-modal-container input[type="file"]');
+                                        if (fileInput) {
+                                            fileInput.files = dataTransfer.files;
+                                            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                        }
+                                    } catch (e) { console.error("Failed to set file input:", e); }
+                                }, 200);
+                            }
+                            if (typeof Notyf !== 'undefined') {
+                                const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                                notyf.success('Metadata found! Review and save changes.');
+                            }
+                        } else {
+                            if (typeof Notyf !== 'undefined') {
+                                const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                                notyf.error('No metadata found for this song.');
+                            }
+                            window.openEditModal(songPath);
+                        }
+                    } catch (err) {
+                        if (typeof Swal !== 'undefined') Swal.close();
+                        if (typeof Notyf !== 'undefined') {
+                            const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                            notyf.error('Error searching metadata.');
+                        }
                         window.openEditModal(songPath);
                     }
-                } catch (err) {
-                    Swal.close();
-                    if (typeof notyf !== 'undefined') notyf.error('Error searching metadata.');
-                    window.openEditModal(songPath);
                 }
-            }
-        });
-
-        $("#bento-edit-btn").on("click", async function(e) {
-            e.stopPropagation();
-            const songPath = $("#bento-context-menu").data("song-path");
-            
-            window.openEditModal(songPath);
-            
-            $("#bento-context-menu").addClass("hidden");
-
-        });
-
-
-        // Handle Delete click from context menu (Placeholder)
-        $("#bento-delete-btn").on("click", function(e) {
-            e.stopPropagation();
-
-            const songPath = $("#bento-context-menu").data("song-path");
-            $("#bento-context-menu").addClass("hidden");
-            
-
-
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You are about to permanently delete this song. This cannot be undone.",
-                icon: 'warning',
-                iconColor: '#f97316',
-                background: '#1a1a1a',
-                color: '#f9fafb',
-                showCancelButton: true,
-                confirmButtonColor: '#f97316',
-                cancelButtonColor: '#4b5563',
-                confirmButtonText: 'Yes, delete it',
-                cancelButtonText: 'Cancel',
-
-                customClass: {
-                    popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                    confirmButton: 'font-semibold rounded-lg px-5 py-2.5',
-                    cancelButton: 'font-semibold rounded-lg px-5 py-2.5'
-                }
-
-            }).then(async (result) => {
-
-                if (result.isConfirmed) {
-
-                    if (songPath) {
-                        
-                        await window.pywebview.api.delete_song(songPath);
-
-                        // Hide the specific song row visually and remove it from the DOM
-                        $('.song-row-container').filter(function() {
-                            return $(this).data("path").File === songPath.File;
-                        }).slideUp("fast", function() { $(this).remove(); });
-                    }
-
+            } else if (e.target.closest("#bento-edit-btn")) {
+                e.stopPropagation();
+                const songPath = contextMenuDataPath;
+                window.openEditModal(songPath);
+                contextMenu.classList.add("hidden");
+            } else if (e.target.closest("#bento-delete-btn")) {
+                e.stopPropagation();
+                const songPath = contextMenuDataPath;
+                contextMenu.classList.add("hidden");
+                
+                if (typeof Swal !== 'undefined') {
                     Swal.fire({
-                        title: 'Deleted!',
-                        text: 'The song has been deleted successfully.',
-                        icon: 'success',
+                        title: 'Are you sure?',
+                        text: "You are about to permanently delete this song. This cannot be undone.",
+                        icon: 'warning',
                         iconColor: '#f97316',
-                        background: '#1f2937',
+                        background: '#1a1a1a',
                         color: '#f9fafb',
+                        showCancelButton: true,
                         confirmButtonColor: '#f97316',
+                        cancelButtonColor: '#4b5563',
+                        confirmButtonText: 'Yes, delete it',
+                        cancelButtonText: 'Cancel',
                         customClass: {
-                        popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                        confirmButton: 'font-semibold rounded-lg px-5 py-2.5'
+                            popup: 'border border-gray-700 rounded-2xl shadow-2xl',
+                            confirmButton: 'font-semibold rounded-lg px-5 py-2.5',
+                            cancelButton: 'font-semibold rounded-lg px-5 py-2.5'
+                        }
+                    }).then(async (result) => {
+                        if (result.isConfirmed && songPath) {
+                            if (window.pywebview && window.pywebview.api) {
+                                await window.pywebview.api.delete_song(songPath);
+                            }
+                            
+                            document.querySelectorAll('.song-row-container').forEach(container => {
+                                let cData = container._songData;
+                                if (!cData) {
+                                    const raw = container.getAttribute("data-path");
+                                    if (raw) {
+                                        try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch(e){}
+                                    }
+                                }
+                                if (cData && cData.File === songPath.File) {
+                                    container.style.transition = 'height 0.2s, opacity 0.2s';
+                                    container.style.height = container.offsetHeight + 'px';
+                                    container.style.opacity = '0';
+                                    setTimeout(() => {
+                                        container.style.height = '0px';
+                                        setTimeout(() => container.remove(), 200);
+                                    }, 10);
+                                }
+                            });
+
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'The song has been deleted successfully.',
+                                icon: 'success',
+                                iconColor: '#f97316',
+                                background: '#1f2937',
+                                color: '#f9fafb',
+                                confirmButtonColor: '#f97316',
+                                customClass: {
+                                    popup: 'border border-gray-700 rounded-2xl shadow-2xl',
+                                    confirmButton: 'font-semibold rounded-lg px-5 py-2.5'
+                                }
+                            });
                         }
                     });
                 }
-            });            
-        });
-
-    });
-
-
-    // Add event listener for song row clicks
-    $(document).off("click", ".song-row").on("click", ".song-row", async function() {
-        const songPath = $(this).data("path");
-        if (songPath) {
-            window.current_playing_song = songPath;
-            window.set_active_song_ui(songPath);
-            
-            // Auto-populate the queue with the remaining songs in the list
-            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
-                await window.pywebview.api.populate_queue(songPath);
+            } else if (e.target.closest(".bento-btn")) {
+                e.stopPropagation();
+                const btn = e.target.closest(".bento-btn");
+                const row = btn.closest(".song-row");
+                const songPathStr = row.getAttribute("data-path");
+                if (songPathStr) {
+                    try {
+                        contextMenuDataPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
+                    } catch(err) { console.error("Failed to parse row song data"); }
+                }
+                
+                const buttonRect = btn.getBoundingClientRect();
+                contextMenu.classList.remove("hidden");
+                contextMenu.style.top = (buttonRect.bottom + 5) + "px";
+                contextMenu.style.left = (buttonRect.right - contextMenu.offsetWidth) + "px";
+            } else if (e.target.closest(".song-row")) {
+                const row = e.target.closest(".song-row");
+                if (!e.target.closest(".bento-btn")) {
+                    const songPathStr = row.getAttribute("data-path");
+                    if (songPathStr) {
+                        try {
+                            const songPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
+                            window.current_playing_song = songPath;
+                            window.set_active_song_ui(songPath);
+                            
+                            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                                await window.pywebview.api.populate_queue(songPath);
+                            }
+                            await window.play_button(songPath);
+                        } catch (err) {}
+                    }
+                }
+                if (contextMenu && !contextMenu.classList.contains("hidden")) {
+                    contextMenu.classList.add("hidden");
+                }
+            } else {
+                if (contextMenu && !contextMenu.classList.contains("hidden")) {
+                    contextMenu.classList.add("hidden");
+                }
             }
-            
-            await window.play_button(songPath);
-        }
-    });
+        });
+    }
 
     fetch('modals/edit_song.html')
         .then(response => response.text())

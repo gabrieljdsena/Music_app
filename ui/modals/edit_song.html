@@ -41,34 +41,36 @@
 
 <script>
     function openEditModal(song) {
-        $('#edit-file').val(song.File || '');
-        $('#edit-title').val(song.Title !== 'Unknown' ? song.Title : '');
-        $('#edit-artist').val(song.Artist !== 'Unknown' ? song.Artist : '');
-        $('#edit-album').val(song.Album !== 'Unknown' ? song.Album : '');
-        $('#edit-year').val(song.Year !== 'Unknown' ? song.Year : '');
-        $('#edit-cover').val('');
+        document.getElementById('edit-file').value = song.File || '';
+        document.getElementById('edit-title').value = song.Title !== 'Unknown' ? song.Title : '';
+        document.getElementById('edit-artist').value = song.Artist !== 'Unknown' ? song.Artist : '';
+        document.getElementById('edit-album').value = song.Album !== 'Unknown' ? song.Album : '';
+        document.getElementById('edit-year').value = song.Year !== 'Unknown' ? song.Year : '';
+        document.getElementById('edit-cover').value = '';
         
-        $('#editSongModal').removeClass('hidden');
-        $('#editSongModal').addClass('flex');
+        const modal = document.getElementById('editSongModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 
     function closeEditModal() {
-        $('#editSongModal').addClass('hidden');
-        $('#editSongModal').removeClass('flex');
+        const modal = document.getElementById('editSongModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 
-    $('#editSongForm').on('submit', function(e) {
+    document.getElementById('editSongForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         let updatedData = {
-            File: $('#edit-file').val(),
-            Title: $('#edit-title').val(),
-            Artist: $('#edit-artist').val(),
-            Album: $('#edit-album').val(),
-            Year: $('#edit-year').val()
+            File: document.getElementById('edit-file').value,
+            Title: document.getElementById('edit-title').value,
+            Artist: document.getElementById('edit-artist').value,
+            Album: document.getElementById('edit-album').value,
+            Year: document.getElementById('edit-year').value
         };
 
-        const coverFile = $('#edit-cover')[0].files[0];
+        const coverFile = document.getElementById('edit-cover').files[0];
         if (coverFile) {
             const reader = new FileReader();
             reader.onload = (event) => {

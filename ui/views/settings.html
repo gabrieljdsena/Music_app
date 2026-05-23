@@ -1,4 +1,4 @@
-<div class="max-w-4xl mx-auto w-full pt-8 px-6 sm:px-8 pb-24">
+<div class="max-w-4xl mx-auto w-full pt-8 px-6 sm:px-8 pb-24" x-data="{ limit: window.limit_downloads || 3 }">
     
     <!-- Header -->
     <div class="flex items-center gap-4 mb-8">
@@ -29,10 +29,11 @@
                     </div>
                     <div>
                         <h3 class="text-zinc-200 font-medium">Download/Songs Folder</h3>
-                        <p class="text-xs text-zinc-500 mt-0.5">Location where your songs are saved</p>
+                        <p class="text-xs text-zinc-500 mt-0.5">Location where your songs are saved and read</p>
+                        <p id="current-folder-path" class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md"></p>
                     </div>
                 </div>
-                <button class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_folder().then(res => { if(res) { document.getElementById('current-folder-path').innerText = res; document.getElementById('current-folder-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Folder updated'); } else { alert('Folder updated to: ' + res); } } })" class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
                     Change Folder
                 </button>
             </div>
@@ -48,27 +49,40 @@
                     <div>
                         <h3 class="text-zinc-200 font-medium">Background Image</h3>
                         <p class="text-xs text-zinc-500 mt-0.5">Customize the app's visual appearance</p>
+                        <p id="current-bg-path" class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md"></p>
                     </div>
                 </div>
-                <button class="px-5 hover:cursor-pointer py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_background().then(res => { if(res) { document.getElementById('current-bg-path').innerText = res; document.getElementById('current-bg-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Background updated'); } else { alert('Background updated to: ' + res); } if (window.apply_background) window.apply_background(res); } })" class="px-5 hover:cursor-pointer py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
                     Browse Images
                 </button>
             </div>
 
             <!-- Setting Row 3 -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
-                <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner shrink-0">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                         </svg>
                     </div>
-                    <div>
-                        <label class="text-zinc-200 font-medium block cursor-pointer" for="txt_download_per_batch">Download Limit Per Batch</label>
-                        <p class="text-xs text-zinc-500 mt-0.5">Maximum concurrent downloads</p>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div>
+                            <label class="text-zinc-200 font-medium block cursor-pointer" for="txt_download_per_batch">Download Limit Per Batch</label>
+                            <p class="text-xs text-zinc-500 mt-0.5">Maximum concurrent downloads</p>
+                        </div>
+                        <input id="txt_download_per_batch" x-model.number="limit" type="number" min="1" max="10" class="w-24 px-3 py-2 text-center text-sm font-medium text-zinc-200 bg-white/5 border border-white/10 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg transition-all duration-300 shadow-md">
                     </div>
                 </div>
-                <input id="txt_download_per_batch" type="number" min="1" max="10" class="w-24 px-3 py-2 text-center text-sm font-medium text-zinc-200 bg-white/5 border border-white/10 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                <button id="saveLimitBtn" @click="window.limit_downloads = limit; if (window.pywebview && window.pywebview.api) window.pywebview.api.update_download_limit(limit); if (typeof notyf !== 'undefined') notyf.success('Download limit updated to ' + limit);" class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                    Save
+                </button>
             </div>
     </div>
 </div>
+
+<script>
+    // Request settings when this view loads
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.load_settings();
+    }
+</script>

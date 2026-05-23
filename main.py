@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import time
 
 print(" [Dev] Compiling Tailwind CSS...")
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -69,12 +70,21 @@ window = webview.create_window(
 # 4. Link the window back to the API so it can use evaluate_js
 api._window = window
 
-def on_resized(width, height):
+resize_timer = None
+
+def save_window_size(width, height):
     try:
         with sqlite3.connect(db_path) as conn:
             conn.execute("UPDATE Settings SET window_width = ?, window_height = ?", (width, height))
     except Exception as e:
         print(f" [Python] Database error: {e}")
+
+def on_resized(width, height):
+    global resize_timer
+    if resize_timer is not None:
+        resize_timer.cancel()
+    resize_timer = threading.Timer(0.4, save_window_size, args=(width, height))
+    resize_timer.start()
 
 def on_start(window):
     pygame.init()

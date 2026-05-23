@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "jquery": "^4.0.0",
+    "alpinejs": "^3.15.12",
     "notyf": "^3.10.0",
     "sweetalert2": "^11.26.24"
   },

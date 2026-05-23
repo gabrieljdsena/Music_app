@@ -143,19 +143,19 @@
 
   // New Search functionality
   window.search_click = async function() {
-    const val = $('#songSearch').val();
+    const val = document.getElementById('songSearch').value;
     if (!val) return;
     
-    const container = $('#search-results-container');
-    container.html(`<div class="text-center text-orange-400 py-8"><span class="spinner"></span><p class="mt-2 text-zinc-400 text-sm">Searching YouTube...</p></div>`);
+    const container = document.getElementById('search-results-container');
+    container.innerHTML = `<div class="text-center text-orange-400 py-8"><span class="spinner"></span><p class="mt-2 text-zinc-400 text-sm">Searching YouTube...</p></div>`;
     
     try {
         // Call the Python API to search (ensure this is exposed in your pywebview api!)
         const results = await window.pywebview.api.search_yt(val);
         
-        container.empty();
+        container.innerHTML = '';
         if (!Array.isArray(results) || results.length === 0) {
-            container.html('<p class="text-zinc-500 text-center py-4">No results found.</p>');
+            container.innerHTML = '<p class="text-zinc-500 text-center py-4">No results found.</p>';
             return;
         }
 
@@ -188,22 +188,23 @@
                 </div>
             </div>
             `;
-            container.append(html);
+            container.insertAdjacentHTML('beforeend', html);
         });
     } catch (e) {
-        container.html(`<p class="text-red-400 text-center py-4">Error searching. Make sure you exposed "search_yt" in api.py!</p>`);
+        container.innerHTML = `<p class="text-red-400 text-center py-4">Error searching. Make sure you exposed "search_yt" in api.py!</p>`;
         console.error("Search error: ", e);
     }
   };
 
   // Original JS -> Python entrypoint (kept for backwards compatibility)
   async function download_click() {
-    const val = $('#songSearch').val();
+    const searchInput = document.getElementById('songSearch');
+    const val = searchInput.value;
     if (!val) return;
     
     window.add_progress_bar(val);
     
-    $('#songSearch').val("");
+    searchInput.value = "";
     try {
         const response = await window.pywebview.api.recieve_download(val);
         const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
@@ -226,11 +227,11 @@
     const safeId = btoa(encodeURIComponent(id)).replace(/[^a-zA-Z0-9]/g, '');
     
     // Ensure the container exists on the main body so it persists across tabs
-    if ($('#global-downloads-container').length === 0) {
-      $('body').append('<div id="global-downloads-container" class="fixed top-6 right-6 w-80 max-w-[calc(100vw-3rem)] flex flex-col gap-3 z-[9999] empty:hidden pointer-events-none *:pointer-events-auto"></div>');
+    if (!document.getElementById('global-downloads-container')) {
+      document.body.insertAdjacentHTML('beforeend', '<div id="global-downloads-container" class="fixed top-6 right-6 w-80 max-w-[calc(100vw-3rem)] flex flex-col gap-3 z-[9999] empty:hidden pointer-events-none *:pointer-events-auto"></div>');
     }
 
-    if ($(`#progress-${safeId}`).length) return;
+    if (document.getElementById(`progress-${safeId}`)) return;
 
     const html = `
       <div id="progress-${safeId}" class="bg-zinc-900/95 border border-white/[0.12] rounded-xl p-4 backdrop-blur-md flex flex-col gap-2 shadow-2xl">
@@ -244,12 +245,17 @@
       </div>
     `;
     
-    $('#global-downloads-container').append(html);
+    document.getElementById('global-downloads-container').insertAdjacentHTML('beforeend', html);
   }
 
   window.remove_progress_bar = function(id) {
     const safeId = btoa(encodeURIComponent(id)).replace(/[^a-zA-Z0-9]/g, '');
-    $(`#progress-${safeId}`).fadeOut(300, function() { $(this).remove(); });
+    const el = document.getElementById(`progress-${safeId}`);
+    if (el) {
+        el.style.transition = 'opacity 0.3s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+    }
   }
 
   // Preview video using SweetAlert2 and an iframe
@@ -317,7 +323,7 @@
 
   // Quick Search tags implementation
   window.quickSearch = function(term) {
-    $('#songSearch').val(term);
+    document.getElementById('songSearch').value = term;
     search_click();
   };
 
@@ -341,7 +347,7 @@
 
   // Fetch iTunes Top Weekly/Daily Songs
   async function loadTrending() {
-    const container = $('#trending-tags');
+    const container = document.getElementById('trending-tags');
     
     try {
       // Fetch top 4 songs from iTunes RSS feed
@@ -350,8 +356,7 @@
       
       const songs = data.feed.entry.slice(0, 4);
       
-      container.empty();
-      container.append('<span class="text-xs text-gray-500 tracking-wider uppercase">Trending:</span>');
+      container.innerHTML = '<span class="text-xs text-gray-500 tracking-wider uppercase">Trending:</span>';
       
       songs.forEach(song => {
         const title = song['im:name'].label;
@@ -360,11 +365,11 @@
         let displayTitle = title.split(' (')[0].split(' - ')[0];
         const searchQuery = `${title} ${artist}`.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
-        container.append(`<button onclick="quickSearch('${searchQuery}')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer whitespace-nowrap truncate max-w-[150px] sm:max-w-[200px]" title="${title} by ${artist}">${displayTitle}</button>`);
+        container.insertAdjacentHTML('beforeend', `<button onclick="quickSearch('${searchQuery}')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer whitespace-nowrap truncate max-w-[150px] sm:max-w-[200px]" title="${title} by ${artist}">${displayTitle}</button>`);
       });
     } catch (e) {
       console.error("Failed to load iTunes trending:", e);
-      container.html(`<span class="text-xs text-gray-500 tracking-wider uppercase">Trending:</span><button onclick="quickSearch('Blinding Lights The Weeknd')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer">Blinding Lights</button>`);
+      container.innerHTML = `<span class="text-xs text-gray-500 tracking-wider uppercase">Trending:</span><button onclick="quickSearch('Blinding Lights The Weeknd')" class="px-3 py-1 text-xs rounded-full bg-white/[0.05] border border-white/[0.08] text-gray-300 hover:bg-white/[0.12] hover:text-white hover:border-white/[0.2] transition-all duration-200 cursor-pointer">Blinding Lights</button>`;
     }
   }
 
