@@ -484,8 +484,9 @@
         }
     }
 
-    window.load_settings = function(volume) {
+    window.load_settings = function(volume, limit_downloads) {
         $("#volumeSlider").val(parseFloat(volume));
+        window.limit_downloads = parseInt(limit_downloads) || 3;
     }
 
     window.playing_view = function(current_song) {

@@ -518,7 +518,7 @@ class Api:
         self._window.evaluate_js(f"song_list({json.dumps(self.song_list)})")
     
     def load_settings(self):
-        self._window.evaluate_js(f"window.load_settings({settings.volume})")
+        self._window.evaluate_js(f"window.load_settings({settings.volume}, {settings.limit_downloads})")
 
     def delete_song(self, song_data):
         filename = song_data.get('File')

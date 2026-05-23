@@ -394,7 +394,9 @@
         notyf.success(`Starting import of ${songs.length} songs`);
         e.target.value = ''; // Reset input
 
-        await processBatchDownloads(songs, 3);
+        let limit = window.limit_downloads || 3;
+
+        await processBatchDownloads(songs, limit);
         notyf.success('Batch import completed!');
     };
     reader.readAsText(file);

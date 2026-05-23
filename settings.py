@@ -11,6 +11,8 @@ volume = 0.7
 window_size = {'width': 1280, 'height': 720}
 background = ""
 browser = "firefox"
+limit_downloads = "3"
+
 
 if os.path.exists(db_path):
     with sqlite3.connect(db_path) as conn:
@@ -28,6 +30,7 @@ if os.path.exists(db_path):
                 if data['window_width'] and data['window_height']:
                     window_size = {'width': data['window_width'], 'height': data['window_height']}
                 background = data['background_path'] if data['background_path'] else background
+                limit_downloads = data['limit_downloads'] if data['limit_downloads'] else limit_downloads
 
         except sqlite3.OperationalError:
             pass
