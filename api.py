@@ -827,3 +827,10 @@ class Api:
                 self.update_background(result[0])
                 return result[0]
         return None
+
+    def new_playlist(self,data):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("INSERT INTO Playlists (title, description, thumbnail) VALUES (?, ?, ?)", (data.get("Title"), data.get("Description"), data.get("Cover")))
+        except Exception as e:
+            print(f" [Python] Error creating playlist: {str(e)}")

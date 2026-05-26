@@ -5,14 +5,14 @@ create table if not exists Songs(
 );
 
 create table if not exists Playlists(
-    id bigint not null PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     title varchar(255) not null,
-    thumbnail varchar(255) null,
-    description text
+    description text,
+    thumbnail varchar(255) null
 );
 
 create table if not exists Song_Playlist(
-    id bigint not null PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     song_file varchar(255) not null,
     playlist_id bigint not null,
     FOREIGN KEY (song_file) REFERENCES Songs(file),
