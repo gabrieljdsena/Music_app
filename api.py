@@ -419,6 +419,16 @@ class Api:
         except Exception as e:
             print(f" [Python] Database error: {e}")
 
+    def remove_background(self):
+        settings.background = None
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET background_path = ?", (settings.background,))
+            return True
+        except Exception as e:
+            print(f" [Python] Database error: {e}")
+            return False
+
     def update_songs_path(self, songs_path):
         settings.path = str(songs_path)
         try:

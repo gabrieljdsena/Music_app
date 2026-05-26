@@ -33,9 +33,11 @@
                         <p id="current-folder-path" class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md"></p>
                     </div>
                 </div>
-                <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_folder().then(res => { if(res) { document.getElementById('current-folder-path').innerText = res; document.getElementById('current-folder-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Folder updated'); } else { alert('Folder updated to: ' + res); } } })" class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
-                    Change Folder
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_folder().then(res => { if(res) { document.getElementById('current-folder-path').innerText = res; document.getElementById('current-folder-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Folder updated'); } else { alert('Folder updated to: ' + res); } } })" class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                        Change Folder
+                    </button>
+                </div>
             </div>
 
             <!-- Setting Row 2 -->
@@ -52,9 +54,17 @@
                         <p id="current-bg-path" class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md"></p>
                     </div>
                 </div>
-                <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_background().then(res => { if(res) { document.getElementById('current-bg-path').innerText = res; document.getElementById('current-bg-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Background updated'); } else { alert('Background updated to: ' + res); } if (window.apply_background) window.apply_background(res); } })" class="px-5 hover:cursor-pointer py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
-                    Browse Images
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.remove_background().then(res => { if(res) { document.getElementById('current-bg-path').innerText = ''; document.getElementById('current-bg-path').title = ''; if (typeof notyf !== 'undefined') { notyf.success('Background removed'); } else { alert('Background removed'); } if (window.apply_background) window.apply_background(''); } })" class="flex items-center gap-2 px-4 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-300 bg-white/5 hover:bg-red-500/20 hover:text-red-400 border border-white/10 hover:border-red-500/50 rounded-lg transition-all duration-300 shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                        Remove
+                    </button>
+                    <button onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_background().then(res => { if(res) { document.getElementById('current-bg-path').innerText = res; document.getElementById('current-bg-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Background updated'); } else { alert('Background updated to: ' + res); } if (window.apply_background) window.apply_background(res); } })" class="px-5 hover:cursor-pointer py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                        Browse
+                    </button>
+                </div>
             </div>
 
             <!-- Setting Row 3 -->

@@ -439,11 +439,14 @@
     }
 
     window.apply_background = async function(background_path) {
-        if (!background_path) return;
+        if (!background_path) {
+            document.body.style.backgroundImage = 'none';
+            return;
+        }
         try {
             const base64Image = await window.pywebview.api.get_local_image_base64(background_path);
             if (base64Image) {
-                document.body.style.backgroundImage = `linear-gradient(rgba(9, 9, 11, 0.47), rgba(9, 9, 11, 0.47)), url('${base64Image}')`;
+                document.body.style.backgroundImage = `linear-gradient(rgba(9, 9, 11, 0.4), rgba(9, 9, 11, 0.4)), url('${base64Image}')`;
                 document.body.style.backgroundSize = 'cover';
                 document.body.style.backgroundPosition = 'center';
                 document.body.style.backgroundRepeat = 'no-repeat';
