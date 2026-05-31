@@ -834,3 +834,13 @@ class Api:
                 conn.execute("INSERT INTO Playlists (title, description, thumbnail) VALUES (?, ?, ?)", (data.get("Title"), data.get("Description"), data.get("Cover")))
         except Exception as e:
             print(f" [Python] Error creating playlist: {str(e)}")
+
+    def load_playlists(self):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                query = "SELECT id, title, description, thumbnail FROM Playlists"
+                cursor = conn.execute(query)
+                return [{"id": row[0], "title": row[1], "description": row[2], "thumbnail": row[3]} for row in cursor.fetchall()]
+        except Exception as e:
+            print(f" [Python] Error loading playlists: {str(e)}")
+            return

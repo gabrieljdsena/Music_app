@@ -8,7 +8,7 @@ create table if not exists Playlists(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title varchar(255) not null,
     description text,
-    thumbnail varchar(255) null
+    thumbnail BLOB null
 );
 
 create table if not exists Song_Playlist(
