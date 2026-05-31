@@ -82,7 +82,6 @@
     --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
     --radius-3xl: 1.5rem;
-    --radius-4xl: 2rem;
     --drop-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.15);
     --drop-shadow-md: 0 3px 3px rgb(0 0 0 / 0.12);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
@@ -478,9 +477,6 @@
   }
   .aspect-square {
     aspect-ratio: 1 / 1;
-  }
-  .h-1 {
-    height: calc(var(--spacing) * 1);
   }
   .h-1\/2 {
     height: calc(1 / 2 * 100%);
@@ -1051,6 +1047,12 @@
     background-color: color-mix(in srgb, oklch(20.5% 0 0) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-neutral-900) 30%, transparent);
+    }
+  }
+  .bg-neutral-900\/50 {
+    background-color: color-mix(in srgb, oklch(20.5% 0 0) 50%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-neutral-900) 50%, transparent);
     }
   }
   .bg-orange-400 {
@@ -1949,6 +1951,11 @@
       }
     }
   }
+  .file\:mr-3 {
+    &::file-selector-button {
+      margin-right: calc(var(--spacing) * 3);
+    }
+  }
   .file\:mr-4 {
     &::file-selector-button {
       margin-right: calc(var(--spacing) * 4);
@@ -1959,10 +1966,29 @@
       cursor: pointer;
     }
   }
+  .file\:rounded-md {
+    &::file-selector-button {
+      border-radius: var(--radius-md);
+    }
+  }
+  .file\:border {
+    &::file-selector-button {
+      border-style: var(--tw-border-style);
+      border-width: 1px;
+    }
+  }
   .file\:border-0 {
     &::file-selector-button {
       border-style: var(--tw-border-style);
       border-width: 0px;
+    }
+  }
+  .file\:border-white\/10 {
+    &::file-selector-button {
+      border-color: color-mix(in srgb, #fff 10%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+      }
     }
   }
   .file\:bg-neutral-800 {
@@ -1970,9 +1996,19 @@
       background-color: var(--color-neutral-800);
     }
   }
+  .file\:px-2\.5 {
+    &::file-selector-button {
+      padding-inline: calc(var(--spacing) * 2.5);
+    }
+  }
   .file\:px-4 {
     &::file-selector-button {
       padding-inline: calc(var(--spacing) * 4);
+    }
+  }
+  .file\:py-1 {
+    &::file-selector-button {
+      padding-block: calc(var(--spacing) * 1);
     }
   }
   .file\:py-2 {
@@ -1984,6 +2020,12 @@
     &::file-selector-button {
       font-size: var(--text-sm);
       line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+  }
+  .file\:text-xs {
+    &::file-selector-button {
+      font-size: var(--text-xs);
+      line-height: var(--tw-leading, var(--text-xs--line-height));
     }
   }
   .file\:font-semibold {
@@ -2338,13 +2380,6 @@
       }
     }
   }
-  .hover\:accent-orange-400 {
-    &:hover {
-      @media (hover: hover) {
-        accent-color: var(--color-orange-400);
-      }
-    }
-  }
   .hover\:shadow-\[0_0_20px_rgba\(251\,146\,60\,0\.4\)\] {
     &:hover {
       @media (hover: hover) {
@@ -2402,6 +2437,15 @@
       &:hover {
         @media (hover: hover) {
           background-color: var(--color-neutral-600);
+        }
+      }
+    }
+  }
+  .file\:hover\:bg-neutral-700 {
+    &::file-selector-button {
+      &:hover {
+        @media (hover: hover) {
+          background-color: var(--color-neutral-700);
         }
       }
     }

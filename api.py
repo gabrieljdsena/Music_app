@@ -43,6 +43,7 @@ class Api:
         self.song_list = []
         self.next_songs = []
         self.prev_songs = []
+        self.current_playlist_id = None
         
         self._window = None
         self.downloader = Download.MusicDownloader()
@@ -62,6 +63,7 @@ class Api:
         self.next_songs.clear()
         self.fallback_to_general_list = True
         self.prev_songs.clear()
+        self.current_playlist_id = None
 
         found = False
         for song in self.song_list:
@@ -71,7 +73,13 @@ class Api:
                 found = True
             else:
                 self.prev_songs.append(song)
-                
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET current_playlist = NULL")
+        except Exception as e:
+            print(f" [Python] Database error clearing current_playlist: {e}")
+
         if self._window:
             self._window.evaluate_js(f"""
                 window.is_custom_queue = false;
@@ -81,11 +89,12 @@ class Api:
                 }}
             """)
 
-    def populate_queue_from_list(self, current_song, song_list):
+    def populate_queue_from_list(self, current_song, song_list, playlist_id=None):
         """Populate the queue from an arbitrary list of songs (e.g. a playlist)."""
         self.next_songs.clear()
         self.fallback_to_general_list = False
         self.prev_songs.clear()
+        self.current_playlist_id = playlist_id
 
         found = False
         for song in song_list:
@@ -95,6 +104,12 @@ class Api:
                 found = True
             else:
                 self.prev_songs.append(song)
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET current_playlist = ?", (playlist_id,))
+        except Exception as e:
+            print(f" [Python] Database error saving current_playlist: {e}")
                 
         if self._window:
             self._window.evaluate_js(f"""
@@ -164,7 +179,14 @@ class Api:
                 """)
         elif not self.shuffle:
             if self.last_song and self.last_song.get('File'):
-                self.populate_queue(self.last_song)
+                if getattr(self, 'current_playlist_id', None) is not None:
+                    playlist_songs = self.get_playlist_songs(self.current_playlist_id)
+                    if playlist_songs:
+                        self.populate_queue_from_list(self.last_song, playlist_songs, self.current_playlist_id)
+                    else:
+                        self.populate_queue(self.last_song)
+                else:
+                    self.populate_queue(self.last_song)
         return self.shuffle
         
 
@@ -610,20 +632,40 @@ class Api:
             if song_data.get('Year'):
                 audio.tags['TDRC'] = TDRC(encoding=3, text=[str(song_data['Year'])])
             
-            if song_data.get('CoverArt') and song_data['CoverArt'].startswith('data:'):
-                # Remove any existing cover art to avoid multiple stacked APIC frames
-                keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
-                for k in keys_to_remove:
-                    audio.tags.pop(k)
+            if song_data.get('CoverArt'):
+                cover_art = song_data['CoverArt']
+                img_data = None
+                mime = 'image/jpeg'
+                
+                if cover_art.startswith('data:'):
+                    header, encoded = cover_art.split(',', 1)
+                    mime = header.split(';')[0].split(':')[1]
+                    img_data = base64.b64decode(encoded)
+                elif cover_art.startswith('http://') or cover_art.startswith('https://'):
+                    try:
+                        import urllib.request
+                        headers = {'User-Agent': 'MyMusicPlayer/1.0'}
+                        req = urllib.request.Request(cover_art, headers=headers)
+                        with urllib.request.urlopen(req) as response:
+                            img_data = response.read()
+                            if '.png' in cover_art.lower():
+                                mime = 'image/png'
+                            elif '.gif' in cover_art.lower():
+                                mime = 'image/gif'
+                    except Exception as e:
+                        print(f" [Python] Failed to download artwork from URL {cover_art}: {e}")
+                
+                if img_data:
+                    # Remove any existing cover art to avoid multiple stacked APIC frames
+                    keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
+                    for k in keys_to_remove:
+                        audio.tags.pop(k)
 
-                header, encoded = song_data['CoverArt'].split(',', 1)
-                mime = header.split(';')[0].split(':')[1]
-                img_data = base64.b64decode(encoded)
-                audio.tags.add(
-                    APIC(
-                        encoding=3, mime=mime, type=3, desc=u'Cover', data=img_data
+                    audio.tags.add(
+                        APIC(
+                            encoding=3, mime=mime, type=3, desc=u'Cover', data=img_data
+                        )
                     )
-                )
             
             audio.save(v2_version=3)
             
@@ -697,14 +739,25 @@ class Api:
                         self.song_list.append(self.get_song_metadata(file_path, file))
 
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor().execute("SELECT current_song FROM Settings LIMIT 1")
+                cursor = conn.cursor().execute("SELECT current_song, current_playlist FROM Settings LIMIT 1")
                 data = cursor.fetchone()
                 if data and data[0]:
                     file = data[0]
+                    playlist_id = data[1]
+                    self.current_playlist_id = playlist_id
+                    
                     file_path = os.path.join(settings.path, file)
                     song_data = self.get_song_metadata(file_path, file, include_cover=True)
                     self.play_button(song_data, True)
-                    self.populate_queue(song_data)
+                    
+                    if playlist_id is not None:
+                        playlist_songs = self.get_playlist_songs(playlist_id)
+                        if playlist_songs:
+                            self.populate_queue_from_list(song_data, playlist_songs, playlist_id)
+                        else:
+                            self.populate_queue(song_data)
+                    else:
+                        self.populate_queue(song_data)
                 
         except Exception as e:
             print(f" [Python] Database error: {e}")

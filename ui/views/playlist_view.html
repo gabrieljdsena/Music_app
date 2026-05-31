@@ -442,7 +442,8 @@
                     if (window.set_active_song_ui) window.set_active_song_ui(firstSong);
 
                     if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
-                        await window.pywebview.api.populate_queue_from_list(firstSong, window.currentPlaylistSongs);
+                        const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
+                        await window.pywebview.api.populate_queue_from_list(firstSong, window.currentPlaylistSongs, playlistId);
                     }
                     await window.play_button(firstSong);
                 }

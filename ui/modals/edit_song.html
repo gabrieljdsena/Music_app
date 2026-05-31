@@ -3,6 +3,7 @@
         <h2 class="text-2xl font-bold mb-4 text-zinc-200 border-b border-neutral-700 pb-2">Edit Song Metadata</h2>
         <form id="editSongForm" class="space-y-4">
             <input type="hidden" id="edit-file" name="File">
+            <input type="hidden" id="edit-cover-art-data" name="CoverArt">
             
             <div>
                 <label for="edit-title" class="block text-sm font-semibold text-gray-200">Title</label>
@@ -26,9 +27,17 @@
                 </div>
             </div>
 
-            <div>
-                <label for="edit-cover" class="block text-sm font-semibold text-gray-200">Cover Image</label>
-                <input type="file" id="edit-cover" accept="image/*" class="mt-1 block w-full text-sm text-zinc-300 border border-neutral-700 rounded-md cursor-pointer bg-neutral-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-500 transition-all duration-300 hover:border-neutral-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-neutral-800 file:text-zinc-200 file:hover:bg-neutral-600 file:cursor-pointer file:transition-colors shadow-sm">
+            <div class="flex items-center gap-4 bg-neutral-900/50 p-3 rounded-lg border border-neutral-700/50">
+                <div class="w-16 h-16 rounded-md bg-neutral-700 flex-shrink-0 overflow-hidden flex items-center justify-center border border-white/10 shadow-inner">
+                    <img id="edit-cover-preview" src="" alt="Cover Preview" class="w-full h-full object-cover hidden">
+                    <svg id="edit-cover-preview-fallback" class="w-8 h-8 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                </div>
+                <div class="flex-grow">
+                    <label for="edit-cover" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Cover Image</label>
+                    <input type="file" id="edit-cover" accept="image/*" class="mt-1 block w-full text-xs text-zinc-300 cursor-pointer bg-transparent outline-none focus:outline-none file:mr-3 file:py-1 file:px-2.5 file:border file:border-white/10 file:rounded-md file:text-xs file:font-semibold file:bg-neutral-800 file:text-zinc-200 file:hover:bg-neutral-700 file:cursor-pointer file:transition-colors">
+                </div>
             </div>
             
             <div class="flex justify-end space-x-3 pt-4 border-t border-neutral-700 mt-5">
@@ -46,7 +55,20 @@
         document.getElementById('edit-artist').value = song.Artist !== 'Unknown' ? song.Artist : '';
         document.getElementById('edit-album').value = song.Album !== 'Unknown' ? song.Album : '';
         document.getElementById('edit-year').value = song.Year !== 'Unknown' ? song.Year : '';
+        document.getElementById('edit-cover-art-data').value = song.CoverArt || '';
         document.getElementById('edit-cover').value = '';
+        
+        const previewImg = document.getElementById('edit-cover-preview');
+        const previewFallback = document.getElementById('edit-cover-preview-fallback');
+        if (song.CoverArt) {
+            previewImg.src = song.CoverArt;
+            previewImg.classList.remove('hidden');
+            previewFallback.classList.add('hidden');
+        } else {
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+            previewFallback.classList.remove('hidden');
+        }
         
         const modal = document.getElementById('editSongModal');
         modal.classList.remove('hidden');
@@ -58,6 +80,23 @@
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
+
+    document.getElementById('edit-cover').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const previewImg = document.getElementById('edit-cover-preview');
+        const previewFallback = document.getElementById('edit-cover-preview-fallback');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                previewImg.src = event.target.result;
+                previewImg.classList.remove('hidden');
+                previewFallback.classList.add('hidden');
+                // Since user chose a new file, clear the previous database/URL coverArt value
+                document.getElementById('edit-cover-art-data').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     document.getElementById('editSongForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -80,6 +119,10 @@
             };
             reader.readAsDataURL(coverFile);
         } else {
+            const coverArtData = document.getElementById('edit-cover-art-data').value;
+            if (coverArtData) {
+                updatedData.CoverArt = coverArtData;
+            }
             window.pywebview.api.update_song_metadata(updatedData);
             closeEditModal();
         }

@@ -12,6 +12,7 @@ window_size = {'width': 1280, 'height': 720}
 background = ""
 browser = "firefox"
 limit_downloads = "3"
+current_playlist = None
 
 
 if os.path.exists(db_path):
@@ -31,6 +32,7 @@ if os.path.exists(db_path):
                     window_size = {'width': data['window_width'], 'height': data['window_height']}
                 background = data['background_path'] if data['background_path'] else background
                 limit_downloads = data['limit_downloads'] if data['limit_downloads'] else limit_downloads
+                current_playlist = data['current_playlist'] if 'current_playlist' in data.keys() and data['current_playlist'] is not None else None
 
         except sqlite3.OperationalError:
             pass

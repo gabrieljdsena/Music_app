@@ -157,7 +157,7 @@
                     type="range" 
                     id="progressSlider" 
                     min="0" step="0.1" value="0"
-                    class="w-full h-1 bg-zinc-800 rounded-full cursor-pointer accent-orange-500 hover:accent-orange-400 outline-none border-none shadow-none focus:outline-none focus:ring-0 transition-all duration-300"
+                    class="w-full cursor-pointer outline-none border-none shadow-none focus:outline-none focus:ring-0"
                 >
                 <span class="text-xs text-zinc-500 font-medium font-mono" id="total_time">0:00</span>
             </div>
@@ -187,7 +187,7 @@
                 type="range" 
                 id="volumeSlider" 
                 min="0" max="1" step="0.01"
-                    class="w-20 sm:w-28 h-1 bg-zinc-800 rounded-full cursor-pointer accent-orange-500 hover:accent-orange-400 outline-none border-none shadow-none focus:outline-none focus:ring-0 transition-all duration-300"
+                class="w-20 sm:w-28 cursor-pointer outline-none border-none shadow-none focus:outline-none focus:ring-0"
             >
         </div>
     </div> <!-- FIX: Added missing closing div tag here -->
@@ -196,12 +196,37 @@
 
     // JS -> Python
 
+    window.isSeeking = false;
+
+    function updateSliderProgress(slider) {
+        if (!slider) return;
+        const min = parseFloat(slider.min) || 0;
+        const max = parseFloat(slider.max) || 100;
+        const val = parseFloat(slider.value) || 0;
+        const percent = max === min ? 0 : ((val - min) / (max - min)) * 100;
+        slider.style.setProperty('--range-percent', `${percent}%`);
+    }
+
+    document.addEventListener("input", function(e) {
+        if (e.target && (e.target.id === "volumeSlider" || e.target.id === "progressSlider")) {
+            updateSliderProgress(e.target);
+        }
+    });
+
     document.addEventListener("change", async function(e) {
         if (e.target && e.target.id === "volumeSlider") {
             await window.pywebview.api.volume_slider(e.target.value);
         }
         if (e.target && e.target.id === "progressSlider") {
-            await window.pywebview.api.progress_slider_click(e.target.value);
+            window.isSeeking = true;
+            try {
+                await window.pywebview.api.progress_slider_click(e.target.value);
+            } catch (err) {
+                console.error(err);
+            }
+            setTimeout(() => {
+                window.isSeeking = false;
+            }, 300);
         }
     });
 
@@ -397,6 +422,12 @@
 
         navigateTo("home");
         
+        // Initialize sliders visual state
+        const volumeSlider = document.getElementById("volumeSlider");
+        if (volumeSlider) updateSliderProgress(volumeSlider);
+        const progressSlider = document.getElementById("progressSlider");
+        if (progressSlider) updateSliderProgress(progressSlider);
+
         // Safely request Python to send the settings on startup
         if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.load_settings === 'function') {
             window.pywebview.api.load_settings();
@@ -480,8 +511,10 @@
                     const secs = Math.floor(pos % 60).toString().padStart(2, '0');
                     document.getElementById("current_time").innerText = `${mins}:${secs}`;
                     
-                    if (!isDraggingProgress) {
-                        document.getElementById("progressSlider").value = pos;
+                    if (!isDraggingProgress && !window.isSeeking) {
+                        const progressSlider = document.getElementById("progressSlider");
+                        progressSlider.value = pos;
+                        updateSliderProgress(progressSlider);
                     }
                     if (typeof window.updateHighlightedLine === 'function' && !document.getElementById("lyrics-container-view").classList.contains("hidden")) {
                         window.updateHighlightedLine(pos);
@@ -512,6 +545,7 @@
         const progressSlider = document.getElementById("progressSlider");
         progressSlider.max = duration;
         progressSlider.value = 0;
+        updateSliderProgress(progressSlider);
         startProgressTracking();
         if (typeof window.fetchLyricsForCurrentSong === 'function') {
             window.fetchLyricsForCurrentSong(data);
@@ -538,7 +572,9 @@
     };
 
     window.load_settings = function(volume, limit_downloads, background, path) {
-        document.getElementById("volumeSlider").value = parseFloat(volume);
+        const volumeSlider = document.getElementById("volumeSlider");
+        volumeSlider.value = parseFloat(volume);
+        updateSliderProgress(volumeSlider);
         window.limit_downloads = parseInt(limit_downloads) || 3;
         if(background){
             window.apply_background(background);
@@ -1043,7 +1079,8 @@
                 // Use playlist queue if we're in a playlist view with loaded songs
                 if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
                     if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
-                        await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs);
+                        const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
+                        await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs, playlistId);
                     }
                 } else {
                     if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
@@ -1093,7 +1130,7 @@
                                     const dataTransfer = new DataTransfer();
                                     dataTransfer.items.add(file);
                                     
-                                    const fileInput = document.getElementById('edit-cover-input') || document.querySelector('#edit-song-modal-container input[type="file"]');
+                                    const fileInput = document.getElementById('edit-cover');
                                     if (fileInput) {
                                         fileInput.files = dataTransfer.files;
                                         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1225,7 +1262,8 @@
                         // Use playlist queue if we're in a playlist view with loaded songs
                         if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
                             if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
-                                await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs);
+                                const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
+                                await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs, playlistId);
                             }
                         } else {
                             if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
