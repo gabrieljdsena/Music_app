@@ -253,12 +253,17 @@
         const playBtn = document.getElementById("playPauseBtn");
         const visualizers = document.querySelectorAll("#audio-visualizer, .list-visualizer");
         
+        // Also sync the playlist view play button if it exists
+        const pvPlayBtn = document.getElementById("pv-play-btn");
+        
         if (isPlaying) {
             playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
             visualizers.forEach(v => { v.classList.remove("w-0", "ml-0", "opacity-0"); v.classList.add("w-4", "ml-1", "opacity-100"); });
+            if (pvPlayBtn) pvPlayBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
         } else {
             playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>`;
             visualizers.forEach(v => { v.classList.remove("w-4", "ml-1", "opacity-100"); v.classList.add("w-0", "ml-0", "opacity-0"); });
+            if (pvPlayBtn) pvPlayBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>`;
         }
     }
 
@@ -352,6 +357,11 @@
         main.style.opacity = '0';
         
         setTimeout(async () => {
+            // Clear playlist context when navigating away from playlist_view
+            if (page !== "playlist_view") {
+                window.currentPlaylistSongs = [];
+            }
+
             try {
                 const response = await fetch(`./views/${page}.html`);
                 if (!response.ok) throw new Error(response.statusText);
@@ -369,7 +379,7 @@
             main.style.opacity = '1';
                 
             if (page === "home") {
-                if (window.pywebview && window.pywebview.api) {
+                if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
                     window.pywebview.api.send_song_list();
                 } else {
                     window.addEventListener('pywebviewready', function() {
@@ -388,7 +398,7 @@
         navigateTo("home");
         
         // Safely request Python to send the settings on startup
-        if (window.pywebview && window.pywebview.api) {
+        if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.load_settings === 'function') {
             window.pywebview.api.load_settings();
             if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
         } else {
@@ -980,6 +990,295 @@
             draggedItemIndex = null;
     });
 
+    // --- Global Song Row & Bento Context Menu Logic ---
+    let contextMenuDataPath = null;
+    
+    document.addEventListener("click", async function(e) {
+        const contextMenu = document.getElementById("bento-context-menu");
+        if (!contextMenu) return;
+
+        if (e.target.closest("#bento-next-to-queue-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            if (songPath) {
+                window.is_custom_queue = true;
+                window.queue_songs.unshift(songPath);
+                if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.next_to_queue) {
+                    window.pywebview.api.next_to_queue(songPath);
+                }
+                
+                if (typeof Notyf !== 'undefined') {
+                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                    notyf.success({ message: `<b>${songPath.Title}</b> will play next`, duration: 3000 });
+                }
+                contextMenu.classList.add("hidden");
+            }
+        } else if (e.target.closest("#bento-add-queue-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            if (songPath) {
+                window.is_custom_queue = true;
+                window.queue_songs.push(songPath);
+                if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.add_to_queue) {
+                    window.pywebview.api.add_to_queue(songPath);
+                }
+                
+                if (typeof Notyf !== 'undefined') {
+                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                    notyf.success({ message: `Added <b>${songPath.Title}</b> to Queue`, duration: 3000 });
+                }
+                contextMenu.classList.add("hidden");
+            }
+        } else if (e.target.closest("#bento-play-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            if (songPath) {
+                window.current_playing_song = songPath;
+                window.set_active_song_ui(songPath);
+                
+                // Use playlist queue if we're in a playlist view with loaded songs
+                if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+                        await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs);
+                    }
+                } else {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                        await window.pywebview.api.populate_queue(songPath);
+                    }
+                }
+                await window.play_button(songPath);
+                contextMenu.classList.add("hidden");
+            }
+        } else if (e.target.closest("#bento-search-metadata-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            contextMenu.classList.add("hidden");
+            
+            if (songPath) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Searching Metadata...',
+                        text: 'Please wait while we search iTunes for metadata.',
+                        allowOutsideClick: false,
+                        background: '#1a1a1a',
+                        color: '#f9fafb',
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                }
+
+                try {
+                    const metadata = await window.pywebview.api.search_itunes_metadata(songPath.Title, songPath.Artist);
+                    if (typeof Swal !== 'undefined') Swal.close();
+
+                    if (metadata) {
+                        const updatedSong = { ...songPath };
+                        if (metadata.title) updatedSong.Title = metadata.title;
+                        if (metadata.artist) updatedSong.Artist = metadata.artist;
+                        if (metadata.album) updatedSong.Album = metadata.album;
+                        if (metadata.year) updatedSong.Year = metadata.year;
+                        if (metadata.artwork) updatedSong.CoverArt = metadata.artwork;
+                        
+                        if (typeof window.openEditModal === 'function') window.openEditModal(updatedSong);
+
+                        if (metadata.artwork) {
+                            setTimeout(async () => {
+                                try {
+                                    const res = await fetch(metadata.artwork);
+                                    const blob = await res.blob();
+                                    const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
+                                    const dataTransfer = new DataTransfer();
+                                    dataTransfer.items.add(file);
+                                    
+                                    const fileInput = document.getElementById('edit-cover-input') || document.querySelector('#edit-song-modal-container input[type="file"]');
+                                    if (fileInput) {
+                                        fileInput.files = dataTransfer.files;
+                                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
+                                } catch (e) { console.error("Failed to set file input:", e); }
+                            }, 200);
+                        }
+                        if (typeof Notyf !== 'undefined') {
+                            const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                            notyf.success('Metadata found! Review and save changes.');
+                        }
+                    } else {
+                        if (typeof Notyf !== 'undefined') {
+                            const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                            notyf.error('No metadata found for this song.');
+                        }
+                        if (typeof window.openEditModal === 'function') window.openEditModal(songPath);
+                    }
+                } catch (err) {
+                    if (typeof Swal !== 'undefined') Swal.close();
+                    if (typeof Notyf !== 'undefined') {
+                        const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                        notyf.error('Error searching metadata.');
+                    }
+                    if (typeof window.openEditModal === 'function') window.openEditModal(songPath);
+                }
+            }
+        } else if (e.target.closest("#bento-edit-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            if (typeof window.openEditModal === 'function') window.openEditModal(songPath);
+            contextMenu.classList.add("hidden");
+        } else if (e.target.closest("#bento-add-playlist-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            if (songPath && window.openAddPlaylistModal) {
+                window.openAddPlaylistModal(songPath);
+            }
+            contextMenu.classList.add("hidden");
+        } else if (e.target.closest("#bento-delete-btn")) {
+            e.stopPropagation();
+            const songPath = contextMenuDataPath;
+            contextMenu.classList.add("hidden");
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You are about to permanently delete this song. This cannot be undone.",
+                    icon: 'warning',
+                    iconColor: '#f97316',
+                    background: '#1a1a1a',
+                    color: '#f9fafb',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f97316',
+                    cancelButtonColor: '#4b5563',
+                    confirmButtonText: 'Yes, delete it',
+                    cancelButtonText: 'Cancel',
+                    customClass: {
+                        popup: 'border border-gray-700 rounded-2xl shadow-2xl',
+                        confirmButton: 'font-semibold rounded-lg px-5 py-2.5',
+                        cancelButton: 'font-semibold rounded-lg px-5 py-2.5'
+                    }
+                }).then(async (result) => {
+                    if (result.isConfirmed && songPath) {
+                        if (window.pywebview && window.pywebview.api) {
+                            await window.pywebview.api.delete_song(songPath);
+                        }
+                        
+                        document.querySelectorAll('.song-row-container').forEach(container => {
+                            let cData = container._songData;
+                            if (!cData) {
+                                const raw = container.getAttribute("data-path");
+                                if (raw) {
+                                    try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch(e){}
+                                }
+                            }
+                            if (cData && cData.File === songPath.File) {
+                                container.style.transition = 'height 0.2s, opacity 0.2s';
+                                container.style.height = container.offsetHeight + 'px';
+                                container.style.opacity = '0';
+                                setTimeout(() => {
+                                    container.style.height = '0px';
+                                    setTimeout(() => container.remove(), 200);
+                                }, 10);
+                            }
+                        });
+
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'The song has been deleted successfully.',
+                            icon: 'success',
+                            iconColor: '#f97316',
+                            background: '#1f2937',
+                            color: '#f9fafb',
+                            confirmButtonColor: '#f97316',
+                            customClass: {
+                                popup: 'border border-gray-700 rounded-2xl shadow-2xl',
+                                confirmButton: 'font-semibold rounded-lg px-5 py-2.5'
+                            }
+                        });
+                    }
+                });
+            }
+        } else if (e.target.closest(".bento-btn")) {
+            e.stopPropagation();
+            const btn = e.target.closest(".bento-btn");
+            const row = btn.closest(".song-row");
+            const songPathStr = row.getAttribute("data-path");
+            if (songPathStr) {
+                try {
+                    contextMenuDataPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
+                } catch(err) { console.error("Failed to parse row song data"); }
+            }
+            
+            const buttonRect = btn.getBoundingClientRect();
+            contextMenu.classList.remove("hidden");
+            contextMenu.style.top = (buttonRect.bottom + 5) + "px";
+            contextMenu.style.left = (buttonRect.right - contextMenu.offsetWidth) + "px";
+        } else if (e.target.closest(".song-row")) {
+            const row = e.target.closest(".song-row");
+            if (!e.target.closest(".bento-btn")) {
+                const songPathStr = row.getAttribute("data-path");
+                if (songPathStr) {
+                    try {
+                        const songPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
+                        window.current_playing_song = songPath;
+                        window.set_active_song_ui(songPath);
+                        
+                        // Use playlist queue if we're in a playlist view with loaded songs
+                        if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
+                            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+                                await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs);
+                            }
+                        } else {
+                            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                                await window.pywebview.api.populate_queue(songPath);
+                            }
+                        }
+                        await window.play_button(songPath);
+                    } catch (err) {}
+                }
+            }
+            if (contextMenu && !contextMenu.classList.contains("hidden")) {
+                contextMenu.classList.add("hidden");
+            }
+        } else {
+            if (contextMenu && !contextMenu.classList.contains("hidden")) {
+                contextMenu.classList.add("hidden");
+            }
+        }
+    });
+
 </script>
+
+<!-- Persistent Bento Context Menu -->
+<div id="bento-context-menu" class="hidden fixed z-50 w-48 py-1 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl origin-top-right">
+    <button id="bento-play-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Play
+    </button>
+    <button id="bento-search-metadata-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        Search Metadata
+    </button>
+    <button id="bento-next-to-queue-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+        Play Next
+    </button>
+    <button id="bento-delete-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 text-red-400 hover:text-red-300">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        Delete
+    </button>
+    <button id="bento-edit-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        Edit Info
+    </button>
+    <button id="bento-add-queue-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
+        Add to queue
+    </button>
+    <button id="bento-add-playlist-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+        Add to Playlist
+    </button>
+</div>
+
 </body>
 </html>

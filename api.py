@@ -80,6 +80,30 @@ class Api:
                     window.update_queue_ui();
                 }}
             """)
+
+    def populate_queue_from_list(self, current_song, song_list):
+        """Populate the queue from an arbitrary list of songs (e.g. a playlist)."""
+        self.next_songs.clear()
+        self.fallback_to_general_list = False
+        self.prev_songs.clear()
+
+        found = False
+        for song in song_list:
+            if found:
+                self.next_songs.append(song)
+            elif song.get('File') == current_song.get('File'):
+                found = True
+            else:
+                self.prev_songs.append(song)
+                
+        if self._window:
+            self._window.evaluate_js(f"""
+                window.is_custom_queue = false;
+                window.queue_songs = {json.dumps(self.next_songs)};
+                if (typeof window.update_queue_ui === 'function') {{
+                    window.update_queue_ui();
+                }}
+            """)
             
     def jump_to_queue_index(self, index):
         if 0 <= index < len(self.next_songs):
@@ -301,44 +325,13 @@ class Api:
                 """)
             self.play_button(next_song)
         else:
-            # Fall back to playing the next consecutive song in the general list
-            if not self.fallback_to_general_list:
-                self.playing = False
-                self.pause_time = 0
-                self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
-                self.current_time_offset = 0
-                if self._window:
-                    self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
-                return
-
-            next_song = None
-            if getattr(self, 'shuffle', False) and self.song_list:
-                available_songs = [s for s in self.song_list if s.get('File') != self.current_filename]
-                if available_songs:
-                    next_song = random.choice(available_songs)
-                elif self.song_list:
-                    next_song = self.song_list[0]
-            elif self.current_filename and self.song_list:
-                for i, song in enumerate(self.song_list):
-                    if song.get('File') == self.current_filename:
-                        if i + 1 < len(self.song_list):
-                            next_song = self.song_list[i + 1]
-                        break
-            
-            if next_song:
-                if self.last_song and self.last_song.get('File'):
-                    self.prev_songs.append(self.last_song)
-                if self._window:
-                    self._window.evaluate_js(f"window.current_playing_song = {json.dumps(next_song)}; if (typeof window.set_active_song_ui === 'function') {{ window.set_active_song_ui(window.current_playing_song); }}")
-                self.play_button(next_song)
-            else:
-                # Reached the end of the queue and the end of the playlist, stop playing
-                self.playing = False
-                self.pause_time = 0
-                self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
-                self.current_time_offset = 0
-                if self._window:
-                    self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
+            # Queue is empty — stop playback
+            self.playing = False
+            self.pause_time = 0
+            self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
+            self.current_time_offset = 0
+            if self._window:
+                self._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
                     
     def play_prev(self):
         if self.prev_songs:
@@ -856,3 +849,81 @@ class Api:
         except Exception as e:
             print(f" [Python] Error loading playlist image: {str(e)}")
             return None
+
+    def update_playlist(self, playlist_id, data):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                fields = []
+                values = []
+                if "title" in data:
+                    fields.append("title = ?")
+                    values.append(data["title"])
+                if "description" in data:
+                    fields.append("description = ?")
+                    values.append(data["description"])
+                if "thumbnail" in data:
+                    fields.append("thumbnail = ?")
+                    values.append(data["thumbnail"])
+                if fields:
+                    values.append(playlist_id)
+                    conn.execute(f"UPDATE Playlists SET {', '.join(fields)} WHERE id = ?", values)
+            return True
+        except Exception as e:
+            print(f" [Python] Error updating playlist: {str(e)}")
+            return False
+
+    def pick_playlist_image(self):
+        import webview
+        if self._window:
+            result = self._window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=('Image Files (*.bmp;*.jpg;*.jpeg;*.gif;*.png)', 'All files (*.*)')
+            )
+            if result and len(result) > 0:
+                return self.get_local_image_base64(result[0])
+        return None
+
+    def get_song_playlists(self, song_file):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT playlist_id FROM Song_Playlist WHERE song_file = ?", (song_file,))
+                return [row[0] for row in cursor.fetchall()]
+        except Exception as e:
+            print(f" [Python] Error getting song playlists: {str(e)}")
+            return []
+
+    def update_song_playlists(self, song_file, song_title, playlist_ids):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # First ensure song exists in Songs table to satisfy foreign key constraint
+                conn.execute("INSERT OR IGNORE INTO Songs (file, title) VALUES (?, ?)", (song_file, song_title or song_file))
+                
+                # Delete existing associations
+                conn.execute("DELETE FROM Song_Playlist WHERE song_file = ?", (song_file,))
+                
+                # Insert new associations
+                for pid in playlist_ids:
+                    conn.execute("INSERT INTO Song_Playlist (song_file, playlist_id) VALUES (?, ?)", (song_file, pid))
+            return True
+        except Exception as e:
+            print(f" [Python] Error updating song playlists: {str(e)}")
+            return False
+
+    def get_playlist_songs(self, playlist_id):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT song_file FROM Song_Playlist WHERE playlist_id = ?", (playlist_id,))
+                song_files = [row[0] for row in cursor.fetchall()]
+                
+                # Fetch metadata for each song file
+                playlist_songs = []
+                for file_name in song_files:
+                    file_path = os.path.join(settings.path, file_name)
+                    if os.path.exists(file_path):
+                        song_data = self.get_song_metadata(file_path, file_name)
+                        playlist_songs.append(song_data)
+                return playlist_songs
+        except Exception as e:
+            print(f" [Python] Error loading playlist songs: {str(e)}")
+            return []

@@ -3,72 +3,276 @@
     <div class="flex-1 flex flex-col min-w-0 w-full h-full">
         <div class="max-w-5xl mx-auto w-full flex justify-end mb-6 px-6 sm:px-8 gap-3">
             <div class="relative group">
-                <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <input type="text" placeholder="Search..." id="txt_search" spellcheck="false" class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-900/40 hover:bg-zinc-800/40 focus:bg-zinc-900/80 backdrop-blur-xl border border-white/5 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
+                <input type="text" placeholder="Search..." id="txt_search" spellcheck="false"
+                    class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-900/40 hover:bg-zinc-800/40 focus:bg-zinc-900/80 backdrop-blur-xl border border-white/5 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
             </div>
         </div>
         <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10">
             <div id="table">
                 <!-- Header Row -->
-                <div id="table-header" class="grid grid-cols-[3fr_2fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5"> 
+                <div id="table-header"
+                    class="grid grid-cols-[3fr_2fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
                     <div class="cursor-pointer hover:text-zinc-300 transition-colors">Song</div>
                     <div class="cursor-pointer hover:text-zinc-300 transition-colors">Album</div>
                     <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right">Duration</div>
                     <div></div>
                 </div>
-        
+
                 <!-- Body Row -->
-                <div id="table-body" class="flex flex-col gap-1 pb-2"> 
-                    <!-- Content will be dynamically populated via Javascript -->
+                <div id="table-body" class="flex flex-col gap-1 pb-2">
+                    <!-- Loading placeholders -->
+                    <div
+                        class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-full"></div>
+                                <div class="h-3 bg-white/10 rounded w-2/3"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-32"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 100ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-4/5"></div>
+                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-24"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 200ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-5/6"></div>
+                                <div class="h-3 bg-white/10 rounded w-3/4"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-28"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 300ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-3/4"></div>
+                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-32"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 400ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-11/12"></div>
+                                <div class="h-3 bg-white/10 rounded w-2/3"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-20"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 500ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-4/5"></div>
+                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-24"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 600ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-full"></div>
+                                <div class="h-3 bg-white/10 rounded w-3/4"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-36"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 700ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-3/4"></div>
+                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-28"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 800ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-4/5"></div>
+                                <div class="h-3 bg-white/10 rounded w-2/3"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-32"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 900ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-5/6"></div>
+                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-24"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 1000ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-full"></div>
+                                <div class="h-3 bg-white/10 rounded w-3/4"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-28"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                        style="animation-delay: 1100ms">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
+                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                                <div class="h-4 bg-white/10 rounded w-3/4"></div>
+                                <div class="h-3 bg-white/10 rounded w-1/3"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="h-4 bg-white/10 rounded w-32"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="h-4 bg-white/10 rounded w-10"></div>
+                        </div>
+                        <div class="flex justify-end">
+                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Context Menu (Hidden by default) -->
-<div id="bento-context-menu" class="hidden fixed z-50 w-48 py-1 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl origin-top-right">
-    <button id="bento-play-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        Play
-    </button>
-    <button id="bento-search-metadata-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        Search Metadata
-    </button>
-    <button id="bento-next-to-queue-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-        Play Next
-    </button>
-    <button id="bento-delete-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 text-red-400 hover:text-red-300">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        Delete
-    </button>
-    <button id="bento-edit-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-        Edit Info
-    </button>
-    <button id="bento-add-queue-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path></svg>
-        Add to queue
-    </button>
-    <button id="bento-add-playlist-btn" class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
-        Add to Playlist
-    </button>
-</div>
+
 
 <div id="edit-song-modal-container"></div>
+<div id="add-playlist-modal-container"></div>
 
 <script>
-    window.generateSongRowHtml = function(song) {
+    window.generateSongRowHtml = function (song) {
         const durationSecs = Math.floor(song.Duration || 0);
         const minutes = Math.floor(durationSecs / 60);
         const seconds = (durationSecs % 60).toString().padStart(2, '0');
         const formattedDuration = `${minutes}:${seconds}`;
-        
+
         const coverArt = song.CoverArt
             ? `<img src="${song.CoverArt}" class="w-full h-full object-cover" alt="${song.Title}">`
             : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
@@ -78,7 +282,7 @@
         const isActive = currentFile && thisFile && (currentFile === thisFile);
         const activeClasses = isActive ? "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30" : "";
         const titleColor = isActive ? "text-orange-400" : "text-zinc-100";
-        
+
         const visualizerHtml = isActive ? `
             <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
                 <div class="visualizer-bar"></div>
@@ -131,7 +335,7 @@
                         const songData = JSON.parse(songDataStr);
                         container.innerHTML = window.generateSongRowHtml(songData);
                         container.setAttribute('data-rendered', 'true');
-                        
+
                         const cover = container.querySelector('.lazy-cover');
                         if (cover && window.lazyCoverObserver) {
                             window.lazyCoverObserver.observe(cover);
@@ -149,9 +353,9 @@
     }, { rootMargin: '300px' });
 
     // Helper function to guarantee only one active song UI at a time
-    window.set_active_song_ui = function(songData) {
+    window.set_active_song_ui = function (songData) {
         const activeClasses = ["bg-orange-500/10", "scale-[1.02]", "shadow-xl", "relative", "z-10", "ring-1", "ring-orange-500/30"];
-        
+
         document.querySelectorAll(".song-row").forEach(row => {
             row.classList.remove(...activeClasses);
             const title = row.querySelector(".song-title");
@@ -189,7 +393,7 @@
                             `);
                         }
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
         });
     };
@@ -202,7 +406,7 @@
         entries.forEach(entry => {
             const container = entry.target;
             const fileName = container.getAttribute('data-filename');
-            
+
             if (entry.isIntersecting) {
                 if (fileName && !container.hasAttribute('data-loaded')) {
                     // Store the fallback HTML if not already stored
@@ -210,17 +414,17 @@
                         container._fallbackHTML = container.innerHTML;
                         container.setAttribute('data-fallback', 'true');
                     }
-                    
+
                     // Debounce fetching: wait 150ms before asking Python to prevent IPC flooding
                     container._loadTimeout = setTimeout(() => {
                         container.setAttribute('data-loaded', 'true');
-                        
+
                         // Check JS memory cache first
                         if (window._coverCache.has(fileName)) {
                             container.innerHTML = `<img src="${window._coverCache.get(fileName)}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
                             return;
                         }
-                        
+
                         if (window.pywebview && window.pywebview.api) {
                             window.pywebview.api.get_cover_art_base64(fileName).then(base64 => {
                                 if (base64) {
@@ -230,7 +434,7 @@
                                         window._coverCache.delete(firstKey);
                                     }
                                     window._coverCache.set(fileName, base64);
-                                    
+
                                     if (container.hasAttribute('data-loaded')) {
                                         container.innerHTML = `<img src="${base64}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
                                     }
@@ -245,7 +449,7 @@
                     clearTimeout(container._loadTimeout);
                     container._loadTimeout = null;
                 }
-                
+
                 // Unload the image when it goes off screen to free up memory
                 if (container.hasAttribute('data-loaded')) {
                     container.removeAttribute('data-loaded');
@@ -257,13 +461,13 @@
         });
     }, { rootMargin: "100px" }); // Reduced margin to avoid loading too many off-screen elements
 
-    window.update_song_row_ui = function(oldFilename, newSongData) {
+    window.update_song_row_ui = function (oldFilename, newSongData) {
         document.querySelectorAll('.song-row-container').forEach(container => {
             let cData = container._songData;
             if (!cData) {
                 const raw = container.getAttribute("data-path");
                 if (raw) {
-                    try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch(e) {}
+                    try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch (e) { }
                 }
             }
             if (cData && cData.File === oldFilename) {
@@ -278,7 +482,7 @@
                 }
             }
         });
-        
+
         if (window._coverCache) {
             if (newSongData.CoverArt) {
                 if (newSongData.File !== oldFilename) window._coverCache.delete(oldFilename);
@@ -292,17 +496,17 @@
     };
 
     // Python -> JS
-    window.song_list = function(data) {
+    window.song_list = function (data) {
         if (window._coverCache) window._coverCache.clear(); // Clear cover cache on refresh
         let tableHtmlBuffer = "";
         data.forEach(song => {
             const songRow = `
             <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
             </div>`;
-            
+
             tableHtmlBuffer += songRow;
         });
-        
+
         const tableBody = document.getElementById("table-body");
         if (tableBody) {
             tableBody.innerHTML = tableHtmlBuffer;
@@ -315,20 +519,20 @@
 
     if (!window.homeEventHandlersAttached) {
         window.homeEventHandlersAttached = true;
-        
+
         let searchTimeout;
-        document.addEventListener("keyup", function(e) {
+        document.addEventListener("keyup", function (e) {
             if (e.target && e.target.id === "txt_search") {
                 clearTimeout(searchTimeout);
                 const value = e.target.value.toLowerCase();
-                
-                searchTimeout = setTimeout(function() {
+
+                searchTimeout = setTimeout(function () {
                     const containers = document.querySelectorAll("#table-body .song-row-container");
                     containers.forEach(container => {
                         const rawStr = container.getAttribute('data-path');
                         let songData = {};
                         if (rawStr) {
-                            try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch(err) {}
+                            try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch (err) { }
                         }
                         const title = (songData.Title || "").toLowerCase();
                         const artist = (songData.Artist || "").toLowerCase();
@@ -342,249 +546,29 @@
                 }, 150);
             }
         });
-        let contextMenuDataPath = null;
-        const contextMenu = document.getElementById("bento-context-menu");
 
-        document.addEventListener("click", async function(e) {
-            if (e.target.closest("#bento-next-to-queue-btn")) {
-                e.stopPropagation();
-                const songPath = contextMenuDataPath;
-                if (songPath) {
-                    window.is_custom_queue = true;
-                    window.queue_songs.unshift(songPath);
-                    if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
-                    
-                    if (window.pywebview && window.pywebview.api && window.pywebview.api.next_to_queue) {
-                        window.pywebview.api.next_to_queue(songPath);
-                    }
-                    
-                    if (typeof Notyf !== 'undefined') {
-                        const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                        notyf.success({ message: `<b>${songPath.Title}</b> will play next`, duration: 3000 });
-                    }
-                    contextMenu.classList.add("hidden");
-                }
-            } else if (e.target.closest("#bento-add-queue-btn")) {
-                e.stopPropagation();
-                const songPath = contextMenuDataPath;
-                if (songPath) {
-                    window.is_custom_queue = true;
-                    window.queue_songs.push(songPath);
-                    if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
-                    
-                    if (window.pywebview && window.pywebview.api && window.pywebview.api.add_to_queue) {
-                        window.pywebview.api.add_to_queue(songPath);
-                    }
-                    
-                    if (typeof Notyf !== 'undefined') {
-                        const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                        notyf.success({ message: `Added <b>${songPath.Title}</b> to Queue`, duration: 3000 });
-                    }
-                    contextMenu.classList.add("hidden");
-                }
-            } else if (e.target.closest("#bento-play-btn")) {
-                e.stopPropagation();
-                const songPath = contextMenuDataPath;
-                if (songPath) {
-                    window.current_playing_song = songPath;
-                    window.set_active_song_ui(songPath);
-                    
-                    if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
-                        await window.pywebview.api.populate_queue(songPath);
-                    }
-                    await window.play_button(songPath);
-                    contextMenu.classList.add("hidden");
-                }
-            } else if (e.target.closest("#bento-search-metadata-btn")) {
-                e.stopPropagation();
-                const songPath = contextMenuDataPath;
-                contextMenu.classList.add("hidden");
-                
-                if (songPath) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            title: 'Searching Metadata...',
-                            text: 'Please wait while we search iTunes for metadata.',
-                            allowOutsideClick: false,
-                            background: '#1a1a1a',
-                            color: '#f9fafb',
-                            didOpen: () => { Swal.showLoading(); }
-                        });
-                    }
-
-                    try {
-                        const metadata = await window.pywebview.api.search_itunes_metadata(songPath.Title, songPath.Artist);
-                        if (typeof Swal !== 'undefined') Swal.close();
-
-                        if (metadata) {
-                            const updatedSong = { ...songPath };
-                            if (metadata.title) updatedSong.Title = metadata.title;
-                            if (metadata.artist) updatedSong.Artist = metadata.artist;
-                            if (metadata.album) updatedSong.Album = metadata.album;
-                            if (metadata.year) updatedSong.Year = metadata.year;
-                            if (metadata.artwork) updatedSong.CoverArt = metadata.artwork;
-                            
-                            window.openEditModal(updatedSong);
-
-                            if (metadata.artwork) {
-                                setTimeout(async () => {
-                                    try {
-                                        const res = await fetch(metadata.artwork);
-                                        const blob = await res.blob();
-                                        const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
-                                        const dataTransfer = new DataTransfer();
-                                        dataTransfer.items.add(file);
-                                        
-                                        const fileInput = document.getElementById('edit-cover-input') || document.querySelector('#edit-song-modal-container input[type="file"]');
-                                        if (fileInput) {
-                                            fileInput.files = dataTransfer.files;
-                                            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                        }
-                                    } catch (e) { console.error("Failed to set file input:", e); }
-                                }, 200);
-                            }
-                            if (typeof Notyf !== 'undefined') {
-                                const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                                notyf.success('Metadata found! Review and save changes.');
-                            }
-                        } else {
-                            if (typeof Notyf !== 'undefined') {
-                                const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                                notyf.error('No metadata found for this song.');
-                            }
-                            window.openEditModal(songPath);
-                        }
-                    } catch (err) {
-                        if (typeof Swal !== 'undefined') Swal.close();
-                        if (typeof Notyf !== 'undefined') {
-                            const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                            notyf.error('Error searching metadata.');
-                        }
-                        window.openEditModal(songPath);
-                    }
-                }
-            } else if (e.target.closest("#bento-edit-btn")) {
-                e.stopPropagation();
-                const songPath = contextMenuDataPath;
-                window.openEditModal(songPath);
-                contextMenu.classList.add("hidden");
-            } else if (e.target.closest("#bento-delete-btn")) {
-                e.stopPropagation();
-                const songPath = contextMenuDataPath;
-                contextMenu.classList.add("hidden");
-                
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You are about to permanently delete this song. This cannot be undone.",
-                        icon: 'warning',
-                        iconColor: '#f97316',
-                        background: '#1a1a1a',
-                        color: '#f9fafb',
-                        showCancelButton: true,
-                        confirmButtonColor: '#f97316',
-                        cancelButtonColor: '#4b5563',
-                        confirmButtonText: 'Yes, delete it',
-                        cancelButtonText: 'Cancel',
-                        customClass: {
-                            popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                            confirmButton: 'font-semibold rounded-lg px-5 py-2.5',
-                            cancelButton: 'font-semibold rounded-lg px-5 py-2.5'
-                        }
-                    }).then(async (result) => {
-                        if (result.isConfirmed && songPath) {
-                            if (window.pywebview && window.pywebview.api) {
-                                await window.pywebview.api.delete_song(songPath);
-                            }
-                            
-                            document.querySelectorAll('.song-row-container').forEach(container => {
-                                let cData = container._songData;
-                                if (!cData) {
-                                    const raw = container.getAttribute("data-path");
-                                    if (raw) {
-                                        try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch(e){}
-                                    }
-                                }
-                                if (cData && cData.File === songPath.File) {
-                                    container.style.transition = 'height 0.2s, opacity 0.2s';
-                                    container.style.height = container.offsetHeight + 'px';
-                                    container.style.opacity = '0';
-                                    setTimeout(() => {
-                                        container.style.height = '0px';
-                                        setTimeout(() => container.remove(), 200);
-                                    }, 10);
-                                }
-                            });
-
-                            Swal.fire({
-                                title: 'Deleted!',
-                                text: 'The song has been deleted successfully.',
-                                icon: 'success',
-                                iconColor: '#f97316',
-                                background: '#1f2937',
-                                color: '#f9fafb',
-                                confirmButtonColor: '#f97316',
-                                customClass: {
-                                    popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                                    confirmButton: 'font-semibold rounded-lg px-5 py-2.5'
-                                }
-                            });
-                        }
-                    });
-                }
-            } else if (e.target.closest(".bento-btn")) {
-                e.stopPropagation();
-                const btn = e.target.closest(".bento-btn");
-                const row = btn.closest(".song-row");
-                const songPathStr = row.getAttribute("data-path");
-                if (songPathStr) {
-                    try {
-                        contextMenuDataPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
-                    } catch(err) { console.error("Failed to parse row song data"); }
-                }
-                
-                const buttonRect = btn.getBoundingClientRect();
-                contextMenu.classList.remove("hidden");
-                contextMenu.style.top = (buttonRect.bottom + 5) + "px";
-                contextMenu.style.left = (buttonRect.right - contextMenu.offsetWidth) + "px";
-            } else if (e.target.closest(".song-row")) {
-                const row = e.target.closest(".song-row");
-                if (!e.target.closest(".bento-btn")) {
-                    const songPathStr = row.getAttribute("data-path");
-                    if (songPathStr) {
-                        try {
-                            const songPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
-                            window.current_playing_song = songPath;
-                            window.set_active_song_ui(songPath);
-                            
-                            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
-                                await window.pywebview.api.populate_queue(songPath);
-                            }
-                            await window.play_button(songPath);
-                        } catch (err) {}
-                    }
-                }
-                if (contextMenu && !contextMenu.classList.contains("hidden")) {
-                    contextMenu.classList.add("hidden");
-                }
-            } else {
-                if (contextMenu && !contextMenu.classList.contains("hidden")) {
-                    contextMenu.classList.add("hidden");
-                }
-            }
-        });
     }
 
     fetch('modals/edit_song.html')
         .then(response => response.text())
         .then(html => {
             document.getElementById('edit-song-modal-container').innerHTML = html;
-            
+
             // Execute any script tags inside the fetched HTML (since innerHTML doesn't auto-run scripts)
             const scripts = document.getElementById('edit-song-modal-container').getElementsByTagName('script');
             for (let i = 0; i < scripts.length; i++) {
                 window.eval(scripts[i].innerText);
             }
         }).catch(err => console.error('Failed to load modal:', err));
+
+    fetch('modals/add_playlist.html')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('add-playlist-modal-container').innerHTML = html;
+            const scripts = document.getElementById('add-playlist-modal-container').getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                window.eval(scripts[i].innerText);
+            }
+        }).catch(err => console.error('Failed to load add_playlist modal:', err));
 
 </script>
