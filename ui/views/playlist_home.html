@@ -96,26 +96,37 @@
             const reader = new FileReader();
             reader.onload = (event) => {
                 data.Cover = event.target.result;
-                window.pywebview.api.new_playlist(data);
-                closePlaylistModal();
+                window.pywebview.api.new_playlist(data).then(() => {
+                    closePlaylistModal();
+                    if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
+                    reloadPlaylistsGrid();
+                });
             };
             reader.readAsDataURL(coverFile);
         } else {
-            window.pywebview.api.new_playlist(data);
-            closePlaylistModal();
+            window.pywebview.api.new_playlist(data).then(() => {
+                closePlaylistModal();
+                if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
+                reloadPlaylistsGrid();
+            });
         }
     });
 
-
-    (async () => {
+    async function reloadPlaylistsGrid() {
         const gridBody = document.getElementById("playlists-grid");
-        const list = await getPlaylists();
         if (gridBody) {
+            // Clear current cards to prevent stacking (keeping the initial Add card)
+            const cards = gridBody.querySelectorAll('.playlist-card');
+            cards.forEach(card => card.remove());
+            
+            const list = await getPlaylists();
             list.forEach(playlist => {
                 gridBody.insertAdjacentHTML('beforeend', generatePlaylistRowHtml(playlist));
             });
         }
-    })();
+    }
+
+    reloadPlaylistsGrid();
 
     
     async function getPlaylists(current_song) {
@@ -135,11 +146,15 @@
                         </svg>`
         }
 
+        // Create a lightweight version without the base64 thumbnail to save DOM RAM
+        const slimPlaylist = {
+            id: playlist.id,
+            title: playlist.title || playlist.Title,
+            description: playlist.description || playlist.Description
+        };
 
         return `
-        <div class="group relative aspect-square rounded-xl overflow-hidden bg-zinc-800/40 border border-white/5 hover:border-orange-500/50 hover:bg-zinc-800/60 transition-all duration-300 cursor-pointer shadow-lg">
-            
-            <input type='hidden' id='playlist-id'>${playlist.id}</input>
+        <div class="playlist-card group relative aspect-square rounded-xl overflow-hidden bg-zinc-800/40 border border-white/5 hover:border-orange-500/50 hover:bg-zinc-800/60 transition-all duration-300 cursor-pointer shadow-lg" data-playlist="${encodeURIComponent(JSON.stringify(slimPlaylist))}">
             <!-- Icon Placeholder -->
             <div class="absolute inset-0 flex items-center justify-center text-zinc-600 group-hover:text-orange-400/80 transition-all duration-300 group-hover:scale-110">
                 ${imgHtml}
@@ -161,5 +176,17 @@
             </div>
         </div>`;
     }
+
+    document.getElementById("playlists-grid").addEventListener("click", function(e) {
+        const card = e.target.closest(".playlist-card");
+        if (card) {
+            e.preventDefault();
+            const playlistDataStr = card.getAttribute("data-playlist");
+            if (playlistDataStr) {
+                window.currentPlaylist = JSON.parse(decodeURIComponent(playlistDataStr));
+                navigateTo("playlist_view");
+            }
+        }
+    });
 
 </script>

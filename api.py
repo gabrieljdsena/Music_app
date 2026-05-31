@@ -844,3 +844,15 @@ class Api:
         except Exception as e:
             print(f" [Python] Error loading playlists: {str(e)}")
             return
+        
+    def getImage(self, id):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                query = "SELECT thumbnail FROM Playlists WHERE id = ?"
+                cursor = conn.execute(query, (id,))
+                row = cursor.fetchone()
+                if row:
+                    return row[0]
+        except Exception as e:
+            print(f" [Python] Error loading playlist image: {str(e)}")
+            return None

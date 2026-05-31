@@ -34,7 +34,7 @@
                     </div>
                     <span class="nav-text text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-400 tracking-wide truncate">Hathor</span>
                 </div>
-                <button class="text-zinc-500 hover:text-orange-400 p-1.5 rounded-xl hover:bg-white/10 transition-all duration-300 flex-shrink-0 outline-none" id="sidebar-toggle">
+                <button class="text-zinc-500 hover:text-orange-400 p-1.5 rounded-xl hover:bg-white/10 transition-all duration-300 flex-shrink-0 outline-none hover:cursor-pointer" id="sidebar-toggle">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 transition-transform duration-300 ease-in-out">
                         <path d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" />
                     </svg>
@@ -63,8 +63,16 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-[.active-nav]:scale-110 group-hover:text-orange-400 group-[.active-nav]:text-orange-400">
                         <path d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                     </svg>
-                    <span class="nav-text font-medium tracking-wide">Playlists</span>
+                    <span class="nav-text font-medium tracking-wide flex-grow text-left">Playlists</span>
+                    <button class="nav-text p-1 hover:cursor-pointer hover:text-white transition-colors focus:outline-none ml-auto" id="toggle-playlists-submenu">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="hover:orange-400 w-5 h-5 transition-transform duration-300 -rotate-180" id="playlists-chevron">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
                 </a>
+                <div id="playlists-submenu" class="flex flex-col gap-1 pl-6 pr-2 transition-all duration-300 max-h-48 overflow-y-auto custom-scrollbar">
+                    
+                </div>
                 <a href="#" data-target="settings" class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white group-[.active-nav]:text-white group-[.active-nav]:bg-orange-500/10 hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden mt-auto" title="Settings">
                     <div class="nav-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 group-[.active-nav]:scale-y-100 transition-transform duration-300 origin-center"></div>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-[.active-nav]:scale-110 group-hover:text-orange-400 group-[.active-nav]:text-orange-400">
@@ -313,6 +321,12 @@
         document.getElementById("brand-container").classList.add("hidden");
         const header = document.getElementById("sidebar-header");
         header.classList.remove("justify-between"); header.classList.add("justify-center");
+
+        const submenu = document.getElementById("playlists-submenu");
+        if (submenu) {
+            submenu.classList.remove("pl-6", "pr-2");
+            submenu.classList.add("px-0");
+        }
     } 
 
     function showSidebar(){
@@ -323,6 +337,12 @@
         document.getElementById("brand-container").classList.remove("hidden");
         const header = document.getElementById("sidebar-header");
         header.classList.remove("justify-center"); header.classList.add("justify-between");
+
+        const submenu = document.getElementById("playlists-submenu");
+        if (submenu) {
+            submenu.classList.remove("px-0");
+            submenu.classList.add("pl-6", "pr-2");
+        }
     } 
 
     // --- Dynamic Content Routing ---
@@ -370,15 +390,58 @@
         // Safely request Python to send the settings on startup
         if (window.pywebview && window.pywebview.api) {
             window.pywebview.api.load_settings();
+            if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
         } else {
             window.addEventListener('pywebviewready', function() {
                 window.pywebview.api.load_settings();
+                if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
             }, { once: true });
         }
     });
 
     let progressTimer = null;
     let isDraggingProgress = false;
+
+    window.loadPlaylistsToSidebar = async function() {
+        const submenu = document.getElementById("playlists-submenu");
+        if (!submenu) return;
+
+        const isSidebarHidden = document.getElementById("sidebar").classList.contains("w-20");
+        
+        try {
+            const playlists = await window.pywebview.api.load_playlists();
+            submenu.innerHTML = "";
+            if (playlists && playlists.length > 0) {
+                playlists.forEach(playlist => {
+                    const el = document.createElement("a");
+                    el.href = "#";
+                    el.className = "text-sm text-zinc-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors truncate flex items-center gap-3";
+                    
+                    let imgHtml;
+                    if(playlist.thumbnail) {
+                        imgHtml = `<img src="${playlist.thumbnail}" alt="${playlist.title}" class="w-8 h-8 object-cover rounded-md flex-shrink-0">`;
+                    } else {
+                        imgHtml = `<div class="w-8 h-8 rounded-md bg-zinc-800 flex items-center justify-center flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg></div>`;
+                    }
+                    
+                    const textHidden = isSidebarHidden ? "hidden" : "";
+                    el.innerHTML = `${imgHtml}<span class="nav-text truncate ${textHidden}">${playlist.title}</span>`;
+                    el.title = playlist.title;
+                    el.onclick = function(e) {
+                        e.preventDefault();
+                        window.currentPlaylist = playlist;
+                        navigateTo("playlist_view");
+                    };
+                    submenu.appendChild(el);
+                });
+            } else {
+                const textHidden = isSidebarHidden ? "hidden" : "";
+                submenu.innerHTML = `<span class='nav-text text-xs text-zinc-500 p-2 ${textHidden}'>No playlists</span>`;
+            }
+        } catch (e) {
+            console.error("Failed to load playlists", e);
+        }
+    };
 
     // Prevent UI jumps if the user grabs the slider (useful when you add seeking later)
     document.addEventListener("mousedown", function(e) {
@@ -724,6 +787,26 @@
 
     // --- Global Click Event Delegation ---
     document.addEventListener("click", async function(e) {
+        // Toggle playlists submenu
+        if (e.target.closest("#toggle-playlists-submenu")) {
+            e.preventDefault();
+            const submenu = document.getElementById("playlists-submenu");
+            const chevron = document.getElementById("playlists-chevron");
+            if (submenu.classList.contains("hidden")) {
+                submenu.classList.remove("hidden");
+                submenu.classList.add("flex");
+                chevron.classList.add("-rotate-180");
+                if (typeof window.loadPlaylistsToSidebar === 'function') {
+                    window.loadPlaylistsToSidebar();
+                }
+            } else {
+                submenu.classList.add("hidden");
+                submenu.classList.remove("flex");
+                chevron.classList.remove("-rotate-180");
+            }
+            return; // Skip main nav routing logic
+        }
+
         // Handle nav link clicks
         const navLink = e.target.closest(".nav-link");
         if (navLink) {

@@ -98,4 +98,4 @@ def on_start(window):
 
 if __name__ == '__main__':
     window.events.resized += on_resized
-    webview.start(on_start, window, debug=False)
+    webview.start(on_start, window, debug=True)
