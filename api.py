@@ -279,6 +279,11 @@ class Api:
             try:
                 with sqlite3.connect(self.db_path) as conn:
                     conn.execute("UPDATE Settings SET current_song = ?", (self.current_filename,))
+                    # Record listen history (skip when just restoring session on app open)
+                    if not opening:
+                        conn.execute("INSERT INTO Music_History (song_file) VALUES (?)", (self.current_filename,))
+                        if self.current_playlist_id is not None:
+                            conn.execute("INSERT INTO Playlist_History (playlist_id) VALUES (?)", (self.current_playlist_id,))
             except Exception as e:
                 print(f" [Python] Database error: {e}")
             
@@ -763,6 +768,24 @@ class Api:
             print(f" [Python] Database error: {e}")
 
     def get_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
+        # 1. Check local cache first (enables offline lyrics)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute(
+                    "SELECT synced_lyrics, plain_lyrics FROM Lyrics WHERE track_name = ? AND artist_name = ?",
+                    (track_name, artist_name)
+                )
+                row = cursor.fetchone()
+                if row:
+                    synced, plain = row[0], row[1]
+                    if kks:
+                        synced = self.romanize_text(synced, is_lrc=True) if synced else None
+                        plain = self.romanize_text(plain, is_lrc=False) if plain else None
+                    return {"synced": synced, "plain": plain}
+        except Exception as e:
+            print(f" [Python] Lyrics cache read error: {e}")
+
+        # 2. Fetch from lrclib.net on cache miss
         base_url = "https://lrclib.net/api/get"
         
         # Build query parameters
@@ -786,10 +809,20 @@ class Api:
                     
                     synced = data.get("syncedLyrics")
                     plain = data.get("plainLyrics")
+
+                    # 3. Cache the raw (un-romanized) lyrics for future offline use
+                    try:
+                        with sqlite3.connect(self.db_path) as conn:
+                            conn.execute(
+                                "INSERT OR REPLACE INTO Lyrics (track_name, artist_name, synced_lyrics, plain_lyrics) VALUES (?, ?, ?, ?)",
+                                (track_name, artist_name, synced, plain)
+                            )
+                    except Exception as cache_err:
+                        print(f" [Python] Lyrics cache write error: {cache_err}")
                     
                     if kks:
-                        synced = self.romanize_text(synced, is_lrc=True)
-                        plain = self.romanize_text(plain, is_lrc=False)
+                        synced = self.romanize_text(synced, is_lrc=True) if synced else None
+                        plain = self.romanize_text(plain, is_lrc=False) if plain else None
 
                     return {
                         "synced": synced,

@@ -35,5 +35,26 @@ create table if not exists Settings(
     FOREIGN KEY (current_song) REFERENCES Songs(file)
 );
 
+create table if not exists Lyrics(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    song_file varchar(255) not null,
+    lyrics text,
+    FOREIGN KEY (song_file) REFERENCES Songs(file)
+);
+
+create table if not exists Music_History(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    song_file varchar(255) not null,
+    date_played datetime default CURRENT_TIMESTAMP,
+    FOREIGN KEY (song_file) REFERENCES Songs(file)
+);
+
+create table if not exists Playlist_History(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    playlist_id bigint not null,
+    date_played datetime default CURRENT_TIMESTAMP,
+    FOREIGN KEY (playlist_id) REFERENCES Playlists(id)
+);
+
 INSERT OR IGNORE INTO Settings(id,current_song, limit_downloads, current_playlist, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path, browser)
 values (1,null,null,null,null,null,null,null,null,null,null,null)
