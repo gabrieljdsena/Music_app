@@ -38,6 +38,7 @@ class Api:
         self.fallback_to_general_list = True
         self.pause_time = 0
         self.shuffle = False
+        self.repeat = False
 
         #queue
         self.song_list = []
@@ -334,7 +335,16 @@ class Api:
             
         return self.current_time_offset + (pos / 1000.0)
     
+    def toggle_repeat(self):
+        self.repeat = not self.repeat
+        return self.repeat
+
     def play_next(self):
+        # Repeat current song if repeat mode is on
+        if self.repeat and self.last_song and self.last_song.get('File'):
+            self.play_button(self.last_song)
+            return
+
         if self.next_songs:
             next_song = self.next_songs.pop(0)
             if self.last_song and self.last_song.get('File'):
@@ -768,22 +778,28 @@ class Api:
             print(f" [Python] Database error: {e}")
 
     def get_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
+        # Use current filename as cache key
+        song_file = self.current_filename
+
         # 1. Check local cache first (enables offline lyrics)
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute(
-                    "SELECT synced_lyrics, plain_lyrics FROM Lyrics WHERE track_name = ? AND artist_name = ?",
-                    (track_name, artist_name)
-                )
-                row = cursor.fetchone()
-                if row:
-                    synced, plain = row[0], row[1]
-                    if kks:
-                        synced = self.romanize_text(synced, is_lrc=True) if synced else None
-                        plain = self.romanize_text(plain, is_lrc=False) if plain else None
-                    return {"synced": synced, "plain": plain}
-        except Exception as e:
-            print(f" [Python] Lyrics cache read error: {e}")
+        if song_file:
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.execute(
+                        "SELECT lyrics FROM Lyrics WHERE song_file = ?",
+                        (song_file,)
+                    )
+                    row = cursor.fetchone()
+                    if row and row[0]:
+                        cached = json.loads(row[0])
+                        synced = cached.get("synced")
+                        plain = cached.get("plain")
+                        if kks:
+                            synced = self.romanize_text(synced, is_lrc=True) if synced else None
+                            plain = self.romanize_text(plain, is_lrc=False) if plain else None
+                        return {"synced": synced, "plain": plain}
+            except Exception as e:
+                print(f" [Python] Lyrics cache read error: {e}")
 
         # 2. Fetch from lrclib.net on cache miss
         base_url = "https://lrclib.net/api/get"
@@ -811,14 +827,16 @@ class Api:
                     plain = data.get("plainLyrics")
 
                     # 3. Cache the raw (un-romanized) lyrics for future offline use
-                    try:
-                        with sqlite3.connect(self.db_path) as conn:
-                            conn.execute(
-                                "INSERT OR REPLACE INTO Lyrics (track_name, artist_name, synced_lyrics, plain_lyrics) VALUES (?, ?, ?, ?)",
-                                (track_name, artist_name, synced, plain)
-                            )
-                    except Exception as cache_err:
-                        print(f" [Python] Lyrics cache write error: {cache_err}")
+                    if song_file:
+                        try:
+                            lyrics_json = json.dumps({"synced": synced, "plain": plain})
+                            with sqlite3.connect(self.db_path) as conn:
+                                conn.execute(
+                                    "INSERT OR REPLACE INTO Lyrics (song_file, lyrics) VALUES (?, ?)",
+                                    (song_file, lyrics_json)
+                                )
+                        except Exception as cache_err:
+                            print(f" [Python] Lyrics cache write error: {cache_err}")
                     
                     if kks:
                         synced = self.romanize_text(synced, is_lrc=True) if synced else None
