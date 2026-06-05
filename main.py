@@ -2,6 +2,9 @@ import os
 import sys
 import subprocess
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 print(" [Dev] Compiling Tailwind CSS...")
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,6 +19,7 @@ import pygame
 import monitor
 import settings
 from api import Api
+from sync import DatabaseSync
 
 
 # 1. Setup paths
@@ -86,6 +90,14 @@ def on_resized(width, height):
     resize_timer = threading.Timer(0.4, save_window_size, args=(width, height))
     resize_timer.start()
 
+# 5. Setup PostgreSQL sync
+db_sync = None
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    db_sync = DatabaseSync(db_path, DATABASE_URL)
+else:
+    print(" [Sync] No DATABASE_URL found in .env, sync disabled.")
+
 def on_start(window):
     pygame.init()
     pygame.mixer.init()
@@ -95,6 +107,10 @@ def on_start(window):
     #monitor_thread.start()
     
     api.load_current_song()
+    
+    # Start background PostgreSQL sync
+    if db_sync:
+        db_sync.start()
 
 if __name__ == '__main__':
     window.events.resized += on_resized

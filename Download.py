@@ -86,9 +86,20 @@ class MusicDownloader:
             
             if progress_callback:
                 progress_callback({'status': 'finished_all'})
+
+            # Build the final filename after metadata rename
+            final_title = metadata.get('title', info.get('title', 'Unknown'))
+            final_filename = f"{final_title}.mp3"
+            source_url = info.get('webpage_url') or info.get('original_url') or (search if isinstance(search, str) and search.startswith('http') else None)
                 
             print(f" [Python] Download complete with metadata: {metadata}")
-            return "Download successful"
+            return {
+                "status": "success",
+                "filename": final_filename,
+                "title": final_title,
+                "artist": metadata.get('artist', ''),
+                "source_url": source_url
+            }
             
         except Exception as e:
             print(f" [Python] Error: {str(e)}")

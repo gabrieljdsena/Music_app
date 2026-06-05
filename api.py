@@ -534,7 +534,18 @@ class Api:
                 self._window.evaluate_js(f"if (typeof update_download_progress === 'function') update_download_progress({safe_data}, 100, 'Done!');")
                 
         try:
-            return self.downloader.download_song(data, progress_callback)
+            result = self.downloader.download_song(data, progress_callback)
+            # Save downloaded song to the Songs table
+            if isinstance(result, dict) and result.get("status") == "success":
+                try:
+                    with sqlite3.connect(self.db_path) as conn:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO Songs (file, downloaded_link, title, artist) VALUES (?, ?, ?, ?)",
+                            (result["filename"], result.get("source_url"), result["title"], result.get("artist"))
+                        )
+                except Exception as db_err:
+                    print(f" [Python] DB error saving download: {db_err}")
+            return result
         except Exception as e:
             print(f" [Python] Error: {e}")
             return f"Error: {e}"
@@ -738,6 +749,17 @@ class Api:
                 self._window.evaluate_js(f"if (typeof window.update_song_row_ui === 'function') window.update_song_row_ui({json.dumps(filename)}, {safe_updated});")
                 self._window.evaluate_js(f"window.queue_songs = {json.dumps(getattr(self, 'next_songs', []))}; if (typeof window.update_queue_ui === 'function') window.update_queue_ui();")
 
+            # Sync the Songs table with the edited metadata
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    if new_file_name != filename:
+                        conn.execute("UPDATE Songs SET file = ?, title = ?, artist = ? WHERE file = ?",
+                            (new_file_name, song_data.get('Title', ''), song_data.get('Artist', ''), filename))
+                    else:
+                        conn.execute("UPDATE Songs SET title = ?, artist = ? WHERE file = ?",
+                            (song_data.get('Title', ''), song_data.get('Artist', ''), filename))
+            except Exception as e:
+                print(f" [Python] DB error updating song: {e}")
             return True
         except Exception as e:
             print(f" [Python] Error updating metadata: {str(e)}")

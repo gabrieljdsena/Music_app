@@ -1,7 +1,8 @@
 create table if not exists Songs(
     file varchar(255) PRIMARY KEY,
     downloaded_link varchar(255) null,
-    title varchar(255) not null
+    title varchar(255) not null,
+    artist varchar(255) null
 );
 
 create table if not exists Playlists(
@@ -55,6 +56,7 @@ create table if not exists Playlist_History(
     date_played datetime default CURRENT_TIMESTAMP,
     FOREIGN KEY (playlist_id) REFERENCES Playlists(id)
 );
+
 
 INSERT OR IGNORE INTO Settings(id,current_song, limit_downloads, current_playlist, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path, browser)
 values (1,null,null,null,null,null,null,null,null,null,null,null)
