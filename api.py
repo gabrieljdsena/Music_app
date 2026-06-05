@@ -597,6 +597,44 @@ class Api:
         safe_path = json.dumps(settings.path)
         self._window.evaluate_js(f"if (typeof window.load_settings === 'function') window.load_settings({settings.volume}, {settings.limit_downloads}, {safe_bg}, {safe_path});")
 
+    def sync_local_songs_to_db(self):
+        """Iterate over the local music folder and ensure all songs exist in the database."""
+        path = Path(settings.path)
+        if not path.exists():
+            return "Folder does not exist."
+            
+        files = [f.name for f in path.iterdir() if f.is_file() and f.suffix.lower() == '.mp3']
+        added_count = 0
+        updated_count = 0
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                for file in files:
+                    file_path = str(path / file)
+                    song_data = self.get_song_metadata(file_path, file)
+                    
+                    title = song_data.get('Title', file.replace('.mp3', ''))
+                    artist = song_data.get('Artist', '')
+                    if artist == 'Unknown':
+                        artist = ''
+                        
+                    # Check if exists
+                    cursor = conn.execute("SELECT title, artist FROM Songs WHERE file = ?", (file,))
+                    row = cursor.fetchone()
+                    
+                    if row:
+                        if row[0] != title or row[1] != artist:
+                            conn.execute("UPDATE Songs SET title = ?, artist = ? WHERE file = ?", (title, artist, file))
+                            updated_count += 1
+                    else:
+                        conn.execute("INSERT INTO Songs (file, title, artist) VALUES (?, ?, ?)", (file, title, artist))
+                        added_count += 1
+                        
+            return f"Sync complete: {added_count} added, {updated_count} updated."
+        except Exception as e:
+            print(f" [Python] Sync error: {e}")
+            return f"Error: {str(e)}"
+
     def delete_song(self, song_data):
         filename = song_data.get('File')
         total_path = os.path.join(settings.path, filename)

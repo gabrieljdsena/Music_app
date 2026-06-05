@@ -61,7 +61,6 @@ class DatabaseSync:
         """Get or reconnect the PostgreSQL connection."""
         if self._pg_conn is None or self._pg_conn.closed:
             self._pg_conn = psycopg2.connect(self.pg_url)
-            self._pg_conn.autocommit = True
         return self._pg_conn
 
     def _init_pg_schema(self):
@@ -70,6 +69,7 @@ class DatabaseSync:
             conn = self._get_pg_conn()
             with conn.cursor() as cur:
                 cur.execute(PG_SCHEMA)
+            conn.commit()
             print(" [Sync] PostgreSQL schema initialized.")
         except Exception as e:
             print(f" [Sync] Failed to init PG schema: {e}")
@@ -179,7 +179,6 @@ class DatabaseSync:
         try:
             sqlite_conn = sqlite3.connect(self.sqlite_path)
             pg_conn = self._get_pg_conn()
-            pg_conn.autocommit = False
 
             self._sync_songs(sqlite_conn, pg_conn)
             self._sync_playlists(sqlite_conn, pg_conn)
