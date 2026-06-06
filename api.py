@@ -588,10 +588,25 @@ class Api:
     def send_song_list(self):
         path = Path(settings.path)
         files = [f.name for f in path.iterdir() if f.is_file() and f.suffix.lower() == '.mp3']
+        
+        # Build a lookup of date_download from the database
+        date_lookup = {}
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT file, date_download FROM Songs")
+                for row in cursor.fetchall():
+                    if row[1]:
+                        date_lookup[row[0]] = row[1].replace(' ', 'T') + 'Z' if 'T' not in str(row[1]) else str(row[1])
+                    else:
+                        date_lookup[row[0]] = None
+        except Exception as e:
+            print(f" [Python] Error fetching date_download: {e}")
+        
         self.song_list = []
         for file in files:
             file_path = str(path / file)
             song_data = self.get_song_metadata(file_path, file)
+            song_data['DateDownload'] = date_lookup.get(file, None)
             self.song_list.append(song_data)
         self._window.evaluate_js(f"song_list({json.dumps(self.song_list)})")
     

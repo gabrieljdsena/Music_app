@@ -106,10 +106,14 @@
                         </svg>
                     </button>
                     <!-- Dropdown -->
-                    <div id="pv-options-dropdown" class="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-xl shadow-2xl border border-white/10 opacity-0 pointer-events-none transition-all duration-200 transform origin-top-right scale-95 z-50 overflow-hidden">
-                        <button onclick="deleteCurrentPlaylist()" class="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-2 hover:cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    <div id="pv-options-dropdown"
+                        class="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-xl shadow-2xl border border-white/10 opacity-0 pointer-events-none transition-all duration-200 transform origin-top-right scale-95 z-50 overflow-hidden">
+                        <button onclick="deleteCurrentPlaylist()"
+                            class="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-2 hover:cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                             </svg>
                             Delete Playlist
                         </button>
@@ -120,7 +124,8 @@
     </div>
 
     <!-- Search Bar (Glassmorphism) -->
-    <div class="sticky top-0 z-40 backdrop-blur-2xl bg-zinc-900/20 border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 py-4 rounded-2xl flex justify-end items-center mb-2">
+    <div
+        class="sticky top-0 z-40 backdrop-blur-2xl bg-zinc-900/20 border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 py-4 rounded-2xl flex justify-end items-center mb-2">
         <div class="relative group w-full flex justify-end">
             <div class="relative w-full sm:w-auto">
                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -137,12 +142,20 @@
 
     <!-- Controls & Table Placeholder -->
     <div class="flex flex-col gap-4">
-        <div
-            class="grid grid-cols-[3fr_2fr_1.5fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors">Song</div>
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors">Album</div>
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors">Date Added</div>
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right">Duration</div>
+        <div id="pv-table-header"
+            class="grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                data-sort-key="Title" onclick="window._pvSortColumn('Title')">Song <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                data-sort-key="Album" onclick="window._pvSortColumn('Album')">Album <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                data-sort-key="Duration" onclick="window._pvSortColumn('Duration')">Duration <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                data-sort-key="DateAdded" onclick="window._pvSortColumn('DateAdded')">Date Added <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
             <div></div>
         </div>
 
@@ -410,35 +423,8 @@
             try {
                 const songs = await window.pywebview.api.get_playlist_songs(playlistId);
                 window.currentPlaylistSongs = songs || [];
-                const container = document.getElementById("pv-songs-container");
-                if (container) {
-                    if (songs && songs.length > 0) {
-                        let htmlBuffer = "";
-                        songs.forEach(song => {
-                            htmlBuffer += `
-                            <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
-                            </div>`;
-                        });
-                        container.innerHTML = htmlBuffer;
-
-                        const containers = container.querySelectorAll(".song-row-container");
-                        containers.forEach(c => {
-                            if (window.lazyRowObserver) {
-                                window.lazyRowObserver.observe(c);
-                            }
-                        });
-                    } else {
-                        container.innerHTML = `
-                            <div class="py-16 flex flex-col items-center justify-center text-center opacity-70">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-zinc-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-                                </svg>
-                                <p class="text-zinc-400 font-medium text-lg">It's a bit quiet here</p>
-                                <p class="text-sm text-zinc-500 mt-2 max-w-md">Start adding songs to this playlist from your library by right-clicking a song and choosing 'Add to Playlist'.</p>
-                            </div>
-                        `;
-                    }
-                }
+                window._pvSongsData = songs || [];
+                window._pvRenderSorted();
             } catch (e) {
                 console.error("Failed to load playlist songs:", e);
             }
@@ -481,6 +467,80 @@
             });
         }
     })();
+
+    // ── Sorting state for playlist view ──
+    window._pvSortKey = null;
+    window._pvSortDir = 'asc';
+    window._pvSongsData = [];
+
+    window._pvSortColumn = function (key) {
+        if (window._pvSortKey === key) {
+            window._pvSortDir = window._pvSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            window._pvSortKey = key;
+            window._pvSortDir = 'asc';
+        }
+        // Update arrow indicators
+        document.querySelectorAll('#pv-table-header [data-sort-key] .sort-arrow').forEach(el => {
+            el.textContent = '';
+        });
+        const activeHeader = document.querySelector(`#pv-table-header [data-sort-key="${key}"] .sort-arrow`);
+        if (activeHeader) {
+            activeHeader.textContent = window._pvSortDir === 'asc' ? '▲' : '▼';
+        }
+        window._pvRenderSorted();
+    };
+
+    window._pvRenderSorted = function () {
+        let sorted = [...window._pvSongsData];
+        const key = window._pvSortKey;
+        const dir = window._pvSortDir;
+        if (key) {
+            sorted.sort((a, b) => {
+                let valA, valB;
+                if (key === 'Duration') {
+                    valA = a.Duration || 0;
+                    valB = b.Duration || 0;
+                } else if (key === 'DateAdded') {
+                    valA = a.DateAdded ? new Date(a.DateAdded).getTime() : 0;
+                    valB = b.DateAdded ? new Date(b.DateAdded).getTime() : 0;
+                } else {
+                    valA = (a[key] || '').toString().toLowerCase();
+                    valB = (b[key] || '').toString().toLowerCase();
+                }
+                if (valA < valB) return dir === 'asc' ? -1 : 1;
+                if (valA > valB) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        const container = document.getElementById("pv-songs-container");
+        if (!container) return;
+
+        if (sorted.length > 0) {
+            let htmlBuffer = "";
+            sorted.forEach(song => {
+                htmlBuffer += `
+                <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+                </div>`;
+            });
+            container.innerHTML = htmlBuffer;
+            const containers = container.querySelectorAll(".song-row-container");
+            containers.forEach(c => {
+                if (window.lazyRowObserver) window.lazyRowObserver.observe(c);
+            });
+        } else {
+            container.innerHTML = `
+                <div class="py-16 flex flex-col items-center justify-center text-center opacity-70">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-zinc-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    <p class="text-zinc-400 font-medium text-lg">It's a bit quiet here</p>
+                    <p class="text-sm text-zinc-500 mt-2 max-w-md">Start adding songs to this playlist from your library by right-clicking a song and choosing 'Add to Playlist'.</p>
+                </div>
+            `;
+        }
+    };
 
     // Search logic for playlist view
     if (!window.pvEventHandlersAttached) {
@@ -536,7 +596,7 @@
 
     async function deleteCurrentPlaylist() {
         closePlaylistOptions();
-        
+
         const result = await Swal.fire({
             title: 'Delete Playlist?',
             text: "Are you sure you want to delete this playlist? This action cannot be undone.",
@@ -555,7 +615,7 @@
         });
 
         if (!result.isConfirmed) return;
-        
+
         const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
         if (!playlistId) return;
 

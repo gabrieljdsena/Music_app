@@ -21,10 +21,19 @@
             <div id="table">
                 <!-- Header Row -->
                 <div id="table-header"
-                    class="grid grid-cols-[3fr_2fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors">Song</div>
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors">Album</div>
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right">Duration</div>
+                    class="grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                        data-sort-key="Title" onclick="window._homeSortColumn('Title')">Song <span
+                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                        data-sort-key="Album" onclick="window._homeSortColumn('Album')">Album <span
+                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                        data-sort-key="Duration" onclick="window._homeSortColumn('Duration')">Duration <span
+                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                        data-sort-key="DateDownload" onclick="window._homeSortColumn('DateDownload')">Date Downloaded
+                        <span class="sort-arrow text-orange-400 text-[10px]"></span></div>
                     <div></div>
                 </div>
 
@@ -32,7 +41,7 @@
                 <div id="table-body" class="flex flex-col gap-1 pb-2">
                     <!-- Loading placeholders -->
                     <div
-                        class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50">
+                        class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
                             <div class="flex flex-col gap-2 w-full max-w-[200px]">
@@ -50,7 +59,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 100ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -69,7 +78,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 200ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -88,7 +97,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 300ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -107,7 +116,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 400ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -126,7 +135,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 500ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -145,7 +154,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 600ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -164,7 +173,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 700ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -183,7 +192,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 800ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -202,7 +211,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 900ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -221,7 +230,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 1000ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -240,7 +249,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 1100ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -297,7 +306,7 @@
         ` : '';
 
         const isPlaylist = song.DateAdded !== undefined;
-        const gridCols = isPlaylist ? "grid-cols-[3fr_2fr_1.5fr_1fr_auto]" : "grid-cols-[3fr_2fr_1fr_auto]";
+        const gridCols = "grid-cols-[3fr_2fr_1fr_1.5fr_auto]";
 
         let dateAddedHtml = "";
         if (isPlaylist) {
@@ -309,6 +318,15 @@
                 }
             }
             dateAddedHtml = `<div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${dateStr}</span></div>`;
+        } else {
+            let dateDownloadStr = "";
+            if (song.DateDownload) {
+                const d = new Date(song.DateDownload);
+                if (!isNaN(d.getTime())) {
+                    dateDownloadStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            }
+            dateAddedHtml = `<div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${dateDownloadStr}</span></div>`;
         }
 
         return `
@@ -324,8 +342,8 @@
                 </div>
             </div>
             <div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${song.Album || "Unknown Album"}</span></div>
-            ${dateAddedHtml}
             <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
+            ${dateAddedHtml}
             <div class="flex items-center justify-end">
                 <button class="bento-btn p-2 hover:bg-white/10 hover:cursor-pointer rounded-full transition-colors focus:outline-none" aria-label="Menu">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -516,17 +534,57 @@
     };
 
     // Python -> JS
-    window.song_list = function (data) {
-        if (window._coverCache) window._coverCache.clear(); // Clear cover cache on refresh
+    // ── Sorting state for home view ──
+    window._homeSortKey = null;
+    window._homeSortDir = 'asc'; // 'asc' or 'desc'
+    window._homeSongsData = []; // keep a reference to the raw data
+
+    window._homeSortColumn = function (key) {
+        if (window._homeSortKey === key) {
+            window._homeSortDir = window._homeSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            window._homeSortKey = key;
+            window._homeSortDir = 'asc';
+        }
+        // Update arrow indicators
+        document.querySelectorAll('#table-header [data-sort-key] .sort-arrow').forEach(el => {
+            el.textContent = '';
+        });
+        const activeHeader = document.querySelector(`#table-header [data-sort-key="${key}"] .sort-arrow`);
+        if (activeHeader) {
+            activeHeader.textContent = window._homeSortDir === 'asc' ? '▲' : '▼';
+        }
+        window._homeRenderSorted();
+    };
+
+    window._homeRenderSorted = function () {
+        let sorted = [...window._homeSongsData];
+        const key = window._homeSortKey;
+        const dir = window._homeSortDir;
+        if (key) {
+            sorted.sort((a, b) => {
+                let valA, valB;
+                if (key === 'Duration') {
+                    valA = a.Duration || 0;
+                    valB = b.Duration || 0;
+                } else if (key === 'DateDownload') {
+                    valA = a.DateDownload ? new Date(a.DateDownload).getTime() : 0;
+                    valB = b.DateDownload ? new Date(b.DateDownload).getTime() : 0;
+                } else {
+                    valA = (a[key] || '').toString().toLowerCase();
+                    valB = (b[key] || '').toString().toLowerCase();
+                }
+                if (valA < valB) return dir === 'asc' ? -1 : 1;
+                if (valA > valB) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
         let tableHtmlBuffer = "";
-        data.forEach(song => {
-            const songRow = `
+        sorted.forEach(song => {
+            tableHtmlBuffer += `
             <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
             </div>`;
-
-            tableHtmlBuffer += songRow;
         });
-
         const tableBody = document.getElementById("table-body");
         if (tableBody) {
             tableBody.innerHTML = tableHtmlBuffer;
@@ -535,6 +593,12 @@
                 if (window.lazyRowObserver) window.lazyRowObserver.observe(container);
             });
         }
+    };
+
+    window.song_list = function (data) {
+        if (window._coverCache) window._coverCache.clear(); // Clear cover cache on refresh
+        window._homeSongsData = data;
+        window._homeRenderSorted();
     }
 
     if (!window.homeEventHandlersAttached) {
