@@ -330,7 +330,7 @@ class Api:
         # Added 0.5s cooldown check to prevent Pygame buffering delays from instantly skipping the queue!
         if pos == -1:
             if self.playing and (time.time() - self.last_play_time > 0.5):
-                self.play_next()
+                self.play_next(auto=True)
             return 0
             
         return self.current_time_offset + (pos / 1000.0)
@@ -339,9 +339,12 @@ class Api:
         self.repeat = not self.repeat
         return self.repeat
 
-    def play_next(self):
-        # Repeat current song if repeat mode is on
-        if self.repeat and self.last_song and self.last_song.get('File'):
+    def play_next(self, auto=False):
+        # Repeat current song if repeat mode is on and it naturally ended
+        if self.repeat and auto and self.last_song and self.last_song.get('File'):
+            pygame.mixer.music.stop()
+            self.first_play = True
+            self.current_time_offset = 0
             self.play_button(self.last_song)
             return
 
