@@ -1,22 +1,22 @@
 import os
 import sys
 import subprocess
-import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
-print(" [Dev] Compiling Tailwind CSS...")
-current_dir = os.path.dirname(os.path.abspath(__file__))
-input_css = os.path.join(current_dir, 'ui', 'input.css')
-output_css = os.path.join(current_dir, 'ui', 'output.css')
-subprocess.run(f"npx @tailwindcss/cli -i \"{input_css}\" -o \"{output_css}\"", shell=True)
+if not getattr(sys, 'frozen', False):
+    print(" [Dev] Compiling Tailwind CSS...")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    input_css = os.path.join(current_dir, 'ui', 'input.css')
+    output_css = os.path.join(current_dir, 'ui', 'output.css')
+    subprocess.run(f"npx @tailwindcss/cli -i \"{input_css}\" -o \"{output_css}\"", shell=True)
 
 import webview
 import threading
 import sqlite3
 import pygame
-import monitor
+#import monitor
 import settings
 from api import Api
 from sync import DatabaseSync
@@ -114,4 +114,4 @@ def on_start(window):
 
 if __name__ == '__main__':
     window.events.resized += on_resized
-    webview.start(on_start, window, debug=True)
+    webview.start(on_start, window, debug=False)

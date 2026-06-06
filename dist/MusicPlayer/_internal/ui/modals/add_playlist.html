@@ -1,0 +1,140 @@
+<div id="addPlaylistModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-transparent bg-opacity-40 backdrop-blur-sm transition-opacity">
+    <div class="bg-neutral-800 rounded-xl border border-neutral-700/50 shadow-2xl w-full max-w-md p-6 relative">
+        <!-- Ambient Glow inside Modal -->
+        <div class="absolute -right-20 -top-20 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
+
+        <!-- Title & Subtitle -->
+        <div class="relative z-10">
+            <h2 class="text-2xl font-bold text-zinc-100 flex items-center gap-2">
+                <svg class="w-6 h-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg>
+                Add to Playlists
+            </h2>
+            <p id="ap-song-title" class="text-xs text-zinc-400 mt-1 mb-4 border-b border-white/5 pb-2 truncate font-medium max-w-[90%]">Song Title</p>
+        </div>
+        
+        <!-- Checklist Container -->
+        <div id="ap-playlists-list" class="relative z-10 space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar mb-6 pr-1">
+            <!-- Playlist items populated dynamically -->
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="relative z-10 flex justify-end space-x-3 pt-4 border-t border-white/5">
+            <button type="button" onclick="closeAddPlaylistModal()" class="px-4 py-2 hover:cursor-pointer bg-neutral-700/60 text-zinc-300 font-medium rounded-lg hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-neutral-500 transition-all duration-300 hover:scale-105 active:scale-95">Cancel</button>
+            <button id="save-playlists-btn" type="button" class="px-4 py-2 bg-orange-500 text-white hover:cursor-pointer font-medium rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-orange-500/20 hover:shadow-lg hover:shadow-orange-500/40">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentModalSong = null;
+
+    window.openAddPlaylistModal = async function(song) {
+        if (!song) return;
+        currentModalSong = song;
+        
+        document.getElementById('ap-song-title').innerText = song.Title || 'Unknown Title';
+        const listContainer = document.getElementById('ap-playlists-list');
+        listContainer.innerHTML = `
+            <div class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+        `;
+        
+        const modal = document.getElementById('addPlaylistModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        try {
+            // Load all playlists
+            const playlists = await window.pywebview.api.load_playlists();
+            // Load current playlists for the song
+            const associatedPlaylists = await window.pywebview.api.get_song_playlists(song.File);
+            
+            listContainer.innerHTML = '';
+            
+            if (playlists && playlists.length > 0) {
+                playlists.forEach(playlist => {
+                    const isChecked = associatedPlaylists.includes(playlist.id);
+                    const itemHtml = `
+                        <label class="flex items-center justify-between p-3 rounded-xl bg-neutral-900/30 hover:bg-neutral-800/60 border border-white/5 hover:border-orange-500/30 cursor-pointer transition-all duration-200 group">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                ${playlist.thumbnail ? 
+                                    `<img src="${playlist.thumbnail}" class="w-9 h-9 object-cover rounded-lg flex-shrink-0 border border-white/5 group-hover:scale-105 transition-transform duration-300">` :
+                                    `<div class="w-9 h-9 rounded-lg bg-zinc-900/60 border border-white/5 flex items-center justify-center flex-shrink-0 text-zinc-500 group-hover:text-orange-400 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg></div>`
+                                }
+                                <span class="text-sm font-semibold text-zinc-300 group-hover:text-zinc-200 transition-colors truncate">${playlist.title}</span>
+                            </div>
+                            <input type="checkbox" name="ap-playlist-checkbox" value="${playlist.id}" ${isChecked ? 'checked' : ''} class="w-5 h-5 rounded border-zinc-700 text-orange-500 focus:ring-orange-500 bg-zinc-900 focus:ring-offset-zinc-800 focus:ring-2 cursor-pointer accent-orange-500 transition-colors">
+                        </label>
+                    `;
+                    listContainer.insertAdjacentHTML('beforeend', itemHtml);
+                });
+            } else {
+                listContainer.innerHTML = `
+                    <div class="py-10 flex flex-col items-center justify-center text-center opacity-70">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-zinc-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                        </svg>
+                        <p class="text-zinc-400 font-medium text-sm">No playlists found</p>
+                        <p class="text-xs text-zinc-500 mt-1 max-w-[200px]">Create a playlist first in the Playlists sidebar tab.</p>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            console.error("Error loading checklist playlists:", e);
+            listContainer.innerHTML = `<p class="text-red-400 text-sm py-4 text-center">Failed to load playlists.</p>`;
+        }
+    };
+
+    window.closeAddPlaylistModal = function() {
+        const modal = document.getElementById('addPlaylistModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        currentModalSong = null;
+    };
+
+    // Close on overlay click
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('addPlaylistModal');
+        if (event.target === modal) {
+            closeAddPlaylistModal();
+        }
+    });
+
+    document.getElementById('save-playlists-btn').addEventListener('click', async function() {
+        if (!currentModalSong) return;
+        
+        const checkboxes = document.querySelectorAll('input[name="ap-playlist-checkbox"]');
+        const selectedIds = [];
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                selectedIds.push(parseInt(cb.value));
+            }
+        });
+        
+        try {
+            const success = await window.pywebview.api.update_song_playlists(
+                currentModalSong.File,
+                currentModalSong.Title,
+                selectedIds
+            );
+            
+            if (success) {
+                if (typeof Notyf !== 'undefined') {
+                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                    notyf.success(`Playlists updated for <b>${currentModalSong.Title}</b>`);
+                }
+                closeAddPlaylistModal();
+            } else {
+                if (typeof Notyf !== 'undefined') {
+                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                    notyf.error('Failed to update playlists.');
+                }
+            }
+        } catch (err) {
+            console.error("Error saving playlists association:", err);
+        }
+    });
+</script>

@@ -1039,6 +1039,16 @@ class Api:
             print(f" [Python] Error updating playlist: {str(e)}")
             return False
 
+    def delete_playlist(self, playlist_id):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("DELETE FROM Playlists WHERE id = ?", (playlist_id,))
+                conn.execute("DELETE FROM Song_Playlist WHERE playlist_id = ?", (playlist_id,))
+            return True
+        except Exception as e:
+            print(f" [Python] Error deleting playlist: {str(e)}")
+            return False
+
     def pick_playlist_image(self):
         import webview
         if self._window:
@@ -1080,15 +1090,21 @@ class Api:
     def get_playlist_songs(self, playlist_id):
         try:
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute("SELECT song_file FROM Song_Playlist WHERE playlist_id = ?", (playlist_id,))
-                song_files = [row[0] for row in cursor.fetchall()]
+                cursor = conn.execute("SELECT song_file, date_added FROM Song_Playlist WHERE playlist_id = ?", (playlist_id,))
+                rows = cursor.fetchall()
                 
                 # Fetch metadata for each song file
                 playlist_songs = []
-                for file_name in song_files:
+                for row in rows:
+                    file_name = row[0]
+                    date_added = row[1]
                     file_path = os.path.join(settings.path, file_name)
                     if os.path.exists(file_path):
                         song_data = self.get_song_metadata(file_path, file_name)
+                        if date_added:
+                            song_data['DateAdded'] = date_added.replace(' ', 'T') + 'Z'
+                        else:
+                            song_data['DateAdded'] = None
                         playlist_songs.append(song_data)
                 return playlist_songs
         except Exception as e:

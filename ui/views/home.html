@@ -1,19 +1,23 @@
 <div class="flex flex-col xl:flex-row w-full h-full relative items-start">
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0 w-full h-full">
-        <div class="max-w-5xl mx-auto w-full flex justify-end mb-6 px-6 sm:px-8 gap-3">
-            <div class="relative group">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                    class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input type="text" placeholder="Search..." id="txt_search" spellcheck="false"
-                    class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-900/40 hover:bg-zinc-800/40 focus:bg-zinc-900/80 backdrop-blur-xl border border-white/5 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
+        <!-- Search Bar Header (Glassmorphism) -->
+        <div
+            class="sticky top-0 w-full z-50 backdrop-blur-2xl bg-zinc-900/20 rounded-2xl border-b border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 sm:px-8 py-4 flex justify-end items-center">
+            <div class="relative max-w-5xl mx-auto w-full flex justify-end">
+                <div class="relative group">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" placeholder="Search..." id="txt_search" spellcheck="false"
+                        class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
+                </div>
             </div>
         </div>
-        <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10">
+        <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10 pt-6">
             <div id="table">
                 <!-- Header Row -->
                 <div id="table-header"
@@ -292,8 +296,23 @@
             </div>
         ` : '';
 
+        const isPlaylist = song.DateAdded !== undefined;
+        const gridCols = isPlaylist ? "grid-cols-[3fr_2fr_1.5fr_1fr_auto]" : "grid-cols-[3fr_2fr_1fr_auto]";
+
+        let dateAddedHtml = "";
+        if (isPlaylist) {
+            let dateStr = "";
+            if (song.DateAdded) {
+                const d = new Date(song.DateAdded);
+                if (!isNaN(d.getTime())) {
+                    dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            }
+            dateAddedHtml = `<div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${dateStr}</span></div>`;
+        }
+
         return `
-        <div class="song-row grid grid-cols-[3fr_2fr_1fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group ${activeClasses}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+        <div class="song-row grid ${gridCols} gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group ${activeClasses}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
             <div class="flex items-center gap-3 overflow-hidden">
                 ${visualizerHtml}
                 <div class="w-10 h-10 rounded-md bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md cover-art-container">
@@ -305,6 +324,7 @@
                 </div>
             </div>
             <div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${song.Album || "Unknown Album"}</span></div>
+            ${dateAddedHtml}
             <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
             <div class="flex items-center justify-end">
                 <button class="bento-btn p-2 hover:bg-white/10 hover:cursor-pointer rounded-full transition-colors focus:outline-none" aria-label="Menu">

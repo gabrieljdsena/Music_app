@@ -3,3 +3,5 @@ node_modules/
 __pycache__/
 music_player.db
 .env
+dist/
+build/

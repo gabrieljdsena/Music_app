@@ -42,7 +42,7 @@
         <div id="pv-cover-wrapper"
             class="relative w-56 h-56 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10 group-hover:shadow-orange-500/20 transition-all duration-500 z-10 bg-zinc-800 flex items-center justify-center">
             <img id="pv-cover" src="" alt="Playlist Cover"
-                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 hidden">
 
             <!-- Fallback icon if no image -->
             <div id="pv-cover-fallback" class="absolute inset-0 flex items-center justify-center bg-zinc-800/80">
@@ -95,15 +95,42 @@
                     </svg>
                 </button>
                 <!-- Options Button -->
-                <button
-                    class="flex items-center justify-center w-12 h-12 hover:cursor-pointer bg-white/5 text-zinc-300 rounded-full hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 border border-white/5 shadow-lg focus:outline-none"
-                    title="Options">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                        stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                    </svg>
-                </button>
+                <div class="relative group">
+                    <button id="pv-options-btn"
+                        class="flex items-center justify-center w-12 h-12 hover:cursor-pointer bg-white/5 text-zinc-300 rounded-full hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 border border-white/5 shadow-lg focus:outline-none"
+                        title="Options" onclick="togglePlaylistOptions(event)">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-6 h-6 pointer-events-none">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="pv-options-dropdown" class="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-xl shadow-2xl border border-white/10 opacity-0 pointer-events-none transition-all duration-200 transform origin-top-right scale-95 z-50 overflow-hidden">
+                        <button onclick="deleteCurrentPlaylist()" class="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-2 hover:cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                            Delete Playlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar (Glassmorphism) -->
+    <div class="sticky top-0 z-40 backdrop-blur-2xl bg-zinc-900/20 border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 py-4 rounded-2xl flex justify-end items-center mb-2">
+        <div class="relative group w-full flex justify-end">
+            <div class="relative w-full sm:w-auto">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" placeholder="Search in playlist..." id="pv_txt_search" spellcheck="false"
+                    class="w-full sm:w-64 focus:w-full sm:focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
             </div>
         </div>
     </div>
@@ -111,9 +138,10 @@
     <!-- Controls & Table Placeholder -->
     <div class="flex flex-col gap-4">
         <div
-            class="grid grid-cols-[3fr_2fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+            class="grid grid-cols-[3fr_2fr_1.5fr_1fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
             <div class="cursor-pointer hover:text-zinc-300 transition-colors">Song</div>
             <div class="cursor-pointer hover:text-zinc-300 transition-colors">Album</div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors">Date Added</div>
             <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right">Duration</div>
             <div></div>
         </div>
@@ -337,6 +365,7 @@
                     const imgEl = document.getElementById("pv-cover");
                     const fallbackEl = document.getElementById("pv-cover-fallback");
                     imgEl.src = base64;
+                    imgEl.classList.remove("hidden");
                     if (fallbackEl) fallbackEl.classList.add("hidden");
                 }
             } catch (e) {
@@ -369,9 +398,11 @@
             if (img && imgEl) {
                 imgEl.src = img;
                 imgEl.alt = window.currentPlaylist.title || "Unknown Playlist";
+                imgEl.classList.remove("hidden");
                 if (fallbackEl) fallbackEl.classList.add("hidden");
             } else {
                 if (fallbackEl) fallbackEl.classList.remove("hidden");
+                if (imgEl) imgEl.classList.add("hidden");
             }
         }
 
@@ -450,5 +481,104 @@
             });
         }
     })();
+
+    // Search logic for playlist view
+    if (!window.pvEventHandlersAttached) {
+        window.pvEventHandlersAttached = true;
+        let pvSearchTimeout;
+        document.addEventListener("keyup", function (e) {
+            if (e.target && e.target.id === "pv_txt_search") {
+                clearTimeout(pvSearchTimeout);
+                const value = e.target.value.toLowerCase();
+
+                pvSearchTimeout = setTimeout(function () {
+                    const containers = document.querySelectorAll("#pv-songs-container .song-row-container");
+                    containers.forEach(container => {
+                        const rawStr = container.getAttribute('data-path');
+                        let songData = {};
+                        if (rawStr) {
+                            try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch (err) { }
+                        }
+                        const title = (songData.Title || "").toLowerCase();
+                        const artist = (songData.Artist || "").toLowerCase();
+                        const album = (songData.Album || "").toLowerCase();
+                        if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
+                            container.style.display = "";
+                        } else {
+                            container.style.display = "none";
+                        }
+                    });
+                }, 150);
+            }
+        });
+    }
+
+    function togglePlaylistOptions(e) {
+        e.stopPropagation();
+        const dropdown = document.getElementById('pv-options-dropdown');
+        if (dropdown.classList.contains('opacity-0')) {
+            dropdown.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            dropdown.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+        } else {
+            closePlaylistOptions();
+        }
+    }
+
+    function closePlaylistOptions() {
+        const dropdown = document.getElementById('pv-options-dropdown');
+        if (dropdown && !dropdown.classList.contains('opacity-0')) {
+            dropdown.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+            dropdown.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+        }
+    }
+
+    document.addEventListener('click', closePlaylistOptions);
+
+    async function deleteCurrentPlaylist() {
+        closePlaylistOptions();
+        
+        const result = await Swal.fire({
+            title: 'Delete Playlist?',
+            text: "Are you sure you want to delete this playlist? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#3f3f46',
+            confirmButtonText: 'Yes, delete it!',
+            background: '#18181b',
+            color: '#f4f4f5',
+            customClass: {
+                popup: 'border border-white/10 rounded-2xl shadow-2xl',
+                confirmButton: 'rounded-xl',
+                cancelButton: 'rounded-xl'
+            }
+        });
+
+        if (!result.isConfirmed) return;
+        
+        const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
+        if (!playlistId) return;
+
+        if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.delete_playlist === 'function') {
+            try {
+                const success = await window.pywebview.api.delete_playlist(playlistId);
+                if (success) {
+                    if (window.notyf) window.notyf.success('Playlist deleted');
+                    // Refresh sidebar
+                    if (typeof window.loadPlaylistsToSidebar === 'function') {
+                        window.loadPlaylistsToSidebar();
+                    }
+                    // Go home
+                    if (typeof window.navigateTo === 'function') {
+                        window.navigateTo('home');
+                    }
+                } else {
+                    if (window.notyf) window.notyf.error('Failed to delete playlist');
+                }
+            } catch (e) {
+                console.error("Failed to delete playlist:", e);
+            }
+        }
+    }
 
 </script>

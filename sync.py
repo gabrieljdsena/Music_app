@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS songs (
     file VARCHAR(255) PRIMARY KEY,
     downloaded_link VARCHAR(255),
     title VARCHAR(255) NOT NULL,
+    date_download TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     artist VARCHAR(255)
 );
 
@@ -26,7 +27,8 @@ CREATE TABLE IF NOT EXISTS playlists (
 CREATE TABLE IF NOT EXISTS song_playlist (
     id SERIAL PRIMARY KEY,
     song_file VARCHAR(255) NOT NULL,
-    playlist_id BIGINT NOT NULL
+    playlist_id BIGINT NOT NULL,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS lyrics (
@@ -76,18 +78,19 @@ class DatabaseSync:
 
     def _sync_songs(self, sqlite_conn, pg_conn):
         """Upsert all songs from SQLite → PostgreSQL."""
-        rows = sqlite_conn.execute("SELECT file, downloaded_link, title, artist FROM Songs").fetchall()
+        rows = sqlite_conn.execute("SELECT file, downloaded_link, title, date_download, artist FROM Songs").fetchall()
         if not rows:
             return
         with pg_conn.cursor() as cur:
             execute_values(
                 cur,
                 """
-                INSERT INTO songs (file, downloaded_link, title, artist)
+                INSERT INTO songs (file, downloaded_link, title, date_download, artist)
                 VALUES %s
                 ON CONFLICT (file) DO UPDATE SET
                     downloaded_link = EXCLUDED.downloaded_link,
                     title = EXCLUDED.title,
+                    date_download = EXCLUDED.date_download,
                     artist = EXCLUDED.artist
                 """,
                 rows
@@ -117,13 +120,13 @@ class DatabaseSync:
 
     def _sync_song_playlist(self, sqlite_conn, pg_conn):
         """Full replace of song-playlist associations."""
-        rows = sqlite_conn.execute("SELECT id, song_file, playlist_id FROM Song_Playlist").fetchall()
+        rows = sqlite_conn.execute("SELECT id, song_file, playlist_id, date_added FROM Song_Playlist").fetchall()
         with pg_conn.cursor() as cur:
             cur.execute("DELETE FROM song_playlist")
             if rows:
                 execute_values(
                     cur,
-                    "INSERT INTO song_playlist (id, song_file, playlist_id) VALUES %s",
+                    "INSERT INTO song_playlist (id, song_file, playlist_id, date_added) VALUES %s",
                     rows
                 )
                 cur.execute("SELECT setval('song_playlist_id_seq', COALESCE((SELECT MAX(id) FROM song_playlist), 1), true)")

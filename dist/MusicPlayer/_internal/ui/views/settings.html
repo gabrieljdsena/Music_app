@@ -1,0 +1,150 @@
+<div class="max-w-4xl mx-auto w-full pt-8 px-6 sm:px-8 pb-24" x-data="{ limit: window.limit_downloads || 3 }">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+        <div
+            class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                </path>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-3xl font-bold text-zinc-100">Settings</h1>
+            <p class="text-sm text-zinc-500 mt-1 tracking-wide">Manage your preferences and configurations</p>
+        </div>
+    </div>
+
+    <!-- Settings Container (Tinted Glass) -->
+    <!-- Subtle gradient overlay to enhance the glass effect -->
+    <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col gap-3">
+        <!-- Setting Row 1 -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-zinc-200 font-medium">Download/Songs Folder</h3>
+                    <p class="text-xs text-zinc-500 mt-0.5">Location where your songs are saved and read</p>
+                    <p id="current-folder-path"
+                        class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button
+                    onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_folder().then(res => { if(res) { document.getElementById('current-folder-path').innerText = res; document.getElementById('current-folder-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Folder updated'); } else { alert('Folder updated to: ' + res); } } })"
+                    class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                    Change Folder
+                </button>
+            </div>
+        </div>
+
+        <!-- Setting Row 2 -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-zinc-200 font-medium">Background Image</h3>
+                    <p class="text-xs text-zinc-500 mt-0.5">Customize the app's visual appearance</p>
+                    <p id="current-bg-path"
+                        class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button
+                    onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.remove_background().then(res => { if(res) { document.getElementById('current-bg-path').innerText = ''; document.getElementById('current-bg-path').title = ''; if (typeof notyf !== 'undefined') { notyf.success('Background removed'); } else { alert('Background removed'); } if (window.apply_background) window.apply_background(''); } })"
+                    class="flex items-center gap-2 px-4 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-300 bg-white/5 hover:bg-red-500/20 hover:text-red-400 border border-white/10 hover:border-red-500/50 rounded-lg transition-all duration-300 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                    Remove
+                </button>
+                <button
+                    onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_background().then(res => { if(res) { document.getElementById('current-bg-path').innerText = res; document.getElementById('current-bg-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Background updated'); } else { alert('Background updated to: ' + res); } if (window.apply_background) window.apply_background(res); } })"
+                    class="px-5 hover:cursor-pointer py-2.5 text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                    Browse
+                </button>
+            </div>
+        </div>
+
+        <!-- Setting Row 3 -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4 flex-wrap">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div>
+                        <label class="text-zinc-200 font-medium block cursor-pointer"
+                            for="txt_download_per_batch">Download Limit Per Batch</label>
+                        <p class="text-xs text-zinc-500 mt-0.5">Maximum concurrent downloads</p>
+                    </div>
+                    <input id="txt_download_per_batch" x-model.number="limit" type="number" min="1" max="10"
+                        class="w-24 px-3 py-2 text-center text-sm font-medium text-zinc-200 bg-white/5 border border-white/10 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                </div>
+            </div>
+            <button id="saveLimitBtn"
+                @click="window.limit_downloads = limit; if (window.pywebview && window.pywebview.api) window.pywebview.api.update_download_limit(limit); if (typeof notyf !== 'undefined') notyf.success('Download limit updated to ' + limit);"
+                class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                Save
+            </button>
+        </div>
+        <!-- Setting Row 4 -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-zinc-200 font-medium">Sync Local Songs to Database</h3>
+                    <p class="text-xs text-zinc-500 mt-0.5">Scans your songs folder and updates the database</p>
+                </div>
+            </div>
+            <button
+                onclick="if(window.pywebview && window.pywebview.api) { if(typeof notyf !== 'undefined') notyf.success('Syncing songs...'); window.pywebview.api.sync_local_songs_to_db().then(res => { if(typeof notyf !== 'undefined') notyf.success(res); else alert(res); }); }"
+                class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                Sync Now
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Request settings when this view loads
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.load_settings();
+    }
+</script>

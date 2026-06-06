@@ -1,4 +1,5 @@
 import os
+import sys
 from yt_dlp import YoutubeDL
 import urllib.request
 import urllib.parse
@@ -36,7 +37,8 @@ class MusicDownloader:
             return []
 
     def download_song(self, search, progress_callback=None):
-        ffmpeg_path = os.path.join(os.path.dirname(__file__), 'ffmpeg', 'bin')
+        base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
+        ffmpeg_path = os.path.join(base_path, 'ffmpeg', 'bin')
         
         print(f" [Python] Searching and Downloading: {search}")
         

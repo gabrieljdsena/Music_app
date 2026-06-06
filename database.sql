@@ -2,6 +2,7 @@ create table if not exists Songs(
     file varchar(255) PRIMARY KEY,
     downloaded_link varchar(255) null,
     title varchar(255) not null,
+    date_download datetime default CURRENT_TIMESTAMP,
     artist varchar(255) null
 );
 
@@ -16,6 +17,7 @@ create table if not exists Song_Playlist(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     song_file varchar(255) not null,
     playlist_id bigint not null,
+    date_added datetime default CURRENT_TIMESTAMP,
     FOREIGN KEY (song_file) REFERENCES Songs(file),
     FOREIGN KEY (playlist_id) REFERENCES Playlists(id)
 );
