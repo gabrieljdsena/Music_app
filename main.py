@@ -74,7 +74,7 @@ window = webview.create_window(
     height=settings.window_size['height'],
     x=center_x,
     y=center_y,
-    min_size=(560, 400)
+    min_size=(895, 400)
 )
 
 # 4. Link the window back to the API so it can use evaluate_js

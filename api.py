@@ -65,6 +65,8 @@ class Api:
         self.fallback_to_general_list = True
         self.prev_songs.clear()
         self.current_playlist_id = None
+        self.unshuffled_song_list = list(self.song_list)
+
 
         found = False
         for song in self.song_list:
@@ -96,6 +98,8 @@ class Api:
         self.fallback_to_general_list = False
         self.prev_songs.clear()
         self.current_playlist_id = playlist_id
+        self.unshuffled_song_list = list(song_list)
+
 
         found = False
         for song in song_list:
@@ -180,7 +184,9 @@ class Api:
                 """)
         elif not self.shuffle:
             if self.last_song and self.last_song.get('File'):
-                if getattr(self, 'current_playlist_id', None) is not None:
+                if hasattr(self, 'unshuffled_song_list') and self.unshuffled_song_list:
+                    self.populate_queue_from_list(self.last_song, self.unshuffled_song_list, getattr(self, 'current_playlist_id', None))
+                elif getattr(self, 'current_playlist_id', None) is not None:
                     playlist_songs = self.get_playlist_songs(self.current_playlist_id)
                     if playlist_songs:
                         self.populate_queue_from_list(self.last_song, playlist_songs, self.current_playlist_id)
@@ -293,6 +299,47 @@ class Api:
             updater.type = media.MediaPlaybackType.MUSIC
             updater.music_properties.title = str(current_song.get('Title', 'Unknown'))
             updater.music_properties.artist = str(current_song.get('Artist', 'Unknown'))
+            
+            # Set Thumbnail
+            cover_art = current_song.get('CoverArt')
+            if cover_art:
+                try:
+                    from winsdk.windows.storage.streams import RandomAccessStreamReference
+                    from winsdk.windows.foundation import Uri
+                    import tempfile
+                    
+                    temp_dir = tempfile.gettempdir()
+                    thumb_path = os.path.join(temp_dir, 'music_player_thumb.jpg')
+                    valid_thumb = False
+                    
+                    if cover_art.startswith('data:image'):
+                        try:
+                            header, encoded = cover_art.split(",", 1)
+                            data = base64.b64decode(encoded)
+                            with open(thumb_path, "wb") as f:
+                                f.write(data)
+                            valid_thumb = True
+                            print(f" [Python] Thumbnail saved to {thumb_path} ({len(data)} bytes)")
+                        except Exception as e:
+                            print(f" [Python] Failed to decode/save base64 thumbnail: {e}")
+                    elif os.path.exists(cover_art):
+                        thumb_path = cover_art
+                        valid_thumb = True
+                        
+                    if valid_thumb:
+                        # Verify file exists before creating URI
+                        if os.path.exists(thumb_path):
+                            file_uri = Uri(f"file:///{thumb_path.replace(os.sep, '/')}")
+                            print(f" [Python] Setting thumbnail from URI: {file_uri}")
+                            updater.thumbnail = RandomAccessStreamReference.create_from_uri(file_uri)
+                            print(f" [Python] Thumbnail URI set successfully")
+                        else:
+                            print(f" [Python] Thumbnail file not found: {thumb_path}")
+                except Exception as e:
+                    print(f" [Python] Failed to set thumbnail: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
             updater.update()
 
         elif(self.playing):
@@ -327,9 +374,9 @@ class Api:
         pos = pygame.mixer.music.get_pos()
         
         # -1 means the music is not playing (naturally ended or fully stopped)
-        # Added 0.5s cooldown check to prevent Pygame buffering delays from instantly skipping the queue!
+        # Added 3.0s cooldown check to prevent Pygame buffering delays from instantly skipping the queue!
         if pos == -1:
-            if self.playing and (time.time() - self.last_play_time > 0.5):
+            if self.playing and (time.time() - self.last_play_time > 3.0):
                 self.play_next(auto=True)
             return 0
             
@@ -772,11 +819,17 @@ class Api:
                     self.last_song['CoverArt'] = song_data['CoverArt']
                 
                 safe_song = json.dumps(self.last_song)
-                self._window.evaluate_js(f"window.current_playing_song = {safe_song}; if (typeof window.set_active_song_ui === 'function') window.set_active_song_ui(window.current_playing_song); if (typeof window.plaiyng_info === 'function') window.plaiyng_info(window.current_playing_song);")
+                self._window.evaluate_js(f"""
+                    window.current_playing_song = {safe_song}; 
+                    if (typeof window.set_active_song_ui === 'function') window.set_active_song_ui(window.current_playing_song); 
+                    if (typeof window.playing_view === 'function') window.playing_view(window.current_playing_song);
+                    if (typeof window.fetchLyricsForCurrentSong === 'function') window.fetchLyricsForCurrentSong(window.current_playing_song);
+                """)
                 
                 pygame.mixer.music.load(os.path.join(settings.path, new_file_name))
                 pygame.mixer.music.play(0, resume_pos)
                 self.current_time_offset = resume_pos
+                self.last_play_time = time.time()
                 
                 if not was_playing:
                     pygame.mixer.music.pause()
@@ -790,7 +843,11 @@ class Api:
                 updater.update()
 
             # Update backend memory to avoid full reload
-            for lst in [getattr(self, 'song_list', []), getattr(self, 'next_songs', []), getattr(self, 'prev_songs', [])]:
+            lists_to_update = [getattr(self, 'song_list', []), getattr(self, 'next_songs', []), getattr(self, 'prev_songs', [])]
+            if hasattr(self, 'unshuffled_song_list'):
+                lists_to_update.append(self.unshuffled_song_list)
+            
+            for lst in lists_to_update:
                 for s in lst:
                     if s.get('File') == filename:
                         s['File'] = new_file_name

@@ -314,12 +314,29 @@
   };
 
   // Trigger search on Enter key press
-  document.getElementById('songSearch').addEventListener('keypress', function(e) {
+  const songSearchInput = document.getElementById('songSearch');
+  songSearchInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       search_click();
     }
   });
+
+  // Show/hide clear button
+  songSearchInput.addEventListener('input', function(e) {
+    const clearBtn = document.getElementById('clearBtn');
+    if (e.target.value.length > 0) {
+      clearBtn.classList.remove('hidden');
+    } else {
+      clearBtn.classList.add('hidden');
+    }
+  });
+
+  window.clearSearch = function() {
+    songSearchInput.value = '';
+    document.getElementById('clearBtn').classList.add('hidden');
+    songSearchInput.focus();
+  };
 
   // Quick Search tags implementation
   window.quickSearch = function(term) {

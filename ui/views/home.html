@@ -13,7 +13,16 @@
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input type="text" placeholder="Search..." id="txt_search" spellcheck="false"
-                        class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
+                        class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-10 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
+                    <button
+                        id="home_clearBtn"
+                        class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors duration-200 hidden"
+                        onclick="window.clearHomeSearch()"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -668,6 +677,15 @@
                 clearTimeout(searchTimeout);
                 const value = e.target.value.toLowerCase();
 
+                const clearBtn = document.getElementById('home_clearBtn');
+                if (clearBtn) {
+                    if (e.target.value.length > 0) {
+                        clearBtn.classList.remove('hidden');
+                    } else {
+                        clearBtn.classList.add('hidden');
+                    }
+                }
+
                 searchTimeout = setTimeout(function () {
                     const containers = document.querySelectorAll("#table-body .song-row-container");
                     containers.forEach(container => {
@@ -690,6 +708,17 @@
         });
 
     }
+
+    window.clearHomeSearch = function() {
+        const input = document.getElementById("txt_search");
+        if (input) {
+            input.value = "";
+            const clearBtn = document.getElementById("home_clearBtn");
+            if (clearBtn) clearBtn.classList.add("hidden");
+            input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+            input.focus();
+        }
+    };
 
     fetch('modals/edit_song.html')
         .then(response => response.text())
