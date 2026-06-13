@@ -28,8 +28,14 @@ def get_base_path():
         return sys._MEIPASS
     return os.path.dirname(os.path.abspath(__file__))
 
+def get_data_path():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
 current_dir = get_base_path()
-db_path = os.path.join(current_dir, 'music_player.db')
+data_dir = get_data_path()
+db_path = os.path.join(data_dir, 'music_player.db')
 html_file = os.path.join(current_dir, 'ui', 'index.html')
 
 #Initialize SQLITE DB

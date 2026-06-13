@@ -3,7 +3,13 @@ import sqlite3
 
 #loads settings from db
 
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'music_player.db')
+def get_data_path():
+    import sys
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+db_path = os.path.join(get_data_path(), 'music_player.db')
 
 # Default values
 path = os.path.expandvars(r'%appdata%\musicPlayer')
