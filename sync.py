@@ -72,6 +72,22 @@ class DatabaseSync:
             with conn.cursor() as cur:
                 cur.execute(PG_SCHEMA)
             conn.commit()
+            
+            # Try to add missing columns in case of schema updates (ignore if already exist)
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("ALTER TABLE songs ADD COLUMN date_download TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("ALTER TABLE songs ADD COLUMN artist VARCHAR(255)")
+                conn.commit()
+            except Exception:
+                conn.rollback()
+
             print(" [Sync] PostgreSQL schema initialized.")
         except Exception as e:
             print(f" [Sync] Failed to init PG schema: {e}")

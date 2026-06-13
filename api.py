@@ -602,12 +602,13 @@ class Api:
         except Exception as e:
             print(f" [Python] Error fetching date_download: {e}")
         
-        self.song_list = []
+        local_list = []
         for file in files:
             file_path = str(path / file)
             song_data = self.get_song_metadata(file_path, file)
             song_data['DateDownload'] = date_lookup.get(file, None)
-            self.song_list.append(song_data)
+            local_list.append(song_data)
+        self.song_list = local_list
         self._window.evaluate_js(f"song_list({json.dumps(self.song_list)})")
     
     def load_settings(self):
@@ -827,9 +828,13 @@ class Api:
                 path = Path(settings.path)
                 if path.exists():
                     files = [f.name for f in path.iterdir() if f.is_file() and f.suffix.lower() == '.mp3']
+                    local_list = []
                     for file in files:
                         file_path = str(path / file)
-                        self.song_list.append(self.get_song_metadata(file_path, file))
+                        local_list.append(self.get_song_metadata(file_path, file))
+                    # Atomic assignment to avoid race condition with send_song_list
+                    if not self.song_list:
+                        self.song_list = local_list
 
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor().execute("SELECT current_song, current_playlist FROM Settings LIMIT 1")

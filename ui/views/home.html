@@ -21,7 +21,7 @@
             <div id="table">
                 <!-- Header Row -->
                 <div id="table-header"
-                    class="grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+                    class="grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
                     <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
                         data-sort-key="Title" onclick="window._homeSortColumn('Title')">Song <span
                             class="sort-arrow text-orange-400 text-[10px]"></span></div>
@@ -31,9 +31,10 @@
                     <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
                         data-sort-key="Duration" onclick="window._homeSortColumn('Duration')">Duration <span
                             class="sort-arrow text-orange-400 text-[10px]"></span></div>
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
-                        data-sort-key="DateDownload" onclick="window._homeSortColumn('DateDownload')">Date Downloaded
-                        <span class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                        data-sort-key="DateDownload" onclick="window._homeSortColumn('DateDownload')">Downloaded
+                        <span class="sort-arrow text-orange-400 text-[10px]"></span>
+                    </div>
                     <div></div>
                 </div>
 
@@ -41,7 +42,7 @@
                 <div id="table-body" class="flex flex-col gap-1 pb-2">
                     <!-- Loading placeholders -->
                     <div
-                        class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50">
+                        class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
                             <div class="flex flex-col gap-2 w-full max-w-[200px]">
@@ -59,7 +60,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 100ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -78,7 +79,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 200ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -97,7 +98,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 300ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -116,7 +117,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 400ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -135,7 +136,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 500ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -154,7 +155,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 600ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -173,7 +174,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 700ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -192,7 +193,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 800ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -211,7 +212,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 900ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -230,7 +231,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 1000ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -249,7 +250,7 @@
                             <div class="w-5 h-5 rounded-full bg-white/10"></div>
                         </div>
                     </div>
-                    <div class="song-row grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
+                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
                         style="animation-delay: 1100ms">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
@@ -306,7 +307,7 @@
         ` : '';
 
         const isPlaylist = song.DateAdded !== undefined;
-        const gridCols = "grid-cols-[3fr_2fr_1fr_1.5fr_auto]";
+        const gridCols = "grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto]";
 
         let dateAddedHtml = "";
         if (isPlaylist) {
@@ -317,7 +318,7 @@
                     dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
                 }
             }
-            dateAddedHtml = `<div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${dateStr}</span></div>`;
+            dateAddedHtml = `<div class="text-sm text-zinc-500 text-right truncate"><span class="hover:text-zinc-400">${dateStr}</span></div>`;
         } else {
             let dateDownloadStr = "";
             if (song.DateDownload) {
@@ -326,7 +327,7 @@
                     dateDownloadStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
                 }
             }
-            dateAddedHtml = `<div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${dateDownloadStr}</span></div>`;
+            dateAddedHtml = `<div class="text-sm text-zinc-500 text-right truncate"><span class="hover:text-zinc-400">${dateDownloadStr}</span></div>`;
         }
 
         return `
@@ -521,6 +522,29 @@
             }
         });
 
+        // Update in-memory arrays so sorting/filtering/scrolling uses new data
+        if (window._homeSongsData) {
+            window._homeSongsData.forEach(song => {
+                if (song.File === oldFilename) {
+                    Object.assign(song, newSongData);
+                }
+            });
+        }
+        if (window._pvSongsData) {
+            window._pvSongsData.forEach(song => {
+                if (song.File === oldFilename) {
+                    Object.assign(song, newSongData);
+                }
+            });
+        }
+        if (window.currentPlaylistSongs) {
+            window.currentPlaylistSongs.forEach(song => {
+                if (song.File === oldFilename) {
+                    Object.assign(song, newSongData);
+                }
+            });
+        }
+
         if (window._coverCache) {
             if (newSongData.CoverArt) {
                 if (newSongData.File !== oldFilename) window._coverCache.delete(oldFilename);
@@ -591,6 +615,27 @@
             const containers = tableBody.querySelectorAll(".song-row-container");
             containers.forEach(container => {
                 if (window.lazyRowObserver) window.lazyRowObserver.observe(container);
+            });
+        }
+
+        // Re-apply active search filter after sort
+        const searchInput = document.getElementById("txt_search");
+        if (searchInput && searchInput.value.trim()) {
+            const value = searchInput.value.toLowerCase();
+            document.querySelectorAll("#table-body .song-row-container").forEach(container => {
+                const rawStr = container.getAttribute('data-path');
+                let songData = {};
+                if (rawStr) {
+                    try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch (err) { }
+                }
+                const title = (songData.Title || "").toLowerCase();
+                const artist = (songData.Artist || "").toLowerCase();
+                const album = (songData.Album || "").toLowerCase();
+                if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
+                    container.style.display = "";
+                } else {
+                    container.style.display = "none";
+                }
             });
         }
     };

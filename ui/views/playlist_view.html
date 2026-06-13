@@ -143,7 +143,7 @@
     <!-- Controls & Table Placeholder -->
     <div class="flex flex-col gap-4">
         <div id="pv-table-header"
-            class="grid grid-cols-[3fr_2fr_1fr_1.5fr_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+            class="grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
             <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
                 data-sort-key="Title" onclick="window._pvSortColumn('Title')">Song <span
                     class="sort-arrow text-orange-400 text-[10px]"></span></div>
@@ -153,8 +153,8 @@
             <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
                 data-sort-key="Duration" onclick="window._pvSortColumn('Duration')">Duration <span
                     class="sort-arrow text-orange-400 text-[10px]"></span></div>
-            <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
-                data-sort-key="DateAdded" onclick="window._pvSortColumn('DateAdded')">Date Added <span
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                data-sort-key="DateAdded" onclick="window._pvSortColumn('DateAdded')">Added <span
                     class="sort-arrow text-orange-400 text-[10px]"></span></div>
             <div></div>
         </div>
@@ -539,6 +539,27 @@
                     <p class="text-sm text-zinc-500 mt-2 max-w-md">Start adding songs to this playlist from your library by right-clicking a song and choosing 'Add to Playlist'.</p>
                 </div>
             `;
+        }
+
+        // Re-apply active search filter after sort
+        const searchInput = document.getElementById("pv_txt_search");
+        if (searchInput && searchInput.value.trim()) {
+            const value = searchInput.value.toLowerCase();
+            document.querySelectorAll("#pv-songs-container .song-row-container").forEach(row => {
+                const rawStr = row.getAttribute('data-path');
+                let songData = {};
+                if (rawStr) {
+                    try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch (err) { }
+                }
+                const title = (songData.Title || "").toLowerCase();
+                const artist = (songData.Artist || "").toLowerCase();
+                const album = (songData.Album || "").toLowerCase();
+                if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
         }
     };
 

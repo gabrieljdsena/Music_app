@@ -789,6 +789,9 @@
         songData = songData || window.current_playing_song;
         if (!songData) return;
 
+        window.lyricsFetchId = (window.lyricsFetchId || 0) + 1;
+        const currentFetchId = window.lyricsFetchId;
+
         container.innerHTML = `<p class="text-zinc-500 text-2xl md:text-4xl font-semibold animate-pulse">Loading lyrics for ${songData.Title}...</p>`;
         window.parsedLyrics = [];
 
@@ -800,6 +803,10 @@
                 songData.Duration
             );
             
+            if (window.lyricsFetchId !== currentFetchId) {
+                return; // Another fetch has started, ignore these results
+            }
+
             if (lyricsData && lyricsData.synced) {
                 window.parsedLyrics = window.parseLRC(lyricsData.synced);
                 window.renderLyrics();
