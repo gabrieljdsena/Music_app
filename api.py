@@ -584,7 +584,8 @@ class Api:
                 self._window.evaluate_js(f"if (typeof update_download_progress === 'function') update_download_progress({safe_data}, 100, 'Done!');")
                 
         try:
-            result = self.downloader.download_song(data, progress_callback)
+            search_query = data.get('url') or f"{data.get('title', '')} {data.get('artist', '')} audio".strip() if isinstance(data, dict) else data
+            result = self.downloader.download_song(search_query, progress_callback)
             # Save downloaded song to the Songs table
             if isinstance(result, dict) and result.get("status") == "success":
                 try:
@@ -700,6 +701,131 @@ class Api:
         except Exception as e:
             print(f" [Python] Sync error: {e}")
             return f"Error: {str(e)}"
+
+    def sync_remote_to_local_and_download(self):
+        """Fetch missing songs from remote database, save to local, and trigger downloads."""
+        DATABASE_URL = os.getenv("DATABASE_URL")
+        if not DATABASE_URL:
+            return "No DATABASE_URL found. Remote sync unavailable."
+        
+        try:
+            import psycopg2
+            conn = psycopg2.connect(DATABASE_URL)
+            with conn.cursor() as cur:
+                # Add check for songs table existence
+                cur.execute("SELECT to_regclass('public.songs')")
+                if not cur.fetchone()[0]:
+                    return "Remote database not initialized yet."
+                cur.execute("SELECT file, downloaded_link, title, date_download, artist FROM songs")
+                remote_songs = cur.fetchall()
+                
+                cur.execute("SELECT id, title, description FROM playlists")
+                remote_playlists = cur.fetchall()
+                
+                cur.execute("SELECT id, song_file, playlist_id, date_added FROM song_playlist")
+                remote_song_playlist = cur.fetchall()
+                
+                cur.execute("SELECT id, song_file, lyrics FROM lyrics")
+                remote_lyrics = cur.fetchall()
+                
+                cur.execute("SELECT id, song_file, date_played FROM music_history")
+                remote_music_history = cur.fetchall()
+                
+                cur.execute("SELECT id, playlist_id, date_played FROM playlist_history")
+                remote_playlist_history = cur.fetchall()
+            conn.close()
+        except Exception as e:
+            return f"Error connecting to remote DB: {e}"
+        
+        songs_to_download = []
+        added_count = 0
+        try:
+            with sqlite3.connect(self.db_path) as local_conn:
+                for file, downloaded_link, title, date_download, artist in remote_songs:
+                    # Check if exists in local db
+                    cursor = local_conn.execute("SELECT file FROM Songs WHERE file = ?", (file,))
+                    if not cursor.fetchone():
+                        # Insert into local
+                        local_conn.execute(
+                            "INSERT INTO Songs (file, downloaded_link, title, date_download, artist) VALUES (?, ?, ?, ?, ?)",
+                            (file, downloaded_link, title, date_download, artist)
+                        )
+                        added_count += 1
+                        
+                        file_path = os.path.join(settings.path, file)
+                        if not os.path.exists(file_path):
+                            if downloaded_link:
+                                vid_id = downloaded_link.split("v=")[-1] if "v=" in downloaded_link else downloaded_link.split("/")[-1]
+                                url = downloaded_link
+                            else:
+                                vid_id = ""
+                                url = f"{title} {artist if artist else ''} audio".strip()
+                                
+                            songs_to_download.append({
+                                "id": vid_id,
+                                "url": url,
+                                "title": title,
+                                "artist": artist if artist else "Unknown"
+                            })
+                
+                # Sync other tables
+                for row in remote_playlists:
+                    local_conn.execute("""
+                        INSERT INTO Playlists (id, title, description) VALUES (?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            title = excluded.title,
+                            description = excluded.description
+                    """, row)
+                for row in remote_song_playlist:
+                    local_conn.execute("""
+                        INSERT INTO Song_Playlist (id, song_file, playlist_id, date_added) VALUES (?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            song_file = excluded.song_file,
+                            playlist_id = excluded.playlist_id,
+                            date_added = excluded.date_added
+                    """, row)
+                for row in remote_lyrics:
+                    local_conn.execute("""
+                        INSERT INTO Lyrics (id, song_file, lyrics) VALUES (?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            song_file = excluded.song_file,
+                            lyrics = excluded.lyrics
+                    """, row)
+                for row in remote_music_history:
+                    local_conn.execute("""
+                        INSERT INTO Music_History (id, song_file, date_played) VALUES (?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            song_file = excluded.song_file,
+                            date_played = excluded.date_played
+                    """, row)
+                for row in remote_playlist_history:
+                    local_conn.execute("""
+                        INSERT INTO Playlist_History (id, playlist_id, date_played) VALUES (?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            playlist_id = excluded.playlist_id,
+                            date_played = excluded.date_played
+                    """, row)
+                    
+        except Exception as e:
+            return f"Error syncing to local DB: {e}"
+        
+        if songs_to_download:
+            import threading
+            def download_worker():
+                for song_data in songs_to_download:
+                    # Notify UI that a download started
+                    try:
+                        self.recieve_download(song_data)
+                    except Exception as e:
+                        print(f" [Python] Download error for {song_data.get('title')}: {e}")
+                
+                # Refresh song list after all downloads complete
+                if self._window:
+                    self._window.evaluate_js("if (typeof window.pywebview !== 'undefined' && typeof window.pywebview.api !== 'undefined') window.pywebview.api.send_song_list();")
+                    
+            threading.Thread(target=download_worker, daemon=True).start()
+            
+        return f"Synced {added_count} new entries from remote DB. Started downloading {len(songs_to_download)} songs."
 
     def delete_song(self, song_data):
         filename = song_data.get('File')
