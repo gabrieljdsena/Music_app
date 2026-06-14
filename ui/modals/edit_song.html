@@ -34,9 +34,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
                     </svg>
                 </div>
-                <div class="flex-grow">
-                    <label for="edit-cover" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Cover Image</label>
-                    <input type="file" id="edit-cover" accept="image/*" class="mt-1 block w-full text-xs text-zinc-300 cursor-pointer bg-transparent outline-none focus:outline-none file:mr-3 file:py-1 file:px-2.5 file:border file:border-white/10 file:rounded-md file:text-xs file:font-semibold file:bg-neutral-800 file:text-zinc-200 file:hover:bg-neutral-700 file:cursor-pointer file:transition-colors">
+                <div class="flex-grow flex items-center justify-between">
+                    <div class="flex-grow">
+                        <label for="edit-cover" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Cover Image</label>
+                        <input type="file" id="edit-cover" accept="image/*" class="mt-1 block w-full text-xs text-zinc-300 cursor-pointer bg-transparent outline-none focus:outline-none file:mr-3 file:py-1 file:px-2.5 file:border file:border-white/10 file:rounded-md file:text-xs file:font-semibold file:bg-neutral-800 file:text-zinc-200 file:hover:bg-neutral-700 file:cursor-pointer file:transition-colors">
+                    </div>
+                    <button type="button" onclick="removeCoverImage()" class="ml-2 mt-4 px-2 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-xs font-semibold border border-red-500/30 transition-colors" title="Remove Cover">
+                        Remove
+                    </button>
                 </div>
             </div>
             
@@ -79,6 +84,18 @@
         const modal = document.getElementById('editSongModal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+    }
+
+    function removeCoverImage() {
+        document.getElementById('edit-cover').value = '';
+        document.getElementById('edit-cover-art-data').value = 'REMOVE';
+        
+        const previewImg = document.getElementById('edit-cover-preview');
+        const previewFallback = document.getElementById('edit-cover-preview-fallback');
+        
+        previewImg.src = '';
+        previewImg.classList.add('hidden');
+        previewFallback.classList.remove('hidden');
     }
 
     document.getElementById('edit-cover').addEventListener('change', function(e) {

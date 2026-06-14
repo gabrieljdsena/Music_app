@@ -15,6 +15,7 @@ import time
 import urllib.request
 import urllib.parse
 import re
+import datetime
 
 try:
     import pykakasi
@@ -694,7 +695,12 @@ class Api:
                             conn.execute("UPDATE Songs SET title = ?, artist = ? WHERE file = ?", (title, artist, file))
                             updated_count += 1
                     else:
-                        conn.execute("INSERT INTO Songs (file, title, artist) VALUES (?, ?, ?)", (file, title, artist))
+                        try:
+                            mtime = os.path.getmtime(file_path)
+                            dt = datetime.datetime.utcfromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                            conn.execute("INSERT INTO Songs (file, title, artist, date_download) VALUES (?, ?, ?, ?)", (file, title, artist, dt))
+                        except Exception:
+                            conn.execute("INSERT INTO Songs (file, title, artist) VALUES (?, ?, ?)", (file, title, artist))
                         added_count += 1
                         
             return f"Sync complete: {added_count} added, {updated_count} updated."
@@ -890,8 +896,13 @@ class Api:
             
             if song_data.get('CoverArt'):
                 cover_art = song_data['CoverArt']
-                img_data = None
-                mime = 'image/jpeg'
+                if cover_art == 'REMOVE':
+                    keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
+                    for k in keys_to_remove:
+                        audio.tags.pop(k)
+                else:
+                    img_data = None
+                    mime = 'image/jpeg'
                 
                 if cover_art.startswith('data:'):
                     header, encoded = cover_art.split(',', 1)
@@ -911,28 +922,30 @@ class Api:
                     except Exception as e:
                         print(f" [Python] Failed to download artwork from URL {cover_art}: {e}")
                 
-                if img_data:
-                    # Remove any existing cover art to avoid multiple stacked APIC frames
-                    keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
-                    for k in keys_to_remove:
-                        audio.tags.pop(k)
+                    if img_data:
+                        # Remove any existing cover art to avoid multiple stacked APIC frames
+                        keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
+                        for k in keys_to_remove:
+                            audio.tags.pop(k)
 
-                    audio.tags.add(
-                        APIC(
-                            encoding=3, mime=mime, type=3, desc=u'Cover', data=img_data
+                        audio.tags.add(
+                            APIC(
+                                encoding=3, mime=mime, type=3, desc=u'Cover', data=img_data
+                            )
                         )
-                    )
             
             audio.save(v2_version=3)
             
             new_title = song_data.get('Title', '')
             new_file_name = filename
             
-            if new_title and f"{new_title}.mp3" != filename:
-                new_file_path = os.path.join(settings.path, f"{new_title}.mp3")
-                if not os.path.exists(new_file_path):
-                    os.rename(total_path, new_file_path)
-                    new_file_name = f"{new_title}.mp3"
+            if new_title:
+                safe_title = re.sub(r'[<>:"/\\|?*]', '', new_title).strip()
+                if safe_title and f"{safe_title}.mp3" != filename:
+                    new_file_path = os.path.join(settings.path, f"{safe_title}.mp3")
+                    if not os.path.exists(new_file_path):
+                        os.rename(total_path, new_file_path)
+                        new_file_name = f"{safe_title}.mp3"
             
             # Resume playback if we interrupted the current song
             if is_current_song:
@@ -941,7 +954,9 @@ class Api:
                 self.last_song['Artist'] = song_data.get('Artist', self.last_song.get('Artist', 'Unknown'))
                 self.last_song['Album'] = song_data.get('Album', self.last_song.get('Album', 'Unknown'))
                 self.last_song['Year'] = song_data.get('Year', self.last_song.get('Year', 'Unknown'))
-                if song_data.get('CoverArt'):
+                if song_data.get('CoverArt') == 'REMOVE':
+                    self.last_song['CoverArt'] = None
+                elif song_data.get('CoverArt'):
                     self.last_song['CoverArt'] = song_data['CoverArt']
                 
                 safe_song = json.dumps(self.last_song)
@@ -981,7 +996,8 @@ class Api:
                         if 'Artist' in song_data: s['Artist'] = song_data['Artist']
                         if 'Album' in song_data: s['Album'] = song_data['Album']
                         if 'Year' in song_data: s['Year'] = song_data['Year']
-                        if song_data.get('CoverArt'): s['CoverArt'] = song_data['CoverArt']
+                        if song_data.get('CoverArt') == 'REMOVE': s['CoverArt'] = None
+                        elif song_data.get('CoverArt'): s['CoverArt'] = song_data['CoverArt']
 
             if self._window:
                 updated_song = next((s for s in getattr(self, 'song_list', []) if s.get('File') == new_file_name), song_data)
@@ -1070,10 +1086,20 @@ class Api:
         # 2. Fetch from lrclib.net on cache miss
         base_url = "https://lrclib.net/api/get"
         
+        # Clean track_name and artist_name for better results
+        clean_track = track_name.replace('？', '?').replace('！', '!')
+        clean_track = re.sub(r'\s*[\(\[].*?(remaster|mix|version|edit|live|feat\.|ft\.).*?[\)\]]', '', clean_track, flags=re.IGNORECASE).strip()
+        clean_artist = artist_name
+
+        if clean_artist.lower() in ["unknown", "unknown artist", ""] and " - " in clean_track:
+            parts = clean_track.split(" - ", 1)
+            clean_artist = parts[0].strip()
+            clean_track = parts[1].strip()
+
         # Build query parameters
         params = {
-            "track_name": track_name,
-            "artist_name": artist_name
+            "track_name": clean_track,
+            "artist_name": clean_artist
         }
         if duration_seconds:
             params["duration"] = int(duration_seconds)

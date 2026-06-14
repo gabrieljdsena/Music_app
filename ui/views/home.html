@@ -564,6 +564,14 @@
                 window._coverCache.set(newSongData.File, oldCover);
             }
         }
+
+        // Refresh lists to fix layout gaps and re-sort if necessary
+        if (typeof window._homeRenderSorted === 'function') {
+            window._homeRenderSorted();
+        }
+        if (typeof window._pvRenderSorted === 'function') {
+            window._pvRenderSorted();
+        }
     };
 
     // Python -> JS
