@@ -78,6 +78,10 @@ class Api:
             else:
                 self.prev_songs.append(song)
 
+        if not found and len(self.song_list) > 0:
+            self.next_songs = list(self.song_list)
+            self.prev_songs.clear()
+
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute("UPDATE Settings SET current_playlist = NULL")
@@ -219,6 +223,16 @@ class Api:
 
         if current_song is None:
             if self.first_play:
+                if self.current_filename and os.path.exists(os.path.join(settings.path, str(self.current_filename))):
+                    try:
+                        pygame.mixer.music.load(os.path.join(settings.path, str(self.current_filename)))
+                        pygame.mixer.music.play()
+                        self.playing = True
+                        self.first_play = False
+                        self._smtc.playback_status = media.MediaPlaybackStatus.PLAYING
+                        return True
+                    except Exception as e:
+                        print(f" [Python] Force play error: {e}")
                 return None
             if self.playing:
                 self.pause_time = self.get_current_pos()
@@ -257,6 +271,14 @@ class Api:
             pygame.mixer.music.stop()
             self.first_play = True
             self.current_time_offset = 0
+        else:
+            # Same file, but check if it's a different instance (different row clicked)
+            last_instance = self.last_song.get('_instanceId') or self.last_song.get('_historyId')
+            curr_instance = current_song.get('_instanceId') or current_song.get('_historyId')
+            if last_instance and curr_instance and str(last_instance) != str(curr_instance):
+                pygame.mixer.music.stop()
+                self.first_play = True
+                self.current_time_offset = 0
 
         if(self.first_play):
             self._window.evaluate_js(f"playing_view({json.dumps(current_song)})")
@@ -1089,7 +1111,7 @@ class Api:
         # Clean track_name and artist_name for better results
         clean_track = track_name.replace('？', '?').replace('！', '!')
         clean_track = re.sub(r'\s*[\(\[].*?(remaster|mix|version|edit|live|feat\.|ft\.).*?[\)\]]', '', clean_track, flags=re.IGNORECASE).strip()
-        clean_artist = artist_name
+        clean_artist = artist_name or ""
 
         if clean_artist.lower() in ["unknown", "unknown artist", ""] and " - " in clean_track:
             parts = clean_track.split(" - ", 1)
@@ -1339,3 +1361,59 @@ class Api:
         except Exception as e:
             print(f" [Python] Error loading playlist songs: {str(e)}")
             return []
+
+    def get_download_history(self, page=1, limit=10):
+        try:
+            import math
+            page = int(page)
+            limit = int(limit)
+            offset = (page - 1) * limit
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT COUNT(*) FROM Songs")
+                total_count = cursor.fetchone()[0]
+                total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+
+                cursor = conn.execute("SELECT file, date_download FROM Songs ORDER BY date_download DESC LIMIT ? OFFSET ?", (limit, offset))
+                rows = cursor.fetchall()
+                
+                history_songs = []
+                for row in rows:
+                    file_name = row[0]
+                    date_download = row[1]
+                    file_path = os.path.join(settings.path, file_name)
+                    if os.path.exists(file_path):
+                        song_data = self.get_song_metadata(file_path, file_name, include_cover=True)
+                        song_data['DateDownload'] = date_download.replace(' ', 'T') + 'Z' if date_download else None
+                        history_songs.append(song_data)
+                return {"items": history_songs, "total_pages": total_pages, "current_page": page}
+        except Exception as e:
+            print(f" [Python] Error loading download history: {str(e)}")
+            return {"items": [], "total_pages": 1, "current_page": 1}
+
+    def get_played_history(self, page=1, limit=10):
+        try:
+            import math
+            page = int(page)
+            limit = int(limit)
+            offset = (page - 1) * limit
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT COUNT(*) FROM Music_History")
+                total_count = cursor.fetchone()[0]
+                total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+
+                cursor = conn.execute("SELECT song_file, date_played FROM Music_History ORDER BY date_played DESC LIMIT ? OFFSET ?", (limit, offset))
+                rows = cursor.fetchall()
+                
+                history_songs = []
+                for row in rows:
+                    file_name = row[0]
+                    date_played = row[1]
+                    file_path = os.path.join(settings.path, file_name)
+                    if os.path.exists(file_path):
+                        song_data = self.get_song_metadata(file_path, file_name, include_cover=True)
+                        song_data['DatePlayed'] = date_played.replace(' ', 'T') + 'Z' if date_played else None
+                        history_songs.append(song_data)
+                return {"items": history_songs, "total_pages": total_pages, "current_page": page}
+        except Exception as e:
+            print(f" [Python] Error loading played history: {str(e)}")
+            return {"items": [], "total_pages": 1, "current_page": 1}

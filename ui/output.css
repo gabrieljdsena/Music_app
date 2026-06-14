@@ -444,6 +444,9 @@
   .ml-0 {
     margin-left: 0;
   }
+  .ml-0\.5 {
+    margin-left: calc(var(--spacing) * 0.5);
+  }
   .ml-1 {
     margin-left: var(--spacing);
   }
@@ -791,6 +794,9 @@
   .animate-spin {
     animation: var(--animate-spin);
   }
+  .cursor-not-allowed {
+    cursor: not-allowed;
+  }
   .cursor-pointer {
     cursor: pointer;
   }
@@ -982,6 +988,9 @@
   .border-neutral-900 {
     border-color: var(--color-neutral-900);
   }
+  .border-orange-400 {
+    border-color: var(--color-orange-400);
+  }
   .border-orange-500 {
     border-color: var(--color-orange-500);
   }
@@ -1008,6 +1017,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--color-red-500) 30%, transparent);
     }
+  }
+  .border-transparent {
+    border-color: transparent;
   }
   .border-white\/5 {
     border-color: color-mix(in srgb, #fff 5%, transparent);
@@ -1097,6 +1109,12 @@
     background-color: color-mix(in srgb, oklch(70.5% 0.213 47.604) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-orange-500) 30%, transparent);
+    }
+  }
+  .bg-orange-500\/\[0\.06\] {
+    background-color: color-mix(in srgb, oklch(70.5% 0.213 47.604) 6%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-orange-500) 6%, transparent);
     }
   }
   .bg-orange-600\/10 {
@@ -1730,6 +1748,12 @@
       --tw-ring-color: color-mix(in oklab, var(--color-orange-500) 30%, transparent);
     }
   }
+  .ring-orange-500\/40 {
+    --tw-ring-color: color-mix(in srgb, oklch(70.5% 0.213 47.604) 40%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      --tw-ring-color: color-mix(in oklab, var(--color-orange-500) 40%, transparent);
+    }
+  }
   .outline {
     outline-style: var(--tw-outline-style);
     outline-width: 1px;
@@ -2207,6 +2231,16 @@
       }
     }
   }
+  .hover\:border-white\/30 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: color-mix(in srgb, #fff 30%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          border-color: color-mix(in oklab, var(--color-white) 30%, transparent);
+        }
+      }
+    }
+  }
   .hover\:border-white\/\[0\.2\] {
     &:hover {
       @media (hover: hover) {
@@ -2647,9 +2681,19 @@
       height: calc(var(--spacing) * 6);
     }
   }
+  .sm\:h-20 {
+    @media (width >= 40rem) {
+      height: calc(var(--spacing) * 20);
+    }
+  }
   .sm\:w-6 {
     @media (width >= 40rem) {
       width: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:w-20 {
+    @media (width >= 40rem) {
+      width: calc(var(--spacing) * 20);
     }
   }
   .sm\:w-28 {

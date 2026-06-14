@@ -416,6 +416,9 @@
 
         if (!songData) return;
         const fileName = songData.File;
+        const targetInstanceId = songData._instanceId || null;
+        
+        let seenFiles = {};
 
         document.querySelectorAll(".song-row").forEach(row => {
             const rawDataStr = row.getAttribute("data-path");
@@ -423,22 +426,36 @@
                 try {
                     const rowData = JSON.parse(rawDataStr.replace(/&quot;/g, '"'));
                     if (rowData.File === fileName) {
-                        row.classList.add(...activeClasses);
-                        const title = row.querySelector(".song-title");
-                        if (title) {
-                            title.classList.remove("text-zinc-100");
-                            title.classList.add("text-orange-400");
+                        let isMatch = false;
+                        if (targetInstanceId) {
+                            if (rowData._instanceId === targetInstanceId) {
+                                isMatch = true;
+                            }
+                        } else {
+                            if (!seenFiles[fileName]) {
+                                isMatch = true;
+                                seenFiles[fileName] = true;
+                            }
                         }
-                        const coverContainer = row.querySelector(".cover-art-container");
-                        if (coverContainer) {
-                            coverContainer.insertAdjacentHTML('beforebegin', `
-                    <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
-                        <div class="visualizer-bar"></div>
-                    </div>
-                            `);
+                        
+                        if (isMatch) {
+                            row.classList.add(...activeClasses);
+                            const title = row.querySelector(".song-title");
+                            if (title) {
+                                title.classList.remove("text-zinc-100");
+                                title.classList.add("text-orange-400");
+                            }
+                            const coverContainer = row.querySelector(".cover-art-container");
+                            if (coverContainer) {
+                                coverContainer.insertAdjacentHTML('beforebegin', `
+                        <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                        </div>
+                                `);
+                            }
                         }
                     }
                 } catch (e) { }
@@ -621,7 +638,8 @@
             });
         }
         let tableHtmlBuffer = "";
-        sorted.forEach(song => {
+        sorted.forEach((song, idx) => {
+            if (!song._instanceId) song._instanceId = 'home_' + idx + '_' + Date.now();
             tableHtmlBuffer += `
             <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
             </div>`;

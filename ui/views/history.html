@@ -1,0 +1,312 @@
+<div x-data="{ tab: 'download', downloadPage: 1, playedPage: 1, downloadTotalPages: 1, playedTotalPages: 1 }"
+  class="flex flex-col items-center justify-start w-full pt-12 max-w-4xl mx-auto px-4">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div
+      class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 mb-5 shadow-lg shadow-orange-500/30">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-orange-400">History</h1>
+    <p class="text-zinc-500 mt-2 text-sm sm:text-base tracking-wide">
+      Your download and playback history
+    </p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-4 sm:gap-8 border-b border-white/10 mb-6 w-full justify-center">
+    <button @click="tab = 'download'; loadDownloadHistory(downloadPage)"
+      :class="tab === 'download' ? 'text-orange-400 border-orange-400 border-b-2 pb-3 font-semibold' : 'text-zinc-400 border-transparent border-b-2 hover:text-white hover:border-white/30 pb-3 transition-colors'"
+      class="cursor-pointer">Download History</button>
+    <button @click="tab = 'played'; loadPlayedHistory(playedPage)"
+      :class="tab === 'played' ? 'text-orange-400 border-orange-400 border-b-2 pb-3 font-semibold' : 'text-zinc-400 border-transparent border-b-2 hover:text-white hover:border-white/30 pb-3 transition-colors'"
+      class="cursor-pointer">Played History</button>
+  </div>
+
+  <!-- Download Tab Content -->
+  <div x-show="tab === 'download'" class="w-full flex-grow pb-24">
+    <div id="download-history-container" class="flex flex-col gap-3">
+      <div class="text-center py-8 text-zinc-500"><span class="spinner"></span> Loading Download History...</div>
+    </div>
+    <!-- Pagination for Download -->
+    <div class="flex items-center justify-center gap-4 mt-8" x-show="downloadTotalPages > 1" style="display: none;"
+      x-bind:style="downloadTotalPages > 1 ? '' : 'display: none;'">
+      <button @click="if(downloadPage > 1) { downloadPage--; loadDownloadHistory(downloadPage); }"
+        :class="downloadPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'"
+        class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white transition-colors hover:cursor-pointer">Previous</button>
+      <span class="text-zinc-400 text-sm">Page <span x-text="downloadPage"></span> of <span
+          x-text="downloadTotalPages"></span></span>
+      <button @click="if(downloadPage < downloadTotalPages) { downloadPage++; loadDownloadHistory(downloadPage); }"
+        :class="downloadPage === downloadTotalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'"
+        class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white transition-colors hover:cursor-pointer">Next</button>
+    </div>
+  </div>
+
+  <!-- Played Tab Content -->
+  <div x-show="tab === 'played'" class="w-full flex-grow pb-24" style="display: none;">
+    <div id="played-history-container" class="flex flex-col gap-3">
+      <div class="text-center py-8 text-zinc-500"><span class="spinner"></span> Loading Played History...</div>
+    </div>
+    <!-- Pagination for Played -->
+    <div class="flex items-center justify-center gap-4 mt-8" x-show="playedTotalPages > 1" style="display: none;"
+      x-bind:style="playedTotalPages > 1 ? '' : 'display: none;'">
+      <button @click="if(playedPage > 1) { playedPage--; loadPlayedHistory(playedPage); }"
+        :class="playedPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'"
+        class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white transition-colors">Previous</button>
+      <span class="text-zinc-400 text-sm">Page <span x-text="playedPage"></span> of <span
+          x-text="playedTotalPages"></span></span>
+      <button @click="if(playedPage < playedTotalPages) { playedPage++; loadPlayedHistory(playedPage); }"
+        :class="playedPage === playedTotalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'"
+        class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white transition-colors">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.loadDownloadHistory = async function (page) {
+    page = page || 1;
+    var container = document.getElementById("download-history-container");
+    if (!container) return;
+    container.innerHTML = '<div class="text-center py-8 text-zinc-500"><span class="spinner"></span> Loading Download History...</div>';
+    try {
+      var result = await window.pywebview.api.get_download_history(page, 10);
+      document.dispatchEvent(new CustomEvent('update-history-pagination', { detail: { tab: 'download', totalPages: result.total_pages || 1, page: result.current_page || 1 } }));
+      renderHistory(result.items || result, container, 'DateDownload', 'Downloaded on');
+    } catch (e) {
+      console.error("Download history error:", e);
+      container.innerHTML = '<div class="text-red-500 text-center py-4">Error loading download history.</div>';
+    }
+  };
+
+  window.loadPlayedHistory = async function (page) {
+    page = page || 1;
+    var container = document.getElementById("played-history-container");
+    if (!container) return;
+    container.innerHTML = '<div class="text-center py-8 text-zinc-500"><span class="spinner"></span> Loading Played History...</div>';
+    try {
+      var result = await window.pywebview.api.get_played_history(page, 10);
+      document.dispatchEvent(new CustomEvent('update-history-pagination', { detail: { tab: 'played', totalPages: result.total_pages || 1, page: result.current_page || 1 } }));
+      renderHistory(result.items || result, container, 'DatePlayed', 'Played on');
+    } catch (e) {
+      console.error("Played history error:", e);
+      container.innerHTML = '<div class="text-red-500 text-center py-4">Error loading played history.</div>';
+    }
+  };
+
+  document.addEventListener('update-history-pagination', function (e) {
+    var tab = e.detail.tab;
+    var totalPages = e.detail.totalPages;
+    var page = e.detail.page;
+    var el = document.querySelector('[x-data]');
+    if (el && el._x_dataStack) {
+      if (tab === 'download') {
+        el._x_dataStack[0].downloadTotalPages = totalPages;
+        el._x_dataStack[0].downloadPage = page;
+      } else {
+        el._x_dataStack[0].playedTotalPages = totalPages;
+        el._x_dataStack[0].playedPage = page;
+      }
+    }
+  });
+
+  function renderHistory(history, container, dateField, dateLabel) {
+    if (!history || history.length === 0) {
+      container.innerHTML = '<div class="text-zinc-500 py-8 text-center bg-white/[0.02] border border-white/[0.05] rounded-xl">No history found.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    var seenFiles = {};
+    for (var i = 0; i < history.length; i++) {
+      var song = history[i];
+      var dateStr = 'Unknown date';
+      if (song[dateField]) {
+        var d = new Date(song[dateField]);
+        if (!isNaN(d.getTime())) {
+          dateStr = d.toLocaleString();
+        }
+      }
+      var cover = song.CoverArt || '';
+      var imgTag = '';
+      if (cover) {
+        imgTag = '<img src="' + cover + '" class="w-full h-full object-cover">';
+      } else {
+        imgTag = '<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg></div>';
+      }
+
+      song._historyId = dateField + '_' + song.File + '_' + (song[dateField] || i);
+      
+      var isCurrentSong = false;
+      var currentSong = window.current_playing_song || null;
+      if (currentSong && currentSong.File === song.File) {
+        if (currentSong._historyId) {
+          isCurrentSong = (currentSong._historyId === song._historyId);
+        } else {
+          if (!seenFiles[song.File]) {
+            isCurrentSong = true;
+            seenFiles[song.File] = true;
+          }
+        }
+      }
+      
+      var isPlaying = isCurrentSong && window.is_currently_playing;
+
+      var row = document.createElement('div');
+      row.className = 'history-row flex items-center gap-4 bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 hover:bg-white/[0.08] transition-all duration-300 cursor-pointer';
+      row.setAttribute('data-file', song.File);
+      row._songData = song;
+      if (isCurrentSong) row.classList.add('ring-1', 'ring-orange-500/40', 'bg-orange-500/[0.06]');
+
+      var thumb = document.createElement('div');
+      thumb.className = 'relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 group rounded-lg overflow-hidden cursor-pointer shadow-md';
+      thumb.innerHTML = imgTag + '<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]"><svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>';
+      thumb._songData = song;
+      thumb.addEventListener('click', function () {
+        playHistorySong(this._songData);
+      });
+
+      var info = document.createElement('div');
+      info.className = 'flex-1 min-w-0 cursor-pointer';
+      var h4 = document.createElement('h4');
+      h4.className = 'text-zinc-100 font-medium truncate text-sm sm:text-base';
+      h4.textContent = song.Title || 'Unknown';
+      var pArtist = document.createElement('p');
+      pArtist.className = 'text-zinc-400 text-xs sm:text-sm truncate';
+      pArtist.textContent = song.Artist || 'Unknown';
+      var pDate = document.createElement('p');
+      pDate.className = 'text-zinc-600 text-xs mt-1';
+      pDate.textContent = dateLabel + ': ' + dateStr;
+      info.appendChild(h4);
+      info.appendChild(pArtist);
+      info.appendChild(pDate);
+      info._songData = song;
+      info.addEventListener('click', function () {
+        playHistorySong(this._songData);
+      });
+
+      var actions = document.createElement('div');
+      actions.className = 'flex gap-2 flex-shrink-0';
+      var playBtn = document.createElement('button');
+      playBtn.className = 'history-play-btn cursor-pointer flex items-center justify-center w-10 h-10 rounded-full bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white transition-colors shadow-md';
+      playBtn.setAttribute('data-file', song.File);
+      playBtn._songData = song;
+      if (isPlaying) {
+        playBtn.title = 'Pause';
+        playBtn.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>';
+      } else {
+        playBtn.title = 'Play';
+        playBtn.innerHTML = '<svg class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+      }
+      playBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var myRow = this.closest('.history-row');
+        var isActiveRow = myRow.classList.contains('ring-orange-500/40');
+        
+        if (isActiveRow) {
+          window.toggle_play_pause();
+        } else {
+          playHistorySong(this._songData);
+        }
+      });
+      actions.appendChild(playBtn);
+
+      row.appendChild(thumb);
+      row.appendChild(info);
+      row.appendChild(actions);
+      container.appendChild(row);
+    }
+  }
+
+  var PLAY_ICON = '<svg class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  var PAUSE_ICON = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>';
+
+  // Update history play buttons when the global playing state changes
+  window.updateHistoryPlayState = function () {
+    var btns = document.querySelectorAll('.history-play-btn');
+    var rows = document.querySelectorAll('.history-row');
+    var currentSong = window.current_playing_song || null;
+    var currentFile = currentSong ? currentSong.File : null;
+    var currentHistoryId = currentSong ? currentSong._historyId : null;
+    var playing = window.is_currently_playing;
+
+    var seenFiles = {};
+
+    for (var i = 0; i < btns.length; i++) {
+      var btnFile = btns[i].getAttribute('data-file');
+      var btnHistoryId = btns[i]._songData ? btns[i]._songData._historyId : null;
+      var tabIdBtn = btns[i].closest('#download-history-container') ? 'download' : 'played';
+      if (!seenFiles[tabIdBtn]) seenFiles[tabIdBtn] = {};
+      
+      var isMatch = false;
+      if (btnFile === currentFile) {
+        if (currentHistoryId) {
+          isMatch = (btnHistoryId === currentHistoryId);
+        } else {
+          if (!seenFiles[tabIdBtn][btnFile]) {
+            isMatch = true;
+            seenFiles[tabIdBtn][btnFile] = true;
+          }
+        }
+      }
+
+      if (isMatch && playing) {
+        btns[i].innerHTML = PAUSE_ICON;
+        btns[i].title = 'Pause';
+      } else {
+        btns[i].innerHTML = PLAY_ICON;
+        btns[i].title = 'Play';
+      }
+    }
+    
+    seenFiles = {}; // reset for rows
+    for (var j = 0; j < rows.length; j++) {
+      var rowFile = rows[j].getAttribute('data-file');
+      var rowHistoryId = rows[j]._songData ? rows[j]._songData._historyId : null;
+      var tabId = rows[j].closest('#download-history-container') ? 'download' : 'played';
+      if (!seenFiles[tabId]) seenFiles[tabId] = {};
+      
+      var isMatch = false;
+      if (rowFile === currentFile) {
+        if (currentHistoryId) {
+          isMatch = (rowHistoryId === currentHistoryId);
+        } else {
+          if (!seenFiles[tabId][rowFile]) {
+            isMatch = true;
+            seenFiles[tabId][rowFile] = true;
+          }
+        }
+      }
+
+      if (isMatch) {
+        rows[j].classList.add('ring-1', 'ring-orange-500/40', 'bg-orange-500/[0.06]');
+      } else {
+        rows[j].classList.remove('ring-1', 'ring-orange-500/40', 'bg-orange-500/[0.06]');
+      }
+    }
+  };
+
+  // Listen for global playback state changes
+  document.addEventListener('playback-state-changed', function () {
+    if (typeof window.updateHistoryPlayState === 'function') window.updateHistoryPlayState();
+  });
+
+  window.playHistorySong = function (songData) {
+    if (window.pywebview && window.pywebview.api) {
+      window.current_playing_song = songData;
+      if (typeof window.set_active_song_ui === 'function') window.set_active_song_ui(songData);
+      window.pywebview.api.populate_queue(songData).then(function () {
+        window.play_button(songData);
+      });
+    }
+  };
+
+  // Load initial tab data
+  if (window.pywebview && window.pywebview.api) {
+    window.loadDownloadHistory(1);
+  } else {
+    window.addEventListener('pywebviewready', function () {
+      window.loadDownloadHistory(1);
+    }, { once: true });
+  }
+</script>

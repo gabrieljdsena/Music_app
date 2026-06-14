@@ -528,7 +528,8 @@
 
         if (sorted.length > 0) {
             let htmlBuffer = "";
-            sorted.forEach(song => {
+            sorted.forEach((song, idx) => {
+                if (!song._instanceId) song._instanceId = 'pv_' + idx + '_' + Date.now();
                 htmlBuffer += `
                 <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
                 </div>`;

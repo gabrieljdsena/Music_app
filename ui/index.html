@@ -119,6 +119,18 @@
                     class="flex flex-col gap-1 pl-6 pr-2 transition-all duration-300 max-h-48 overflow-y-auto custom-scrollbar">
 
                 </div>
+                <a href="#" data-target="history"
+                    class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white group-[.active-nav]:text-white group-[.active-nav]:bg-orange-500/10 hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden"
+                    title="History">
+                    <div
+                        class="nav-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 group-[.active-nav]:scale-y-100 transition-transform duration-300 origin-center">
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                        class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-[.active-nav]:scale-110 group-hover:text-orange-400 group-[.active-nav]:text-orange-400">
+                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="nav-text font-medium tracking-wide">History</span>
+                </a>
                 <a href="#" data-target="settings"
                     class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white group-[.active-nav]:text-white group-[.active-nav]:bg-orange-500/10 hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden mt-auto"
                     title="Settings">
@@ -438,6 +450,7 @@
                 visualizers.forEach(v => { v.classList.remove("w-4", "ml-1", "opacity-100"); v.classList.add("w-0", "ml-0", "opacity-0"); });
                 if (pvPlayBtn) pvPlayBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>`;
             }
+            document.dispatchEvent(new CustomEvent('playback-state-changed', { detail: { isPlaying } }));
         }
 
         // Automatically sync visualizers when dynamically generated content (like home.html) is added
