@@ -527,6 +527,18 @@
     }, { rootMargin: "100px" }); // Reduced margin to avoid loading too many off-screen elements
 
     window.update_song_row_ui = function (oldFilename, newSongData) {
+        // Always invalidate cover cache for this file so fresh art loads
+        if (window._coverCache) {
+            window._coverCache.delete(oldFilename);
+            if (newSongData.File && newSongData.File !== oldFilename) {
+                window._coverCache.delete(newSongData.File);
+            }
+            // If new cover art is provided, cache it
+            if (newSongData.CoverArt && newSongData.CoverArt !== 'REMOVE') {
+                window._coverCache.set(newSongData.File || oldFilename, newSongData.CoverArt);
+            }
+        }
+
         document.querySelectorAll('.song-row-container').forEach(container => {
             let cData = container._songData;
             if (!cData) {
@@ -536,14 +548,14 @@
                 }
             }
             if (cData && cData.File === oldFilename) {
-                container.setAttribute('data-path', JSON.stringify(newSongData).replace(/"/g, '&quot;'));
+                container.setAttribute('data-path', JSON.stringify(newSongData));
                 container._songData = newSongData;
-                if (container.getAttribute('data-rendered') === 'true') {
-                    container.innerHTML = window.generateSongRowHtml(newSongData);
-                    const cover = container.querySelector('.lazy-cover');
-                    if (cover && window.lazyCoverObserver) {
-                        window.lazyCoverObserver.observe(cover);
-                    }
+                // Force re-render by clearing rendered state and re-observing
+                container.removeAttribute('data-rendered');
+                container.innerHTML = '';
+                if (window.lazyRowObserver) {
+                    window.lazyRowObserver.unobserve(container);
+                    window.lazyRowObserver.observe(container);
                 }
             }
         });
@@ -569,17 +581,6 @@
                     Object.assign(song, newSongData);
                 }
             });
-        }
-
-        if (window._coverCache) {
-            if (newSongData.CoverArt) {
-                if (newSongData.File !== oldFilename) window._coverCache.delete(oldFilename);
-                window._coverCache.set(newSongData.File, newSongData.CoverArt);
-            } else if (newSongData.File !== oldFilename && window._coverCache.has(oldFilename)) {
-                const oldCover = window._coverCache.get(oldFilename);
-                window._coverCache.delete(oldFilename);
-                window._coverCache.set(newSongData.File, oldCover);
-            }
         }
 
         // Refresh lists to fix layout gaps and re-sort if necessary

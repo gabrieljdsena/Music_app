@@ -86,19 +86,43 @@
 
         const previewImg = document.getElementById('edit-cover-preview');
         const previewFallback = document.getElementById('edit-cover-preview-fallback');
+
+        // Show modal immediately
+        const modal = document.getElementById('editSongModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
         if (song.CoverArt) {
             previewImg.src = song.CoverArt;
             previewImg.classList.remove('hidden');
             previewFallback.classList.add('hidden');
         } else {
+            // Start with fallback, then try to load cover art
             previewImg.src = '';
             previewImg.classList.add('hidden');
             previewFallback.classList.remove('hidden');
-        }
 
-        const modal = document.getElementById('editSongModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+            // Check JS cache first, then fetch from Python
+            const fileName = song.File;
+            if (fileName) {
+                const cached = window._coverCache && window._coverCache.get(fileName);
+                if (cached) {
+                    previewImg.src = cached;
+                    previewImg.classList.remove('hidden');
+                    previewFallback.classList.add('hidden');
+                    document.getElementById('edit-cover-art-data').value = cached;
+                } else if (window.pywebview && window.pywebview.api) {
+                    window.pywebview.api.get_cover_art_base64(fileName).then(base64 => {
+                        if (base64) {
+                            previewImg.src = base64;
+                            previewImg.classList.remove('hidden');
+                            previewFallback.classList.add('hidden');
+                            document.getElementById('edit-cover-art-data').value = base64;
+                        }
+                    }).catch(() => {});
+                }
+            }
+        }
     }
 
     function closeEditModal() {

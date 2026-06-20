@@ -1287,39 +1287,97 @@
                     }
 
                     try {
-                        const metadata = await window.pywebview.api.search_itunes_metadata(songPath.Title, songPath.Artist);
+                        const results = await window.pywebview.api.search_itunes_metadata_multi(songPath.Title, songPath.Artist);
                         if (typeof Swal !== 'undefined') Swal.close();
 
-                        if (metadata) {
-                            const updatedSong = { ...songPath };
-                            if (metadata.title) updatedSong.Title = metadata.title;
-                            if (metadata.artist) updatedSong.Artist = metadata.artist;
-                            if (metadata.album) updatedSong.Album = metadata.album;
-                            if (metadata.year) updatedSong.Year = metadata.year;
-                            if (metadata.artwork) updatedSong.CoverArt = metadata.artwork;
+                        if (results && results.length > 0) {
+                            // Build the selection modal HTML
+                            let cardsHtml = `<input type="hidden" id="swal-metadata-choice" value="-1">`;
+                            cardsHtml += results.map((r, idx) => `
+                                <div class="metadata-option flex items-center gap-3 p-3 rounded-lg cursor-pointer border border-transparent hover:border-orange-500/50 hover:bg-white/5 transition-all duration-200" data-index="${idx}" style="margin-bottom: 6px;">
+                                    <div class="w-14 h-14 rounded-md overflow-hidden flex-shrink-0 bg-zinc-800 shadow-md">
+                                        ${r.artwork_thumb ? `<img src="${r.artwork_thumb}" class="w-full h-full object-cover" onerror="this.style.display='none'">` : `<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`}
+                                    </div>
+                                    <div class="flex flex-col overflow-hidden flex-grow min-w-0">
+                                        <span class="text-sm font-semibold text-zinc-100 truncate">${r.title || 'Unknown'}</span>
+                                        <span class="text-xs text-zinc-400 truncate">${r.artist || 'Unknown Artist'}</span>
+                                        <span class="text-xs text-zinc-500 truncate">${r.album || ''}${r.year ? ' • ' + r.year : ''}</span>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </div>
+                                </div>
+                            `).join('');
 
-                            if (typeof window.openEditModal === 'function') window.openEditModal(updatedSong);
+                            const swalResult = await Swal.fire({
+                                title: 'Choose Metadata',
+                                html: `<div style="max-height: 380px; overflow-y: auto; padding: 4px;">${cardsHtml}</div>`,
+                                background: '#1a1a1a',
+                                color: '#f9fafb',
+                                showConfirmButton: true,
+                                confirmButtonText: 'Select',
+                                showCancelButton: true,
+                                cancelButtonText: 'Cancel',
+                                cancelButtonColor: '#4b5563',
+                                confirmButtonColor: '#f97316',
+                                customClass: {
+                                    popup: 'border border-gray-700 rounded-2xl shadow-2xl',
+                                    cancelButton: 'font-semibold rounded-lg px-5 py-2.5',
+                                    confirmButton: 'font-semibold rounded-lg px-5 py-2.5 !hidden',
+                                    htmlContainer: '!px-2 !pt-2'
+                                },
+                                didOpen: (popup) => {
+                                    popup.querySelectorAll('.metadata-option').forEach(card => {
+                                        card.addEventListener('click', () => {
+                                            // Highlight selected card
+                                            popup.querySelectorAll('.metadata-option').forEach(c => c.classList.remove('border-orange-500', 'bg-orange-500/10'));
+                                            card.classList.add('border-orange-500', 'bg-orange-500/10');
+                                            // Store selected index and resolve
+                                            document.getElementById('swal-metadata-choice').value = card.getAttribute('data-index');
+                                            Swal.clickConfirm();
+                                        });
+                                    });
+                                },
+                                preConfirm: () => {
+                                    const choiceEl = document.getElementById('swal-metadata-choice');
+                                    return choiceEl ? parseInt(choiceEl.value) : -1;
+                                }
+                            });
 
-                            if (metadata.artwork) {
-                                setTimeout(async () => {
-                                    try {
-                                        const res = await fetch(metadata.artwork);
-                                        const blob = await res.blob();
-                                        const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
-                                        const dataTransfer = new DataTransfer();
-                                        dataTransfer.items.add(file);
+                            const selectedIndex = swalResult.value;
+                            if (selectedIndex >= 0 && results[selectedIndex]) {
+                                const chosen = results[selectedIndex];
+                                const updatedSong = { ...songPath };
+                                if (chosen.title) updatedSong.Title = chosen.title;
+                                if (chosen.artist) updatedSong.Artist = chosen.artist;
+                                if (chosen.album) updatedSong.Album = chosen.album;
+                                if (chosen.year) updatedSong.Year = chosen.year;
+                                if (chosen.artwork_url) updatedSong.CoverArt = chosen.artwork_url;
 
-                                        const fileInput = document.getElementById('edit-cover');
-                                        if (fileInput) {
-                                            fileInput.files = dataTransfer.files;
-                                            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                        }
-                                    } catch (e) { console.error("Failed to set file input:", e); }
-                                }, 200);
-                            }
-                            if (typeof Notyf !== 'undefined') {
-                                const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
-                                notyf.success('Metadata found! Review and save changes.');
+                                if (typeof window.openEditModal === 'function') window.openEditModal(updatedSong);
+
+                                // Download artwork and set file input
+                                if (chosen.artwork_url) {
+                                    setTimeout(async () => {
+                                        try {
+                                            const res = await fetch(chosen.artwork_url);
+                                            const blob = await res.blob();
+                                            const file = new File([blob], "itunes_cover.jpg", { type: "image/jpeg" });
+                                            const dataTransfer = new DataTransfer();
+                                            dataTransfer.items.add(file);
+
+                                            const fileInput = document.getElementById('edit-cover');
+                                            if (fileInput) {
+                                                fileInput.files = dataTransfer.files;
+                                                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                            }
+                                        } catch (e) { console.error("Failed to set file input:", e); }
+                                    }, 200);
+                                }
+                                if (typeof Notyf !== 'undefined') {
+                                    const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
+                                    notyf.success('Metadata selected! Review and save changes.');
+                                }
                             }
                         } else {
                             if (typeof Notyf !== 'undefined') {

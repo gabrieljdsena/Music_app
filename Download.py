@@ -167,7 +167,47 @@ class MusicDownloader:
                 print(f"iTunes lookup failed for query '{query}': {str(e)}")
         
         return None
-    def apply_metadata(self,file_path, metadata):
+
+    def search_itunes_multi(self, title, artist=None, limit=5):
+        """Search iTunes and return multiple results for user selection."""
+        clean_title = title
+        if " - " in clean_title:
+            clean_title = clean_title.split(" - ")[-1]
+        
+        clean_title = re.sub(r'\([^)]*\)', '', clean_title)
+        clean_title = re.sub(r'\[[^\]]*\]', '', clean_title)
+        clean_title = re.sub(r'(?i)(official music video|official video|official lyric video|official audio|lyric video|lyrics|audio|visualizer)', '', clean_title)
+        clean_title = " ".join(clean_title.split()).strip()
+
+        query = f"{clean_title} {artist}" if artist else clean_title
+        
+        try:
+            encoded_query = urllib.parse.quote(query)
+            url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit={limit}"
+            
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            
+            results = []
+            if data['resultCount'] > 0:
+                for result in data['results']:
+                    artwork_url = result.get('artworkUrl100', '').replace('100x100bb', '600x600bb')
+                    results.append({
+                        'title': result.get('trackName', title),
+                        'artist': result.get('artistName', artist or ''),
+                        'album': result.get('collectionName', ''),
+                        'year': result.get('releaseDate', '')[:4],
+                        'genre': result.get('primaryGenreName', ''),
+                        'artwork_url': artwork_url,
+                        'artwork_thumb': result.get('artworkUrl100', ''),
+                    })
+            return results
+        except Exception as e:
+            print(f"iTunes multi-search failed: {str(e)}")
+            return []
+
+    def apply_metadata(self, file_path, metadata):
         """Apply metadata to MP3 file"""
         try:
             audio = MP3(file_path)
