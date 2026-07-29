@@ -178,16 +178,16 @@ class MetadataManager:
                         except Exception as e:
                             print(f" [Python] Failed to download artwork from URL {cover_art}: {e}")
                     
-                        if img_data:
-                            keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
-                            for k in keys_to_remove:
-                                audio.tags.pop(k)
+                    if img_data:
+                        keys_to_remove = [k for k in audio.tags.keys() if k.startswith('APIC')]
+                        for k in keys_to_remove:
+                            audio.tags.pop(k)
 
-                            audio.tags.add(
-                                APIC(
-                                    encoding=3, mime=mime, type=3, desc=u'Cover', data=img_data
-                                )
+                        audio.tags.add(
+                            APIC(
+                                encoding=3, mime=mime, type=3, desc=u'Cover', data=img_data
                             )
+                        )
             
             audio.save(v2_version=3)
             

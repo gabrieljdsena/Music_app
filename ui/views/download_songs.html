@@ -209,13 +209,17 @@
         const response = await window.pywebview.api.recieve_download(val);
         const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
         if (isError) {
-            notyf.error(`Failed to download: ${val}`);
+            notyf.error({ message: `Failed to download: ${val}`, duration: 0, dismissible: true });
             if (typeof window.update_download_progress === 'function') window.update_download_progress(val, 100, 'Failed');
         } else {
             notyf.success(`Song Downloaded: ${val}`);
+            // Refresh song list so metadata is up-to-date
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
+                window.pywebview.api.send_song_list();
+            }
         }
     } catch (e) {
-        notyf.error(`Download error: ${val}`);
+        notyf.error({ message: `Download error: ${val}`, duration: 0, dismissible: true });
         if (typeof window.update_download_progress === 'function') window.update_download_progress(val, 100, 'Failed');
     } finally {
         setTimeout(() => window.remove_progress_bar(val), 3000);
@@ -272,14 +276,9 @@
             </div>
         `,
         width: 600,
-        background: '#18181b', // zinc-900
         showConfirmButton: false,
         showCloseButton: true,
-        padding: '1rem',
-        customClass: {
-            popup: 'border border-white/10 rounded-2xl shadow-2xl',
-            closeButton: 'focus:outline-none hover:text-orange-400'
-        }
+        padding: '1rem'
     });
   };
 
@@ -300,13 +299,17 @@
         const response = await window.pywebview.api.recieve_download(url);
         const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
         if (isError) {
-            notyf.error(`Failed to download: ${title}`);
+            notyf.error({ message: `Failed to download: ${title}`, duration: 0, dismissible: true });
             if (typeof window.update_download_progress === 'function') window.update_download_progress(url, 100, 'Failed');
         } else {
             notyf.success(`Song Downloaded: ${title}`);
+            // Refresh song list so metadata is up-to-date
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
+                window.pywebview.api.send_song_list();
+            }
         }
     } catch (e) {
-        notyf.error(`Failed to download: ${title}`);
+        notyf.error({ message: `Failed to download: ${title}`, duration: 0, dismissible: true });
         if (typeof window.update_download_progress === 'function') window.update_download_progress(url, 100, 'Failed');
     } finally {
         setTimeout(() => window.remove_progress_bar(url), 3000);
@@ -451,16 +454,16 @@
                       const response = await window.pywebview.api.recieve_download(url);
                       const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
                       if (isError) {
-                          notyf.error(`Failed: ${bestResult.title}`);
+                          notyf.error({ message: `Failed: ${bestResult.title}`, duration: 0, dismissible: true });
                           window.update_download_progress(currentBarId, 100, 'Failed');
                       }
                   } else {
-                      notyf.error(`No results found for: ${song}`);
+                      notyf.error({ message: `No results found for: ${song}`, duration: 0, dismissible: true });
                       window.update_download_progress(currentBarId, 100, 'Failed');
                   }
             } catch (e) {
                 console.error("Error downloading " + song, e);
-                notyf.error(`Failed: ${song}`);
+                notyf.error({ message: `Failed: ${song}`, duration: 0, dismissible: true });
                 window.update_download_progress(currentBarId, 100, 'Failed');
             } finally {
                 setTimeout(() => window.remove_progress_bar(currentBarId), 3000);

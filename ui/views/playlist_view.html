@@ -653,16 +653,7 @@
             text: "Are you sure you want to delete this playlist? This action cannot be undone.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#3f3f46',
-            confirmButtonText: 'Yes, delete it!',
-            background: '#18181b',
-            color: '#f4f4f5',
-            customClass: {
-                popup: 'border border-white/10 rounded-2xl shadow-2xl',
-                confirmButton: 'rounded-xl',
-                cancelButton: 'rounded-xl'
-            }
+            confirmButtonText: 'Yes, delete it!'
         });
 
         if (!result.isConfirmed) return;

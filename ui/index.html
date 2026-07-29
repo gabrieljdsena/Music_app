@@ -9,6 +9,68 @@
     <link rel="stylesheet" href="./css.css">
     <!-- SweetAlert2 (Local) -->
     <script src="../sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <style>
+        /* Global SweetAlert2 Glass Theme */
+        .swal2-popup {
+            background: rgba(24, 24, 27, 0.85) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+            color: #f4f4f5 !important;
+        }
+        .swal2-title {
+            color: #f4f4f5 !important;
+        }
+        .swal2-html-container {
+            color: #a1a1aa !important;
+        }
+        .swal2-confirm {
+            background-color: #f97316 !important;
+            border-radius: 0.75rem !important;
+            font-weight: 600 !important;
+            padding: 0.625rem 1.25rem !important;
+            box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.3) !important;
+        }
+        .swal2-confirm:hover {
+            background-color: #ea580c !important;
+        }
+        .swal2-cancel {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #d4d4d8 !important;
+            border-radius: 0.75rem !important;
+            font-weight: 600 !important;
+            padding: 0.625rem 1.25rem !important;
+        }
+        .swal2-cancel:hover {
+            background-color: rgba(255, 255, 255, 0.12) !important;
+            color: #fff !important;
+        }
+        .swal2-close {
+            color: #71717a !important;
+        }
+        .swal2-close:hover {
+            color: #fb923c !important;
+        }
+        .swal2-icon.swal2-warning {
+            border-color: #f97316 !important;
+            color: #f97316 !important;
+        }
+        .swal2-icon.swal2-success {
+            border-color: #f97316 !important;
+        }
+        .swal2-icon.swal2-success .swal2-success-ring {
+            border-color: rgba(249, 115, 22, 0.3) !important;
+        }
+        .swal2-icon.swal2-success [class^='swal2-success-line'] {
+            background-color: #f97316 !important;
+        }
+        .swal2-loader {
+            border-color: #f97316 transparent #f97316 transparent !important;
+        }
+    </style>
     <!-- Alpine.js -->
     <script defer src="../cdn.min.js"></script>
     <!-- Notyf for notifications -->
@@ -1280,8 +1342,6 @@
                             title: 'Searching Metadata...',
                             text: 'Please wait while we search iTunes for metadata.',
                             allowOutsideClick: false,
-                            background: '#1a1a1a',
-                            color: '#f9fafb',
                             didOpen: () => { Swal.showLoading(); }
                         });
                     }
@@ -1312,18 +1372,12 @@
                             const swalResult = await Swal.fire({
                                 title: 'Choose Metadata',
                                 html: `<div style="max-height: 380px; overflow-y: auto; padding: 4px;">${cardsHtml}</div>`,
-                                background: '#1a1a1a',
-                                color: '#f9fafb',
                                 showConfirmButton: true,
                                 confirmButtonText: 'Select',
                                 showCancelButton: true,
                                 cancelButtonText: 'Cancel',
-                                cancelButtonColor: '#4b5563',
-                                confirmButtonColor: '#f97316',
                                 customClass: {
-                                    popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                                    cancelButton: 'font-semibold rounded-lg px-5 py-2.5',
-                                    confirmButton: 'font-semibold rounded-lg px-5 py-2.5 !hidden',
+                                    confirmButton: '!hidden',
                                     htmlContainer: '!px-2 !pt-2'
                                 },
                                 didOpen: (popup) => {
@@ -1417,19 +1471,9 @@
                         title: 'Are you sure?',
                         text: "You are about to permanently delete this song. This cannot be undone.",
                         icon: 'warning',
-                        iconColor: '#f97316',
-                        background: '#1a1a1a',
-                        color: '#f9fafb',
                         showCancelButton: true,
-                        confirmButtonColor: '#f97316',
-                        cancelButtonColor: '#4b5563',
                         confirmButtonText: 'Yes, delete it',
-                        cancelButtonText: 'Cancel',
-                        customClass: {
-                            popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                            confirmButton: 'font-semibold rounded-lg px-5 py-2.5',
-                            cancelButton: 'font-semibold rounded-lg px-5 py-2.5'
-                        }
+                        cancelButtonText: 'Cancel'
                     }).then(async (result) => {
                         if (result.isConfirmed && songPath) {
                             if (window.pywebview && window.pywebview.api) {
@@ -1458,15 +1502,7 @@
                             Swal.fire({
                                 title: 'Deleted!',
                                 text: 'The song has been deleted successfully.',
-                                icon: 'success',
-                                iconColor: '#f97316',
-                                background: '#1f2937',
-                                color: '#f9fafb',
-                                confirmButtonColor: '#f97316',
-                                customClass: {
-                                    popup: 'border border-gray-700 rounded-2xl shadow-2xl',
-                                    confirmButton: 'font-semibold rounded-lg px-5 py-2.5'
-                                }
+                                icon: 'success'
                             });
                         }
                     });
