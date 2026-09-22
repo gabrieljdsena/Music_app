@@ -14,7 +14,8 @@ from services import (
     MetadataManager,
     DatabaseManager,
     WindowsMediaOverlay,
-    LyricsService
+    LyricsService,
+    AppleService
 )
 
 class Api:
@@ -39,6 +40,7 @@ class Api:
         self.db = DatabaseManager(self, self.db_path)
         self.media_controls = WindowsMediaOverlay(self)
         self.lyrics = LyricsService(self)
+        self.apple = AppleService(self)
         
     # ==========================
     # Playback & Queue Wrappers
@@ -120,6 +122,66 @@ class Api:
     def get_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
         return self.lyrics.get_lyrics(track_name, artist_name, album_name, duration_seconds)
 
+    def search_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
+        return self.lyrics.search_lyrics(track_name, artist_name, album_name, duration_seconds)
+
+    def save_lyrics(self, synced, plain):
+        return self.lyrics.save_lyrics_for_current(synced, plain)
+
+    def get_artist_image(self, artist):
+        return self.apple.get_artist_image(artist)
+
+    def get_album_image(self, album, artist=None):
+        return self.apple.get_album_image(album, artist)
+
+    # ==========================
+    # Frameless Window Controls
+    # ==========================
+    def get_window_geometry(self):
+        if not self._window:
+            return None
+        return {
+            "x": int(self._window.x or 0),
+            "y": int(self._window.y or 0),
+            "width": int(self._window.width or 0),
+            "height": int(self._window.height or 0),
+        }
+
+    def move_window(self, x, y):
+        if self._window:
+            self._window.move(int(x), int(y))
+        return True
+
+    def resize_window(self, width, height, x=None, y=None):
+        if not self._window:
+            return False
+        self._window.resize(int(width), int(height))
+        if x is not None and y is not None:
+            self._window.move(int(x), int(y))
+        return True
+
+    def toggle_maximize_window(self):
+        if not self._window:
+            return False
+        if str(getattr(self._window, 'state', 'normal')).lower() == 'maximized':
+            self._window.restore()
+        else:
+            self._window.maximize()
+        return True
+
+    def window_action(self, action):
+        if not self._window:
+            return False
+        if action == 'minimize':
+            self._window.minimize()
+        elif action == 'restore':
+            self._window.restore()
+        elif action == 'maximize':
+            self._window.maximize()
+        elif action == 'close':
+            self._window.destroy()
+        return True
+
     # ==========================
     # Database Wrappers
     # ==========================
@@ -146,6 +208,12 @@ class Api:
 
     def get_playlist_songs(self, playlist_id):
         return self.db.get_playlist_songs(playlist_id)
+
+    def get_songs_by_artist(self, artist):
+        return self.db.get_songs_by_artist(artist)
+
+    def get_songs_by_album(self, album):
+        return self.db.get_songs_by_album(album)
 
     def get_download_history(self, page=1, limit=10):
         return self.db.get_download_history(page, limit)

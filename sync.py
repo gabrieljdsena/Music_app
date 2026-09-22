@@ -244,6 +244,7 @@ class DatabaseSync:
             'songs': 'file',
             'playlists': 'id',
             'lyrics': 'song_file',
+            'music_history': 'song_file',
             'playlist_history': 'playlist_id',
         }
         rows = sqlite_conn.execute("SELECT table_name, row_key FROM Sync_Deletions").fetchall()

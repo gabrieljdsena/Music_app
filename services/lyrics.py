@@ -42,6 +42,37 @@ class LyricsService:
                 
         return '\n'.join(romanized_lines)
 
+    def _clean_track_artist(self, track_name, artist_name):
+        clean_track = track_name.replace('？', '?').replace('！', '!')
+        clean_track = re.sub(r'\s*[\(\[].*?(remaster|mix|version|edit|live|feat\.|ft\.).*?[\)\]]', '', clean_track, flags=re.IGNORECASE).strip()
+        clean_artist = artist_name or ""
+
+        if clean_artist.lower() in ["unknown", "unknown artist", ""] and " - " in clean_track:
+            parts = clean_track.split(" - ", 1)
+            clean_artist = parts[0].strip()
+            clean_track = parts[1].strip()
+
+        return clean_track, clean_artist
+
+    def save_lyrics_for_current(self, synced, plain):
+        """Cache lyrics for the currently playing song so they're reused offline."""
+        song_file = self.api.current_filename
+        if not song_file:
+            return False
+        if not synced and not plain:
+            return False
+        try:
+            lyrics_json = json.dumps({"synced": synced, "plain": plain})
+            with sqlite3.connect(self.api.db_path) as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO Lyrics (song_file, lyrics) VALUES (?, ?)",
+                    (song_file, lyrics_json)
+                )
+            return True
+        except Exception as e:
+            print(f" [Python] Lyrics cache write error: {e}")
+            return False
+
     def get_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
         song_file = self.api.current_filename
 
@@ -68,14 +99,7 @@ class LyricsService:
         # 2. Fetch from lrclib.net on cache miss
         base_url = "https://lrclib.net/api/get"
         
-        clean_track = track_name.replace('？', '?').replace('！', '!')
-        clean_track = re.sub(r'\s*[\(\[].*?(remaster|mix|version|edit|live|feat\.|ft\.).*?[\)\]]', '', clean_track, flags=re.IGNORECASE).strip()
-        clean_artist = artist_name or ""
-
-        if clean_artist.lower() in ["unknown", "unknown artist", ""] and " - " in clean_track:
-            parts = clean_track.split(" - ", 1)
-            clean_artist = parts[0].strip()
-            clean_track = parts[1].strip()
+        clean_track, clean_artist = self._clean_track_artist(track_name, artist_name)
 
         params = {
             "track_name": clean_track,
@@ -98,18 +122,12 @@ class LyricsService:
                     synced = data.get("syncedLyrics")
                     plain = data.get("plainLyrics")
 
+                    if not synced and not plain:
+                        return None
+
                     # 3. Cache the raw (un-romanized) lyrics for future offline use
-                    if song_file:
-                        try:
-                            lyrics_json = json.dumps({"synced": synced, "plain": plain})
-                            with sqlite3.connect(self.api.db_path) as conn:
-                                conn.execute(
-                                    "INSERT OR REPLACE INTO Lyrics (song_file, lyrics) VALUES (?, ?)",
-                                    (song_file, lyrics_json)
-                                )
-                        except Exception as cache_err:
-                            print(f" [Python] Lyrics cache write error: {cache_err}")
-                    
+                    self.save_lyrics_for_current(synced, plain)
+
                     if kks:
                         synced = self.romanize_text(synced, is_lrc=True) if synced else None
                         plain = self.romanize_text(plain, is_lrc=False) if plain else None
@@ -125,5 +143,61 @@ class LyricsService:
                 print(f" [Python] HTTP Error: {e.code}")
         except Exception as e:
             print(f" [Python] Failed to fetch lyrics: {e}")
-            
+
         return None
+
+    def search_lyrics(self, track_name, artist_name, album_name=None, duration_seconds=None):
+        """Search lrclib for candidate lyrics when an exact match isn't found."""
+        if not track_name:
+            return []
+
+        clean_track, clean_artist = self._clean_track_artist(track_name, artist_name)
+
+        params = {
+            "track_name": clean_track,
+            "artist_name": clean_artist
+        }
+        if album_name:
+            params["album_name"] = album_name
+        if duration_seconds:
+            params["duration"] = int(duration_seconds)
+
+        query_string = urllib.parse.urlencode(params)
+        url = f"https://lrclib.net/api/search?{query_string}"
+
+        headers = {'User-Agent': 'MyMusicPlayer/1.0'}
+        req = urllib.request.Request(url, headers=headers)
+
+        try:
+            with urllib.request.urlopen(req) as response:
+                if response.status == 200:
+                    results = json.loads(response.read().decode())
+                    suggestions = []
+                    seen = set()
+                    for item in results or []:
+                        if item.get("instrumental"):
+                            continue
+                        if not (item.get("syncedLyrics") or item.get("plainLyrics")):
+                            continue
+                        track = item.get("trackName") or ""
+                        artist = item.get("artistName") or ""
+                        key = (track.lower(), artist.lower())
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        suggestions.append({
+                            "id": item.get("id"),
+                            "trackName": track,
+                            "artistName": artist,
+                            "albumName": item.get("albumName"),
+                            "duration": item.get("duration"),
+                            "syncedLyrics": item.get("syncedLyrics"),
+                            "plainLyrics": item.get("plainLyrics"),
+                        })
+                        if len(suggestions) >= 10:
+                            break
+                    return suggestions
+        except Exception as e:
+            print(f" [Python] Lyrics search failed: {e}")
+
+        return []

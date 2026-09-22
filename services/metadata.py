@@ -108,6 +108,7 @@ class MetadataManager:
                     if getattr(self.api, 'db', None):
                         self.api.db.record_deletion("songs", filename)
                         self.api.db.record_deletion("lyrics", filename)
+                        self.api.db.record_deletion("music_history", filename)
                 except Exception as db_err:
                     print(f" [Python] Error cleaning up song from database: {db_err}")
                 

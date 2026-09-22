@@ -348,10 +348,10 @@
                 </div>
                 <div class="flex flex-col overflow-hidden">
                     <div class="song-title font-medium ${titleColor} group-hover:text-orange-400 transition-colors truncate">${song.Title || "Unknown Title"}</div>
-                    <div class="cursor-pointer hover:text-zinc-400 transition-colors text-sm truncate">${song.Artist || "Unknown Artist"}</div>
+                    <div class="artist-link cursor-pointer hover:text-orange-400 transition-colors text-sm truncate" data-artist="${(song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${song.Artist || "Unknown Artist"}</div>
                 </div>
             </div>
-            <div class="text-sm text-zinc-500 truncate"><span class="hover:text-zinc-400">${song.Album || "Unknown Album"}</span></div>
+            <div class="text-sm text-zinc-500 truncate"><span class="album-link hover:text-orange-400 transition-colors cursor-pointer" data-album="${(song.Album || "Unknown Album").replace(/"/g, '&quot;')}" data-artist="${(song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${song.Album || "Unknown Album"}</span></div>
             <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
             ${dateAddedHtml}
             <div class="flex items-center justify-end">
@@ -574,6 +574,20 @@
                 }
             });
         }
+        if (window.currentArtistSongs) {
+            window.currentArtistSongs.forEach(song => {
+                if (song.File === oldFilename) {
+                    Object.assign(song, newSongData);
+                }
+            });
+        }
+        if (window.currentAlbumSongs) {
+            window.currentAlbumSongs.forEach(song => {
+                if (song.File === oldFilename) {
+                    Object.assign(song, newSongData);
+                }
+            });
+        }
 
         // Refresh lists to fix layout gaps and re-sort if necessary
         if (typeof window._homeRenderSorted === 'function') {
@@ -581,6 +595,9 @@
         }
         if (typeof window._pvRenderSorted === 'function') {
             window._pvRenderSorted();
+        }
+        if (typeof window._avRenderSorted === 'function') {
+            window._avRenderSorted();
         }
     };
 

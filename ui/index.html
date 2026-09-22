@@ -77,7 +77,7 @@
 </head>
 
 <body
-    class="bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-orange-500/30 h-screen w-screen relative z-0">
+    class="bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-orange-500/30 h-screen w-screen relative z-0 flex flex-col">
 
     <!-- Ambient Background Glows -->
     <div
@@ -87,8 +87,93 @@
         class="absolute -bottom-[15%] right-[15%] w-[35vw] h-[35vw] bg-orange-600/10 rounded-full blur-[120px] pointer-events-none z-[-1]">
     </div>
 
+    <!-- Custom Titlebar (frameless window drag + controls) -->
+    <div id="titlebar"
+        class="relative flex-shrink-0 h-10 flex items-center justify-between border-b border-white/5 bg-black/40 backdrop-blur-2xl z-50 select-none">
+        <div class="flex items-center gap-2 pl-4 pr-2 h-full min-w-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                class="w-4 h-4 text-orange-400 flex-shrink-0">
+                <path
+                    d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.5A2.25 2.25 0 0 0 2.25 9.75v4.5a2.25 2.25 0 0 0 2.25 2.25h2.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06ZM18.75 12c0-1.24-.51-2.35-1.34-3.14a.75.75 0 1 0-1.03 1.1c.41.38.67.92.67 1.51s-.26 1.13-.67 1.51a.75.75 0 1 0 1.03 1.1c.83-.79 1.34-1.9 1.34-3.14Zm2.25 0c0-2.32-.94-4.42-2.45-5.94a.75.75 0 1 0-1.06 1.06A6.73 6.73 0 0 1 19.5 12c0 1.91-.79 3.63-2.06 4.88a.75.75 0 1 0 1.06 1.06A8.23 8.23 0 0 0 21 12Z" />
+            </svg>
+            <span class="text-sm font-semibold text-zinc-300 tracking-wide truncate">Hathor</span>
+        </div>
+        <div id="titlebar-title"
+            class="absolute left-1/2 -translate-x-1/2 text-zinc-600 truncate pointer-events-none px-4" style="font-size:11px;"></div>
+        <div class="flex items-center h-full ml-1 border-l border-white/5">
+            <button id="titlebar-minimize" title="Minimize" aria-label="Minimize" class="win-ctrl-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" class="w-4 h-4"><path d="M5.75 12.5h12.5" /></svg>
+            </button>
+            <button id="titlebar-maximize" title="Maximize / Restore" aria-label="Maximize or restore" class="win-ctrl-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="5" y="5" width="14" height="14" rx="2.75" /></svg>
+            </button>
+            <button id="titlebar-close" title="Close" aria-label="Close" class="win-ctrl-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" class="w-4 h-4"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Window Resize Zones (frameless edges & corners) -->
+    <div id="window-resize-zones" class="fixed inset-0 pointer-events-none" style="z-index:60;">
+        <div class="rz" data-edge="n" style="position:absolute;top:0;left:8px;right:8px;height:5px;cursor:n-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="s" style="position:absolute;bottom:0;left:8px;right:8px;height:5px;cursor:s-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="w" style="position:absolute;left:0;top:8px;bottom:8px;width:5px;cursor:w-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="e" style="position:absolute;right:0;top:8px;bottom:8px;width:5px;cursor:e-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="nw" style="position:absolute;top:0;left:0;width:10px;height:10px;cursor:nw-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="ne" style="position:absolute;top:0;right:0;width:10px;height:10px;cursor:ne-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="sw" style="position:absolute;bottom:0;left:0;width:10px;height:10px;cursor:sw-resize;pointer-events:auto;"></div>
+        <div class="rz" data-edge="se" style="position:absolute;bottom:0;right:0;width:10px;height:10px;cursor:se-resize;pointer-events:auto;"></div>
+    </div>
+
+    <style>
+        /* Keep the queue sidebar clear of the custom titlebar and bottom controls */
+        @media (max-width: 1279.98px) {
+            #queue-sidebar { top: 40px; height: calc(100vh - 152px) !important; }
+        }
+        @media (min-width: 1280px) {
+            #queue-sidebar { height: calc(100vh - 220px); }
+        }
+
+        /* ── KDE Plasma / Breeze-style titlebar controls ── */
+        .win-ctrl-btn {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            height: 100%; width: 44px; margin: 0 2px; border-radius: 8px;
+            color: #a1a1aa; outline: none; cursor: pointer;
+            transition: color .15s ease, background-color .15s ease, box-shadow .2s ease;
+            -webkit-app-region: no-drag;
+        }
+        .win-ctrl-btn:active { filter: brightness(.65); }
+        .win-ctrl-btn svg {
+            transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), filter .25s ease;
+        }
+
+        /* Minimize — the Breeze line, simply brightens with a soft drop shadow */
+        #titlebar-minimize:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+        #titlebar-minimize:hover svg {
+            transform: translateY(1px) scale(1.05);
+            filter: drop-shadow(0 2px 4px rgba(255, 255, 255, .25));
+        }
+
+        /* Maximize — faint orange tint, soft corner hint */
+        #titlebar-maximize:hover {
+            color: #fdba74; background: rgba(249, 115, 22, .08);
+            box-shadow: inset 0 0 0 1px rgba(249, 115, 22, .28);
+        }
+        #titlebar-maximize:hover svg {
+            transform: scale(1.08);
+            filter: drop-shadow(0 0 4px rgba(249, 115, 22, .45));
+        }
+
+        /* Close — muted red tint, gentle */
+        #titlebar-close:hover {
+            color: #fecaca; background: rgba(220, 38, 38, .32);
+            box-shadow: inset 0 0 0 1px rgba(248, 113, 113, .28);
+        }
+        #titlebar-close:hover svg { transform: scale(1.06); }
+    </style>
+
     <!-- FIX: Added w-full to ensure the page container respects the screen width -->
-    <div id="page" class="flex flex-row w-full">
+    <div id="page" class="flex flex-row w-full flex-1" style="min-height:0;">
         <aside id="sidebar"
             class="w-64 flex-shrink-0 flex flex-col border-r border-orange-500/10 bg-black/40 backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-10 relative shadow-[4px_0_24px_rgba(0,0,0,0.5)] overflow-hidden">
             <!-- Glassmorphism glare effect -->
@@ -662,6 +747,25 @@
             }, 100);
         }
 
+        // Open the artist page for the given artist name
+        window.openArtistPage = function (artist) {
+            window.currentArtistName = (artist || "Unknown Artist").trim();
+            window.currentArtistSongs = [];
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo("artist");
+            }
+        };
+
+        // Open the album page for the given album name
+        window.openAlbumPage = function (album, artist) {
+            window.currentAlbumName = (album || "Unknown Album").trim();
+            window.currentAlbumArtist = (artist || "").trim();
+            window.currentAlbumSongs = [];
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo("album");
+            }
+        };
+
         // Load initial view on startup
         document.addEventListener("DOMContentLoaded", function () {
             // Start observing the main container for dynamic content changes
@@ -688,6 +792,144 @@
                     if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
                 }, { once: true });
             }
+
+            // ── Frameless window: drag + resize + controls ──
+            const titlebar = document.getElementById("titlebar");
+            const winCtrlMin = document.getElementById("titlebar-minimize");
+            const winCtrlMax = document.getElementById("titlebar-maximize");
+            const winCtrlClose = document.getElementById("titlebar-close");
+            const resizeZones = document.querySelectorAll("#window-resize-zones .rz");
+            const WIN_MIN_W = 895;
+            const WIN_MIN_H = 400;
+
+            function winApi() {
+                return (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+            }
+
+            // Cached window frame (physical px) so gestures always start from a known baseline
+            const winFrame = { x: 0, y: 0, w: 0, h: 0, known: false };
+            async function refreshWinFrame() {
+                const api = winApi();
+                if (api && api.get_window_geometry) {
+                    try {
+                        const g = await api.get_window_geometry();
+                        if (g && g.width && g.height) {
+                            winFrame.x = g.x;
+                            winFrame.y = g.y;
+                            winFrame.w = g.width;
+                            winFrame.h = g.height;
+                            winFrame.known = true;
+                        }
+                    } catch (err) {
+                        console.error("window geometry fetch failed:", err);
+                    }
+                }
+                return winFrame.known;
+            }
+            function physScale() {
+                return window.devicePixelRatio || 1;
+            }
+
+            if (titlebar) {
+                // Drag the window by grabbing the titlebar
+                let drag = null;
+                titlebar.addEventListener('pointerdown', async function (e) {
+                    if (e.target.closest('.win-ctrl-btn')) return;
+                    e.preventDefault();
+                    await refreshWinFrame();
+                    if (!winFrame.known) return;
+                    const s = physScale();
+                    drag = { sx: e.screenX * s, sy: e.screenY * s, bx: winFrame.x, by: winFrame.y };
+                    try { titlebar.setPointerCapture(e.pointerId); } catch (err) { }
+                });
+                titlebar.addEventListener('pointermove', async function (e) {
+                    const api = winApi();
+                    if (!drag || !api || !api.move_window) return;
+                    const s = physScale();
+                    const nx = Math.round(drag.bx + (e.screenX * s - drag.sx));
+                    const ny = Math.round(drag.by + (e.screenY * s - drag.sy));
+                    try {
+                        await api.move_window(nx, ny);
+                        winFrame.x = nx;
+                        winFrame.y = ny;
+                    } catch (err) { }
+                });
+                titlebar.addEventListener('pointerup', function () { drag = null; });
+                titlebar.addEventListener('pointercancel', function () { drag = null; });
+
+                // Double-click toggles maximize/restore
+                titlebar.addEventListener('dblclick', function (e) {
+                    if (e.target.closest('.win-ctrl-btn')) return;
+                    const api = winApi();
+                    if (api && api.toggle_maximize_window) api.toggle_maximize_window();
+                });
+            }
+
+            if (winCtrlMin) winCtrlMin.addEventListener('click', function () {
+                const api = winApi();
+                if (api) api.window_action('minimize');
+            });
+            if (winCtrlMax) winCtrlMax.addEventListener('click', function () {
+                const api = winApi();
+                if (api) api.toggle_maximize_window();
+            });
+            if (winCtrlClose) winCtrlClose.addEventListener('click', function () {
+                const api = winApi();
+                if (api) api.window_action('close');
+            });
+
+            // Resize the frameless window from its edges and corners
+            let resize = null;
+            resizeZones.forEach(function (zone) {
+                zone.addEventListener('pointerdown', async function (e) {
+                    if (resize) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await refreshWinFrame();
+                    if (!winFrame.known) return;
+                    const s = physScale();
+                    resize = {
+                        edge: zone.getAttribute('data-edge'),
+                        sx: e.screenX * s,
+                        sy: e.screenY * s,
+                        bx: winFrame.x,
+                        by: winFrame.y,
+                        bw: winFrame.w,
+                        bh: winFrame.h,
+                        minW: Math.round(WIN_MIN_W * s),
+                        minH: Math.round(WIN_MIN_H * s)
+                    };
+                    try { zone.setPointerCapture(e.pointerId); } catch (err) { }
+                });
+            });
+            document.addEventListener('pointermove', async function (e) {
+                const api = winApi();
+                if (!resize || !api || !api.resize_window) return;
+                const s = physScale();
+                const dx = e.screenX * s - resize.sx;
+                const dy = e.screenY * s - resize.sy;
+                const edge = resize.edge;
+                let nx = resize.bx, ny = resize.by, nw = resize.bw, nh = resize.bh;
+                if (edge.indexOf('e') > -1) nw = Math.max(resize.bw + dx, resize.minW);
+                if (edge.indexOf('s') > -1) nh = Math.max(resize.bh + dy, resize.minH);
+                if (edge.indexOf('w') > -1) {
+                    const target = resize.bw - dx;
+                    nw = Math.max(target, resize.minW);
+                    nx = target >= resize.minW ? resize.bx + dx : resize.bx + (resize.bw - resize.minW);
+                }
+                if (edge.indexOf('n') > -1) {
+                    const target = resize.bh - dy;
+                    nh = Math.max(target, resize.minH);
+                    ny = target >= resize.minH ? resize.by + dy : resize.by + (resize.bh - resize.minH);
+                }
+                nx = Math.round(nx); ny = Math.round(ny); nw = Math.round(nw); nh = Math.round(nh);
+                try {
+                    await api.resize_window(nw, nh, nx, ny);
+                    winFrame.x = nx; winFrame.y = ny; winFrame.w = nw; winFrame.h = nh;
+                } catch (err) { }
+            });
+            document.addEventListener('pointerup', function () { resize = null; });
+            document.addEventListener('pointercancel', function () { resize = null; });
         });
 
         let progressTimer = null;
@@ -862,7 +1104,7 @@
                 </div>
                 <div class="flex flex-col">
                     <div class="song-title truncate font-medium text-zinc-100 group-hover:text-orange-400 transition-colors truncate">${current_song.Title || "Unknown Title"}</div>
-                    <div class="cursor-pointer truncate hover:text-zinc-400 transition-colors text-sm truncate">${current_song.Artist || "Unknown Artist"}</div>
+                    <div class="artist-link cursor-pointer hover:text-orange-400 transition-colors text-sm truncate" data-artist="${(current_song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${current_song.Artist || "Unknown Artist"}</div>
                 </div>
             </div>`;
             const container = document.getElementById("song_plaiyng_div");
@@ -1016,6 +1258,43 @@
             }
         };
 
+        window.renderLyricsSuggestions = function (container, suggestions) {
+            container.innerHTML = '';
+
+            const heading = document.createElement('p');
+            heading.className = 'text-zinc-400 text-xl md:text-2xl font-semibold mb-4';
+            heading.innerText = 'No exact match. Did you mean?';
+            container.appendChild(heading);
+
+            const list = document.createElement('div');
+            list.className = 'space-y-3 pb-8';
+
+            suggestions.forEach((s) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'w-full text-left bg-white/5 hover:bg-white/10 rounded-xl p-3 px-4 transition-all duration-300 cursor-pointer';
+
+                const title = document.createElement('div');
+                title.className = 'font-bold text-zinc-100 text-sm md:text-base';
+                title.innerText = s.trackName || 'Unknown track';
+
+                const sub = document.createElement('div');
+                sub.className = 'text-zinc-400 text-xs md:text-sm';
+                sub.innerText = [s.artistName, s.albumName].filter(Boolean).join(' \u2014 ');
+
+                btn.appendChild(title);
+                btn.appendChild(sub);
+                btn.addEventListener('click', async () => {
+                    await window.pywebview.api.save_lyrics(s.syncedLyrics || null, s.plainLyrics || null);
+                    window.fetchLyricsForCurrentSong(window.current_playing_song);
+                });
+
+                list.appendChild(btn);
+            });
+
+            container.appendChild(list);
+        };
+
         window.fetchLyricsForCurrentSong = async function (songData) {
             const container = document.getElementById('lyrics-container');
             if (!container) return;
@@ -1047,7 +1326,28 @@
                 } else if (lyricsData && lyricsData.plain) {
                     container.innerHTML = `<div class="text-zinc-300 text-md md:text-xl lg:text-2xl font-bold whitespace-pre-line leading-relaxed md:leading-loose pt-8 pb-16">${lyricsData.plain}</div>`;
                 } else {
-                    container.innerHTML = '<p class="text-zinc-500 text-2xl md:text-4xl font-semibold">No lyrics found for this song.</p>';
+                    container.innerHTML = '<p class="text-zinc-500 text-2xl md:text-4xl font-semibold">No exact lyrics found.</p><p class="text-zinc-400 text-xl md:text-2xl mt-2 animate-pulse">Searching for alternatives...</p>';
+                    try {
+                        const suggestions = await window.pywebview.api.search_lyrics(
+                            songData.Title,
+                            songData.Artist,
+                            songData.Album,
+                            songData.Duration
+                        );
+                        if (window.lyricsFetchId !== currentFetchId) {
+                            return;
+                        }
+                        if (suggestions && suggestions.length) {
+                            window.renderLyricsSuggestions(container, suggestions);
+                        } else {
+                            container.innerHTML = '<p class="text-zinc-500 text-2xl md:text-4xl font-semibold">No lyrics found for this song.</p>';
+                        }
+                    } catch (err) {
+                        if (window.lyricsFetchId !== currentFetchId) {
+                            return;
+                        }
+                        container.innerHTML = '<p class="text-zinc-500 text-2xl md:text-4xl font-semibold">No lyrics found for this song.</p>';
+                    }
                 }
             } catch (error) {
                 container.innerHTML = '<p class="text-red-400 text-2xl md:text-4xl font-semibold">Failed to load lyrics.</p>';
@@ -1292,6 +1592,29 @@
         document.addEventListener("click", async function (e) {
             const contextMenu = document.getElementById("bento-context-menu");
             if (!contextMenu) return;
+
+            // Open an artist's page when their name is clicked
+            const artistLink = e.target.closest(".artist-link");
+            if (artistLink) {
+                e.stopPropagation();
+                const artist = artistLink.getAttribute("data-artist");
+                if (artist && typeof window.openArtistPage === 'function') {
+                    window.openArtistPage(artist);
+                }
+                return;
+            }
+
+            // Open an album's page when its name is clicked
+            const albumLink = e.target.closest(".album-link");
+            if (albumLink) {
+                e.stopPropagation();
+                const album = albumLink.getAttribute("data-album");
+                const artist = albumLink.getAttribute("data-artist") || "";
+                if (album && typeof window.openAlbumPage === 'function') {
+                    window.openAlbumPage(album, artist);
+                }
+                return;
+            }
 
             if (e.target.closest("#bento-next-to-queue-btn")) {
                 e.stopPropagation();

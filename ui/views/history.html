@@ -172,8 +172,15 @@
       h4.className = 'text-zinc-100 font-medium truncate text-sm sm:text-base';
       h4.textContent = song.Title || 'Unknown';
       var pArtist = document.createElement('p');
-      pArtist.className = 'text-zinc-400 text-xs sm:text-sm truncate';
+      pArtist.className = 'artist-link text-zinc-400 text-xs sm:text-sm truncate hover:text-orange-400 transition-colors cursor-pointer';
       pArtist.textContent = song.Artist || 'Unknown';
+      pArtist._songData = song;
+      pArtist.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (typeof window.openArtistPage === 'function') {
+          window.openArtistPage(this._songData.Artist || (this.textContent || 'Unknown'));
+        }
+      });
       var pDate = document.createElement('p');
       pDate.className = 'text-zinc-600 text-xs mt-1';
       pDate.textContent = dateLabel + ': ' + dateStr;

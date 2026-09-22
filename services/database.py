@@ -131,6 +131,64 @@ class DatabaseManager:
             print(f" [Python] Error loading playlist songs: {str(e)}")
             return []
 
+    def get_songs_by_artist(self, artist):
+        """Return all songs whose metadata Artist matches the given artist (metadata-only)."""
+        path = Path(settings.path)
+        if not path.exists() or not artist:
+            return []
+        artist = str(artist).strip()
+
+        date_lookup = {}
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT file, date_download FROM Songs")
+                for row in cursor.fetchall():
+                    if row[1]:
+                        date_lookup[row[0]] = row[1].replace(' ', 'T') + 'Z' if 'T' not in str(row[1]) else str(row[1])
+                    else:
+                        date_lookup[row[0]] = None
+        except Exception as e:
+            print(f" [Python] Error fetching date_download for artist: {e}")
+
+        songs = []
+        for f in path.iterdir():
+            if f.is_file() and f.suffix.lower() == '.mp3':
+                song_data = self.api.metadata.get_song_metadata(str(f), f.name)
+                if (song_data.get('Artist') or '') == artist:
+                    song_data['DateDownload'] = date_lookup.get(f.name, None)
+                    songs.append(song_data)
+        songs.sort(key=lambda s: ((s.get('Album') or '').lower(), (s.get('Title') or '').lower()))
+        return songs
+
+    def get_songs_by_album(self, album):
+        """Return all songs whose metadata Album matches the given album (metadata-only)."""
+        path = Path(settings.path)
+        if not path.exists() or not album:
+            return []
+        album = str(album).strip()
+
+        date_lookup = {}
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT file, date_download FROM Songs")
+                for row in cursor.fetchall():
+                    if row[1]:
+                        date_lookup[row[0]] = row[1].replace(' ', 'T') + 'Z' if 'T' not in str(row[1]) else str(row[1])
+                    else:
+                        date_lookup[row[0]] = None
+        except Exception as e:
+            print(f" [Python] Error fetching date_download for album: {e}")
+
+        songs = []
+        for f in path.iterdir():
+            if f.is_file() and f.suffix.lower() == '.mp3':
+                song_data = self.api.metadata.get_song_metadata(str(f), f.name)
+                if (song_data.get('Album') or '') == album:
+                    song_data['DateDownload'] = date_lookup.get(f.name, None)
+                    songs.append(song_data)
+        songs.sort(key=lambda s: ((s.get('Artist') or '').lower(), (s.get('Title') or '').lower()))
+        return songs
+
     def get_download_history(self, page=1, limit=10):
         try:
             import math

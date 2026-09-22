@@ -1,0 +1,378 @@
+<div class="max-w-6xl mx-auto w-full pt-8 px-6 sm:px-8 pb-24 flex flex-col gap-10">
+
+    <!-- Album Header (Glassmorphism) -->
+    <div
+        class="relative group rounded-3xl overflow-hidden p-6 sm:p-10 flex flex-col sm:flex-row items-center sm:items-end gap-6 sm:gap-10 bg-zinc-900/40 border border-white/5 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500">
+        <!-- Glassmorphism glare -->
+        <div class="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none"></div>
+
+        <!-- Ambient Background Glow inside the header -->
+        <div
+            class="absolute -right-1/4 -top-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-[100px] pointer-events-none z-0">
+        </div>
+
+        <!-- Album Cover (embedded artwork, then Apple, then initials) -->
+        <div id="av-avatar-wrapper"
+            class="relative w-56 h-56 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10 group-hover:shadow-orange-500/20 transition-all duration-500 z-10 bg-gradient-to-br from-orange-400/20 to-orange-600/20 flex items-center justify-center">
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 opacity-80 flex items-center justify-center" id="av-avatar-overlay">
+                <span id="av-avatar" class="text-white font-extrabold text-7xl drop-shadow-xl select-none">?</span>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div
+            class="relative z-10 flex flex-col items-center sm:items-start text-center sm:text-left flex-1 min-w-0 pb-2">
+            <span
+                class="text-xs sm:text-sm font-semibold text-orange-400 tracking-widest uppercase mb-2">Album</span>
+            <h1 id="av-title"
+                class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-500 tracking-tight truncate w-full pb-1 drop-shadow-sm mb-3 sm:mb-4">
+                Album</h1>
+
+            <p id="av-song-count" class="text-sm sm:text-base text-zinc-400 max-w-2xl mb-6 leading-relaxed">Loading...
+            </p>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-4 mt-auto">
+                <!-- Play Button -->
+                <button id="av-play-btn"
+                    class="flex items-center justify-center w-14 h-14 hover:cursor-pointer bg-orange-500 text-white rounded-full hover:bg-orange-400 transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                        class="w-7 h-7 ml-1">
+                        <path fill-rule="evenodd"
+                            d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar (Glassmorphism) -->
+    <div
+        class="sticky top-0 z-40 backdrop-blur-2xl bg-zinc-900/20 border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 py-4 rounded-2xl flex justify-end items-center mb-2">
+        <div class="relative group w-full flex justify-end">
+            <div class="relative w-full sm:w-auto">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" placeholder="Search songs in this album..." id="av_txt_search" spellcheck="false"
+                    class="w-full sm:w-64 focus:w-full sm:focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-10 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
+                <button
+                    id="av_clearBtn"
+                    class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors duration-200 hidden"
+                    onclick="window.clearAvSearch()"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls & Table Placeholder -->
+    <div class="flex flex-col gap-4">
+        <div id="av-table-header"
+            class="grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                data-sort-key="Title" onclick="window._avSortColumn('Title')">Song <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                data-sort-key="Album" onclick="window._avSortColumn('Album')">Album <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                data-sort-key="Duration" onclick="window._avSortColumn('Duration')">Duration <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                data-sort-key="DateDownload" onclick="window._avSortColumn('DateDownload')">Downloaded <span
+                    class="sort-arrow text-orange-400 text-[10px]"></span></div>
+            <div></div>
+        </div>
+
+        <!-- Empty state / Loading (Dynamically replaced by JS) -->
+        <div id="av-songs-container" class="flex flex-col gap-2">
+            <div class="py-16 flex flex-col items-center justify-center text-center opacity-70">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-zinc-600 mb-4" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <p class="text-zinc-400 font-medium text-lg">Loading album...</p>
+                <p class="text-sm text-zinc-500 mt-2 max-w-md">Gathering songs from this album's metadata.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ── Sorting state for album view ──
+    window._avSortKey = null;
+    window._avSortDir = 'asc';
+    window._avSongsData = [];
+
+    window._avSortColumn = function (key) {
+        if (window._avSortKey === key) {
+            window._avSortDir = window._avSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            window._avSortKey = key;
+            window._avSortDir = 'asc';
+        }
+        // Update arrow indicators
+        document.querySelectorAll('#av-table-header [data-sort-key] .sort-arrow').forEach(el => {
+            el.textContent = '';
+        });
+        const activeHeader = document.querySelector(`#av-table-header [data-sort-key="${key}"] .sort-arrow`);
+        if (activeHeader) {
+            activeHeader.textContent = window._avSortDir === 'asc' ? '▲' : '▼';
+        }
+        window._avRenderSorted();
+    };
+
+    window._avRenderSorted = function () {
+        let sorted = [...window._avSongsData];
+        const key = window._avSortKey;
+        const dir = window._avSortDir;
+        if (key) {
+            sorted.sort((a, b) => {
+                let valA, valB;
+                if (key === 'Duration') {
+                    valA = a.Duration || 0;
+                    valB = b.Duration || 0;
+                } else if (key === 'DateDownload') {
+                    valA = a.DateDownload ? new Date(a.DateDownload).getTime() : 0;
+                    valB = b.DateDownload ? new Date(b.DateDownload).getTime() : 0;
+                } else {
+                    valA = (a[key] || '').toString().toLowerCase();
+                    valB = (b[key] || '').toString().toLowerCase();
+                }
+                if (valA < valB) return dir === 'asc' ? -1 : 1;
+                if (valA > valB) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        const container = document.getElementById("av-songs-container");
+        if (!container) return;
+
+        if (sorted.length > 0) {
+            let htmlBuffer = "";
+            sorted.forEach((song, idx) => {
+                if (!song._instanceId) song._instanceId = 'av_' + idx + '_' + Date.now();
+                htmlBuffer += `
+                <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+                </div>`;
+            });
+            container.innerHTML = htmlBuffer;
+            const containers = container.querySelectorAll(".song-row-container");
+            containers.forEach((c, i) => {
+                c._songData = sorted[i] || null;
+                if (typeof window.generateSongRowHtml === 'function') {
+                    if (window.lazyRowObserver) {
+                        window.lazyRowObserver.observe(c);
+                    } else {
+                        c.innerHTML = window.generateSongRowHtml(sorted[i]);
+                        c.setAttribute('data-rendered', 'true');
+                    }
+                }
+            });
+        } else {
+            container.innerHTML = `
+                <div class="py-16 flex flex-col items-center justify-center text-center opacity-70">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-zinc-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    <p class="text-zinc-400 font-medium text-lg">Nothing here yet</p>
+                    <p class="text-sm text-zinc-500 mt-2 max-w-md">No songs are tagged with this album. Edit a song's metadata to add it.</p>
+                </div>
+            `;
+        }
+
+        // Re-apply active search filter after sort
+        const searchInput = document.getElementById("av_txt_search");
+        if (searchInput && searchInput.value.trim()) {
+            const value = searchInput.value.toLowerCase();
+            document.querySelectorAll("#av-songs-container .song-row-container").forEach(container => {
+                const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null) || {};
+                const title = (songData.Title || "").toLowerCase();
+                const artist = (songData.Artist || "").toLowerCase();
+                const album = (songData.Album || "").toLowerCase();
+                if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
+                    container.style.display = "";
+                } else {
+                    container.style.display = "none";
+                }
+            });
+        }
+    };
+
+    // Search logic for album view
+    if (!window.avEventHandlersAttached) {
+        window.avEventHandlersAttached = true;
+        let avSearchTimeout;
+        document.addEventListener("keyup", function (e) {
+            if (e.target && e.target.id === "av_txt_search") {
+                clearTimeout(avSearchTimeout);
+                const value = e.target.value.toLowerCase();
+
+                const clearBtn = document.getElementById('av_clearBtn');
+                if (clearBtn) {
+                    if (e.target.value.length > 0) {
+                        clearBtn.classList.remove('hidden');
+                    } else {
+                        clearBtn.classList.add('hidden');
+                    }
+                }
+
+                avSearchTimeout = setTimeout(function () {
+                    const containers = document.querySelectorAll("#av-songs-container .song-row-container");
+                    containers.forEach(container => {
+                        const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null) || {};
+                        const title = (songData.Title || "").toLowerCase();
+                        const artist = (songData.Artist || "").toLowerCase();
+                        const album = (songData.Album || "").toLowerCase();
+                        if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
+                            container.style.display = "";
+                        } else {
+                            container.style.display = "none";
+                        }
+                    });
+                }, 150);
+            }
+        });
+    }
+
+    window.clearAvSearch = function () {
+        const input = document.getElementById("av_txt_search");
+        if (input) {
+            input.value = "";
+            const clearBtn = document.getElementById("av_clearBtn");
+            if (clearBtn) clearBtn.classList.add("hidden");
+            input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+            input.focus();
+        }
+    };
+
+    // ── Initial data population ──
+    const albumName = window.currentAlbumName || "Unknown Album";
+
+    // ── Album cover: embedded artwork, then Apple iTunes, then initials ──
+    window._albumImageCache = window._albumImageCache || {};
+    function applyAlbumCover(url) {
+        const wrap = document.getElementById('av-avatar-wrapper');
+        const overlay = document.getElementById('av-avatar-overlay');
+        if (!url || !wrap || !overlay) return;
+        const img = document.createElement('img');
+        img.alt = '';
+        img.className = 'absolute inset-0 w-full h-full object-cover';
+        img.onload = function () {
+            overlay.remove();
+            wrap.appendChild(img);
+        };
+        img.onerror = function () {
+            img.remove();
+        };
+        img.src = url;
+    }
+    async function loadAlbumImage(album, artist) {
+        const key = ((album || '') + '|' + (artist || '')).trim().toLowerCase();
+        if (!key) return;
+        if (window._albumImageCache.hasOwnProperty(key)) {
+            applyAlbumCover(window._albumImageCache[key]);
+            return;
+        }
+        if (!window.pywebview || !window.pywebview.api || typeof window.pywebview.api.get_album_image !== 'function') return;
+        try {
+            const url = await window.pywebview.api.get_album_image(album, artist);
+            window._albumImageCache[key] = url || null;
+            applyAlbumCover(url);
+        } catch (e) {
+            console.error("Failed to fetch album image:", e);
+        }
+    }
+
+    document.getElementById("av-title").innerText = albumName;
+
+    // Build avatar initials from the album name (metadata-only)
+    const initials = albumName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 3)
+        .map(word => word[0].toUpperCase())
+        .join('');
+    const avatarEl = document.getElementById("av-avatar");
+    if (avatarEl) avatarEl.innerText = initials || '?';
+
+    // Store album songs for queue usage
+    window.currentAlbumSongs = [];
+
+    (async () => {
+        let allSongs = [];
+        if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.get_songs_by_album === 'function') {
+            try {
+                const songs = await window.pywebview.api.get_songs_by_album(albumName);
+                allSongs = songs || [];
+                window.currentAlbumSongs = allSongs;
+                window.currentPlaylistSongs = allSongs;
+                window._avSongsData = allSongs;
+
+                const countEl = document.getElementById("av-song-count");
+                if (countEl) {
+                    countEl.innerText = `${allSongs.length} song${allSongs.length === 1 ? '' : 's'}`;
+                }
+                window._avRenderSorted();
+            } catch (e) {
+                console.error("Failed to load album songs:", e);
+            }
+        }
+
+        // Prefer the embedded cover art of the first song that has one (metadata-only)
+        const coverSong = allSongs.find(s => s.CoverArt && String(s.CoverArt).startsWith('data:image/'));
+        if (coverSong && coverSong.CoverArt) {
+            applyAlbumCover(coverSong.CoverArt);
+        } else {
+            const primaryArtist = window.currentAlbumArtist || (allSongs.length > 0 ? allSongs[0].Artist : null);
+            loadAlbumImage(albumName, primaryArtist);
+        }
+
+        // Wire up the Play button to play/pause the album's songs
+        const playBtn = document.querySelector('#av-play-btn');
+        if (playBtn) {
+            // Set initial icon state based on whether music is currently playing
+            if (window.is_currently_playing && window.currentAlbumSongs && window.currentAlbumSongs.length > 0) {
+                const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
+                const isFromThisAlbum = currentFile && window.currentAlbumSongs.some(s => s.File === currentFile);
+                if (isFromThisAlbum) {
+                    playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
+                }
+            }
+
+            playBtn.addEventListener('click', async function () {
+                if (!window.currentAlbumSongs || window.currentAlbumSongs.length === 0) return;
+
+                // Check if the currently playing song is from this album
+                const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
+                const isFromThisAlbum = currentFile && window.currentAlbumSongs.some(s => s.File === currentFile);
+
+                if (isFromThisAlbum) {
+                    // Toggle play/pause
+                    await window.toggle_play_pause();
+                } else {
+                    // Start playing the album's songs from the first one
+                    const firstSong = window.currentAlbumSongs[0];
+                    window.current_playing_song = firstSong;
+                    if (window.set_active_song_ui) window.set_active_song_ui(firstSong);
+
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+                        await window.pywebview.api.populate_queue_from_list(firstSong, window.currentAlbumSongs, null);
+                    }
+                    await window.play_button(firstSong);
+                }
+            });
+        }
+    })();
+</script>
