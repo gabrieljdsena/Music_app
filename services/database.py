@@ -134,27 +134,35 @@ class DatabaseManager:
     def get_download_history(self, page=1, limit=10):
         try:
             import math
-            page = int(page)
-            limit = int(limit)
-            offset = (page - 1) * limit
+            page = max(int(page), 1)
+            limit = max(int(limit), 1)
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute("SELECT COUNT(*) FROM Songs")
-                total_count = cursor.fetchone()[0]
-                total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
-
-                cursor = conn.execute("SELECT file, date_download FROM Songs ORDER BY date_download DESC LIMIT ? OFFSET ?", (limit, offset))
+                cursor = conn.execute(
+                    "SELECT file, date_download FROM Songs "
+                    "WHERE downloaded_link IS NOT NULL AND downloaded_link != '' "
+                    "ORDER BY date_download DESC"
+                )
                 rows = cursor.fetchall()
-                
-                history_songs = []
-                for row in rows:
-                    file_name = row[0]
-                    date_download = row[1]
-                    file_path = os.path.join(settings.path, file_name)
-                    if os.path.exists(file_path):
-                        song_data = self.api.metadata.get_song_metadata(file_path, file_name, include_cover=True)
-                        song_data['DateDownload'] = date_download.replace(' ', 'T') + 'Z' if date_download else None
-                        history_songs.append(song_data)
-                return {"items": history_songs, "total_pages": total_pages, "current_page": page}
+
+            existing = [
+                (file_name, date_download)
+                for file_name, date_download in rows
+                if os.path.exists(os.path.join(settings.path, file_name))
+            ]
+            total_count = len(existing)
+            total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+            if page > total_pages:
+                page = total_pages
+            offset = (page - 1) * limit
+            page_rows = existing[offset:offset + limit]
+
+            history_songs = []
+            for file_name, date_download in page_rows:
+                file_path = os.path.join(settings.path, file_name)
+                song_data = self.api.metadata.get_song_metadata(file_path, file_name, include_cover=True)
+                song_data['DateDownload'] = date_download.replace(' ', 'T') + 'Z' if date_download else None
+                history_songs.append(song_data)
+            return {"items": history_songs, "total_pages": total_pages, "current_page": page}
         except Exception as e:
             print(f" [Python] Error loading download history: {str(e)}")
             return {"items": [], "total_pages": 1, "current_page": 1}
@@ -162,27 +170,31 @@ class DatabaseManager:
     def get_played_history(self, page=1, limit=10):
         try:
             import math
-            page = int(page)
-            limit = int(limit)
-            offset = (page - 1) * limit
+            page = max(int(page), 1)
+            limit = max(int(limit), 1)
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.execute("SELECT COUNT(*) FROM Music_History")
-                total_count = cursor.fetchone()[0]
-                total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
-
-                cursor = conn.execute("SELECT song_file, date_played FROM Music_History ORDER BY date_played DESC LIMIT ? OFFSET ?", (limit, offset))
+                cursor = conn.execute("SELECT song_file, date_played FROM Music_History ORDER BY date_played DESC")
                 rows = cursor.fetchall()
-                
-                history_songs = []
-                for row in rows:
-                    file_name = row[0]
-                    date_played = row[1]
-                    file_path = os.path.join(settings.path, file_name)
-                    if os.path.exists(file_path):
-                        song_data = self.api.metadata.get_song_metadata(file_path, file_name, include_cover=True)
-                        song_data['DatePlayed'] = date_played.replace(' ', 'T') + 'Z' if date_played else None
-                        history_songs.append(song_data)
-                return {"items": history_songs, "total_pages": total_pages, "current_page": page}
+
+            existing = [
+                (file_name, date_played)
+                for file_name, date_played in rows
+                if os.path.exists(os.path.join(settings.path, file_name))
+            ]
+            total_count = len(existing)
+            total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+            if page > total_pages:
+                page = total_pages
+            offset = (page - 1) * limit
+            page_rows = existing[offset:offset + limit]
+
+            history_songs = []
+            for file_name, date_played in page_rows:
+                file_path = os.path.join(settings.path, file_name)
+                song_data = self.api.metadata.get_song_metadata(file_path, file_name, include_cover=True)
+                song_data['DatePlayed'] = date_played.replace(' ', 'T') + 'Z' if date_played else None
+                history_songs.append(song_data)
+            return {"items": history_songs, "total_pages": total_pages, "current_page": page}
         except Exception as e:
             print(f" [Python] Error loading played history: {str(e)}")
             return {"items": [], "total_pages": 1, "current_page": 1}

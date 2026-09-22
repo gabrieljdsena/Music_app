@@ -1,15 +1,96 @@
 import os
 import sys
-from yt_dlp import YoutubeDL
+import re
+import json
+import threading
+import importlib
+import subprocess
 import urllib.request
 import urllib.parse
-import json
-import re
+from yt_dlp import YoutubeDL
 import settings
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, APIC, TCON
 
 class MusicDownloader:
+    def __init__(self):
+        self._ytdlp_checked = False
+        self._ytdlp_lock = threading.Lock()
+
+    # ==========================
+    # yt-dlp Self-Update
+    # ==========================
+    def _check_update_ytdlp_once(self):
+        """Check PyPI once per session and auto-update yt-dlp before the first download."""
+        if self._ytdlp_checked:
+            return
+        with self._ytdlp_lock:
+            if self._ytdlp_checked:
+                return
+            self._ytdlp_checked = True
+            self._check_and_update_ytdlp()
+
+    def _check_and_update_ytdlp(self):
+        try:
+            from yt_dlp.version import __version__ as current
+        except Exception:
+            current = None
+
+        if getattr(sys, 'frozen', False):
+            print(" [Python] yt-dlp auto-update skipped (frozen build).")
+            return
+        if not current:
+            return
+
+        latest = self._get_latest_ytdlp_version()
+        if not latest:
+            return
+
+        if self._version_tuple(current) >= self._version_tuple(latest):
+            print(f" [Python] yt-dlp is up to date ({current}).")
+            return
+
+        print(f" [Python] Updating yt-dlp {current} -> {latest}...")
+        try:
+            subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', '--upgrade', 'yt-dlp'],
+                check=True,
+                capture_output=True,
+                timeout=180
+            )
+            print(" [Python] yt-dlp updated successfully.")
+            self._reload_ytdlp()
+        except Exception as e:
+            print(f" [Python] yt-dlp auto-update failed: {e}")
+
+    @staticmethod
+    def _get_latest_ytdlp_version():
+        try:
+            req = urllib.request.Request(
+                "https://pypi.org/pypi/yt-dlp/json",
+                headers={'User-Agent': 'Hathor-MusicPlayer/1.0'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                return data['info']['version']
+        except Exception as e:
+            print(f" [Python] Could not check the latest yt-dlp version: {e}")
+            return None
+
+    @staticmethod
+    def _version_tuple(version):
+        return tuple(int(p) for p in re.findall(r'\d+', str(version)))
+
+    @staticmethod
+    def _reload_ytdlp():
+        try:
+            ytdl_module = importlib.import_module('yt_dlp')
+            importlib.reload(ytdl_module)
+            globals()['YoutubeDL'] = ytdl_module.YoutubeDL
+            print(" [Python] yt-dlp reloaded; updated version is active.")
+        except Exception as e:
+            print(f" [Python] Could not reload yt-dlp, restart the app to use the update: {e}")
+
     def search_yt(self, search_query, limit=5):
         """Searches YouTube and returns a list of results without downloading."""
         ydl_opts = {
@@ -47,6 +128,8 @@ class MusicDownloader:
         return name or 'Unknown'
 
     def download_song(self, search, progress_callback=None):
+        self._check_update_ytdlp_once()
+
         base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
         ffmpeg_path = os.path.join(base_path, 'ffmpeg', 'bin')
         

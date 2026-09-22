@@ -239,7 +239,13 @@ class Api:
                 try:
                     with sqlite3.connect(self.db_path) as conn:
                         conn.execute(
-                            "INSERT OR IGNORE INTO Songs (file, downloaded_link, title, artist) VALUES (?, ?, ?, ?)",
+                            """INSERT INTO Songs (file, downloaded_link, title, artist, date_download)
+                               VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                               ON CONFLICT(file) DO UPDATE SET
+                                   downloaded_link = excluded.downloaded_link,
+                                   title = excluded.title,
+                                   artist = excluded.artist,
+                                   date_download = CURRENT_TIMESTAMP""",
                             (result["filename"], result.get("source_url"), result["title"], result.get("artist"))
                         )
                 except Exception as db_err:
