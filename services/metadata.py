@@ -98,6 +98,19 @@ class MetadataManager:
                 os.remove(total_path)
                 self.api.song_list = [s for s in getattr(self.api, 'song_list', []) if s.get('File') != filename]
                 
+                # Remove the local DB rows so the sync doesn't re-upload the deleted song
+                try:
+                    with sqlite3.connect(self.api.db_path) as conn:
+                        conn.execute("DELETE FROM Song_Playlist WHERE song_file = ?", (filename,))
+                        conn.execute("DELETE FROM Lyrics WHERE song_file = ?", (filename,))
+                        conn.execute("DELETE FROM Music_History WHERE song_file = ?", (filename,))
+                        conn.execute("DELETE FROM Songs WHERE file = ?", (filename,))
+                    if getattr(self.api, 'db', None):
+                        self.api.db.record_deletion("songs", filename)
+                        self.api.db.record_deletion("lyrics", filename)
+                except Exception as db_err:
+                    print(f" [Python] Error cleaning up song from database: {db_err}")
+                
                 # Check playback queue
                 if hasattr(self.api, 'playback'):
                     self.api.playback.next_songs = [s for s in getattr(self.api.playback, 'next_songs', []) if s.get('File') != filename]
@@ -228,7 +241,8 @@ class MetadataManager:
                 if hasattr(self.api, 'media_controls'):
                     self.api.media_controls.update_overlay(
                         self.api.last_song.get('Title', 'Unknown'),
-                        self.api.last_song.get('Artist', 'Unknown')
+                        self.api.last_song.get('Artist', 'Unknown'),
+                        self.api.last_song.get('CoverArt')
                     )
 
             # Update backend lists

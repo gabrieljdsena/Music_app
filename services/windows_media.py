@@ -1,11 +1,13 @@
 import json
 import os
 import base64
+import hashlib
+import io
+import tempfile
 import winsdk.windows.media as media
 import winsdk.windows.media.playback as playback
 from winsdk.windows.storage.streams import RandomAccessStreamReference
 from winsdk.windows.foundation import Uri
-import tempfile
 
 class WindowsMediaOverlay:
     def __init__(self, api):
@@ -47,40 +49,65 @@ class WindowsMediaOverlay:
     def set_stopped(self):
         self._smtc.playback_status = media.MediaPlaybackStatus.STOPPED
 
+    @staticmethod
+    def _save_cover(cover_art):
+        """Save a cover to a temp JPEG file suitable for SMTC, or return None."""
+        if not cover_art:
+            return None
+
+        # Accept a plain file path directly
+        if isinstance(cover_art, str) and os.path.exists(cover_art):
+            return cover_art
+
+        if not (isinstance(cover_art, str) and cover_art.startswith('data:image')):
+            return None
+
+        try:
+            header, encoded = cover_art.split(',', 1)
+            mime = header.split(';')[0].split(':')[1] if ':' in header else 'image/jpeg'
+            raw = base64.b64decode(encoded)
+        except Exception as e:
+            print(f" [Python] Failed to decode cover image: {e}")
+            return None
+
+        # Normalize to JPEG so SMTC can render it regardless of the source format (PNG/WebP...)
+        data = raw
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(raw))
+            img = img.convert('RGB')
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=90)
+            data = buf.getvalue()
+        except Exception as e:
+            print(f" [Python] Failed to convert cover to JPEG, using raw (mime={mime}): {e}")
+
+        digest = hashlib.md5(data).hexdigest()[:16]
+        thumb_path = os.path.join(tempfile.gettempdir(), f'music_player_cover_{digest}.jpg')
+        if not os.path.exists(thumb_path):
+            try:
+                with open(thumb_path, "wb") as f:
+                    f.write(data)
+            except Exception as e:
+                print(f" [Python] Failed to save cover file: {e}")
+                return None
+        return thumb_path
+
     def update_overlay(self, title, artist, cover_art=None):
         updater = self._smtc.display_updater
         updater.type = media.MediaPlaybackType.MUSIC
         updater.music_properties.title = str(title)
         updater.music_properties.artist = str(artist)
-        
+
         # Set Thumbnail
-        if cover_art:
-            try:
-                temp_dir = tempfile.gettempdir()
-                thumb_path = os.path.join(temp_dir, 'music_player_thumb.jpg')
-                valid_thumb = False
-                
-                if cover_art.startswith('data:image'):
-                    try:
-                        header, encoded = cover_art.split(",", 1)
-                        data = base64.b64decode(encoded)
-                        with open(thumb_path, "wb") as f:
-                            f.write(data)
-                        valid_thumb = True
-                    except Exception as e:
-                        print(f" [Python] Failed to decode/save base64 thumbnail: {e}")
-                elif os.path.exists(cover_art):
-                    thumb_path = cover_art
-                    valid_thumb = True
-                    
-                if valid_thumb:
-                    # Verify file exists before creating URI
-                    if os.path.exists(thumb_path):
-                        file_uri = Uri(f"file:///{thumb_path.replace(os.sep, '/')}")
-                        updater.thumbnail = RandomAccessStreamReference.create_from_uri(file_uri)
-            except Exception as e:
-                print(f" [Python] Failed to set thumbnail: {e}")
-                import traceback
-                traceback.print_exc()
-        
+        thumb_path = self._save_cover(cover_art)
+        try:
+            if thumb_path:
+                file_uri = Uri(f"file:///{thumb_path.replace(os.sep, '/')}")
+                updater.thumbnail = RandomAccessStreamReference.create_from_uri(file_uri)
+            else:
+                updater.thumbnail = None
+        except Exception as e:
+            print(f" [Python] Failed to set SMTC thumbnail: {e}")
+
         updater.update()

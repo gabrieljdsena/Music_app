@@ -11,8 +11,7 @@ a = Analysis(
         ('ui', 'ui'),
         ('ffmpeg', 'ffmpeg'),
         ('database.sql', '.'),
-        ('node_modules', 'node_modules'),
-        ('.env', '.')
+        ('node_modules', 'node_modules')
     ] + collect_data_files('pykakasi'),
     hiddenimports=[
         'webview',

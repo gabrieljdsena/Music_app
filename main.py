@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# In a frozen build the .env must live next to the exe (never bundled inside it).
+if getattr(sys, 'frozen', False):
+    load_dotenv(os.path.join(os.path.dirname(sys.executable), '.env'))
+
 if not getattr(sys, 'frozen', False):
     print(" [Dev] Compiling Tailwind CSS...")
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -102,13 +106,12 @@ def on_resized(width, height):
     resize_timer = threading.Timer(0.4, save_window_size, args=(width, height))
     resize_timer.start()
 
-# 5. Setup PostgreSQL sync
+# 5. Setup MySQL/TiDB remote sync
 db_sync = None
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    db_sync = DatabaseSync(db_path, DATABASE_URL)
+if os.getenv("DB_HOST"):
+    db_sync = DatabaseSync(db_path)
 else:
-    print(" [Sync] No DATABASE_URL found in .env, sync disabled.")
+    print(" [Sync] No remote DB configured in .env, sync disabled.")
 
 def on_start(window):
     pygame.init()
@@ -123,7 +126,7 @@ def on_start(window):
         _prompt_remote_sync(window)
     else:
         api.load_current_song()
-        # Start background PostgreSQL sync
+        # Start background MySQL sync
         if db_sync:
             db_sync.start()
 

@@ -36,6 +36,16 @@ class MusicDownloader:
             print(f" [Python] Search Error: {str(e)}")
             return []
 
+    @staticmethod
+    def _safe_filename(name):
+        """Strip characters that are invalid in Windows filenames."""
+        name = re.sub(r'[\\/:*?"<>|]', '', str(name))
+        name = re.sub(r'[\x00-\x1f]', '', name)
+        name = re.sub(r'\s+', ' ', name).strip().rstrip('.')
+        if len(name) > 150:
+            name = name[:150].rstrip()
+        return name or 'Unknown'
+
     def download_song(self, search, progress_callback=None):
         base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
         ffmpeg_path = os.path.join(base_path, 'ffmpeg', 'bin')
@@ -52,8 +62,12 @@ class MusicDownloader:
                 'preferredcodec': 'mp3',
                 'preferredquality': '320',
             }],
-            'outtmpl': os.path.join(appdata_path, '%(title)s'),
-            'ffmpeg_location': ffmpeg_path
+            # Video id keeps concurrent downloads from colliding; restrictfilenames
+            # removes characters that are invalid on Windows.
+            'outtmpl': os.path.join(appdata_path, '%(id)s_%(title)s.%(ext)s'),
+            'ffmpeg_location': ffmpeg_path,
+            'restrictfilenames': True,
+            'noplaylist': True,
         }
         
         if progress_callback:
@@ -66,11 +80,19 @@ class MusicDownloader:
                 info = ydl.extract_info(query, download=True)
                 if 'entries' in info and len(info['entries']) > 0:
                     info = info['entries'][0]
-                    
+
+            downloaded_files = info.get('requested_downloads') or []
+            if downloaded_files and downloaded_files[0].get('filepath'):
+                output_file = downloaded_files[0]['filepath']
+            else:
+                output_file = os.path.join(
+                    appdata_path,
+                    self._safe_filename(f"{info.get('id')}_{info.get('title')}") + '.mp3'
+                )
+            
             if progress_callback:
                 progress_callback({'status': 'processing_metadata'})
                 
-            # Remove anything inside parentheses, including the parentheses, and strip trailing spaces
             # Try to get better metadata from iTunes
             itunes_metadata = self.search_itunes(info.get('title'), info.get('uploader'))
             
@@ -83,15 +105,15 @@ class MusicDownloader:
                     'artist': info.get('uploader', '')
                 }
             
-            output_file = os.path.join(appdata_path, f"{info.get('title')}.mp3")
-            self.apply_metadata(output_file, metadata)
+            final_path = self.apply_metadata(output_file, metadata)
+            if not final_path:
+                raise Exception("Failed to apply metadata")
+            final_filename = os.path.basename(final_path)
             
             if progress_callback:
                 progress_callback({'status': 'finished_all'})
 
-            # Build the final filename after metadata rename
             final_title = metadata.get('title', info.get('title', 'Unknown'))
-            final_filename = f"{final_title}.mp3"
             source_url = info.get('webpage_url') or info.get('original_url') or (search if isinstance(search, str) and search.startswith('http') else None)
                 
             print(f" [Python] Download complete with metadata: {metadata}")
@@ -238,19 +260,28 @@ class MusicDownloader:
             audio.save(v2_version=3)
             print(f"Metadata applied")
 
-            # Rename file to match title
-            title = metadata.get('title', 'Unknown')
-            directory = os.path.dirname(file_path)
-            new_file_path = os.path.join(directory, f"{title}.mp3")
-            
-            # If file already exists with that name, don't rename
-            if new_file_path != file_path:
-                if os.path.exists(new_file_path):
-                    os.remove(new_file_path)
-                os.rename(file_path, new_file_path)
-                print(f"File renamed to: {title}.mp3")
+            # Rename file to match title, without overwriting an existing file
+            title = metadata.get('title')
+            base = self._safe_filename(title) if title else None
+            if not base:
+                return file_path
 
-            return True
+            directory = os.path.dirname(file_path)
+            new_path = os.path.join(directory, f"{base}.mp3")
+
+            # Keep the file as-is if it already matches its final name
+            if os.path.normpath(new_path).lower() == os.path.normpath(file_path).lower():
+                return file_path
+
+            counter = 1
+            candidate = new_path
+            while os.path.exists(candidate):
+                candidate = os.path.join(directory, f"{base} ({counter}).mp3")
+                counter += 1
+
+            os.rename(file_path, candidate)
+            print(f"File renamed to: {os.path.basename(candidate)}")
+            return candidate
         except Exception as e:
             print(f"Error applying metadata: {str(e)}")
-            return False
+            return None

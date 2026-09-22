@@ -5,3 +5,4 @@ music_player.db
 .env
 dist/
 build/
+CA.pem

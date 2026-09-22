@@ -59,6 +59,13 @@ create table if not exists Playlist_History(
     FOREIGN KEY (playlist_id) REFERENCES Playlists(id)
 );
 
+create table if not exists Sync_Deletions(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_name varchar(255) not null,
+    row_key varchar(255) not null,
+    deleted_at datetime default CURRENT_TIMESTAMP
+);
+
 
 INSERT OR IGNORE INTO Settings(id,current_song, limit_downloads, current_playlist, current_volume, standardize_volume, current_tab, window_width, window_height, background_path, songs_path, browser)
 values (1,null,null,null,null,null,null,null,null,null,null,null)

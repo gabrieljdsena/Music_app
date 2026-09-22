@@ -6,3 +6,5 @@ pygame
 winsdk
 psutil
 pykakasi
+pymysql
+pillow

@@ -64,12 +64,23 @@ class DatabaseManager:
     def delete_playlist(self, playlist_id):
         try:
             with sqlite3.connect(self.db_path) as conn:
-                conn.execute("DELETE FROM Playlists WHERE id = ?", (playlist_id,))
+                conn.execute("DELETE FROM Playlist_History WHERE playlist_id = ?", (playlist_id,))
                 conn.execute("DELETE FROM Song_Playlist WHERE playlist_id = ?", (playlist_id,))
+                conn.execute("DELETE FROM Playlists WHERE id = ?", (playlist_id,))
+            self.record_deletion("playlists", playlist_id)
+            self.record_deletion("playlist_history", playlist_id)
             return True
         except Exception as e:
             print(f" [Python] Error deleting playlist: {str(e)}")
             return False
+
+    def record_deletion(self, table_name, row_key):
+        """Record a deletion so the background sync can remove the row on the remote DB."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("INSERT INTO Sync_Deletions (table_name, row_key) VALUES (?, ?)", (table_name, str(row_key)))
+        except Exception as e:
+            print(f" [Python] Error recording deletion: {str(e)}")
 
     def get_song_playlists(self, song_file):
         try:
@@ -221,22 +232,24 @@ class DatabaseManager:
 
     def sync_remote_to_local_and_download(self):
         """Fetch missing songs from remote database, save to local, and trigger downloads."""
-        DATABASE_URL = os.getenv("DATABASE_URL")
-        if not DATABASE_URL:
-            return "No DATABASE_URL found. Remote sync unavailable."
+        if not os.getenv("DB_HOST"):
+            return "No remote DB configured. Remote sync unavailable."
         
         try:
-            import psycopg2
-            conn = psycopg2.connect(DATABASE_URL)
+            from sync import get_mysql_connection
+            conn = get_mysql_connection()
             with conn.cursor() as cur:
                 # Add check for songs table existence
-                cur.execute("SELECT to_regclass('public.songs')")
+                cur.execute(
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                    "WHERE table_schema = DATABASE() AND table_name = 'songs'"
+                )
                 if not cur.fetchone()[0]:
                     return "Remote database not initialized yet."
                 cur.execute("SELECT file, downloaded_link, title, date_download, artist FROM songs")
                 remote_songs = cur.fetchall()
                 
-                cur.execute("SELECT id, title, description FROM playlists")
+                cur.execute("SELECT id, title, description, thumbnail FROM playlists")
                 remote_playlists = cur.fetchall()
                 
                 cur.execute("SELECT id, song_file, playlist_id, date_added FROM song_playlist")
@@ -288,10 +301,11 @@ class DatabaseManager:
                 # Sync other tables
                 for row in remote_playlists:
                     local_conn.execute("""
-                        INSERT INTO Playlists (id, title, description) VALUES (?, ?, ?)
+                        INSERT INTO Playlists (id, title, description, thumbnail) VALUES (?, ?, ?, ?)
                         ON CONFLICT(id) DO UPDATE SET
                             title = excluded.title,
-                            description = excluded.description
+                            description = excluded.description,
+                            thumbnail = excluded.thumbnail
                     """, row)
                 for row in remote_song_playlist:
                     local_conn.execute("""

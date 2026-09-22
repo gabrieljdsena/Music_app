@@ -1,10 +1,14 @@
 <div id="editSongModal"
     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl shadow-black/60 w-full max-w-md p-6 relative">
+    <div
+        class="bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl shadow-black/60 w-full max-w-md p-6 relative">
         <!-- Ambient Glow inside Modal -->
-        <div class="absolute -right-20 -top-20 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
+        <div
+            class="absolute -right-20 -top-20 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px] pointer-events-none z-0">
+        </div>
 
-        <h2 class="relative z-10 text-2xl font-bold mb-4 text-zinc-100 border-b border-white/10 pb-2">Edit Song Metadata</h2>
+        <h2 class="relative z-10 text-2xl font-bold mb-4 text-zinc-100 border-b border-white/10 pb-2">Edit Song Metadata
+        </h2>
         <form id="editSongForm" class="space-y-4 relative z-10">
             <input type="hidden" id="edit-file" name="File">
             <input type="hidden" id="edit-cover-art-data" name="CoverArt">
@@ -122,7 +126,7 @@
                             previewFallback.classList.add('hidden');
                             document.getElementById('edit-cover-art-data').value = base64;
                         }
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
             }
         }
@@ -183,6 +187,26 @@
                     return;
                 }
                 closeEditModal();
+
+                // Refresh the main library view
+                if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
+                    window.pywebview.api.send_song_list();
+                }
+                
+                // If we are currently in the playlist view, refresh it as well
+                if (window.currentPlaylist && typeof window._pvRenderSorted === 'function') {
+                    const playlistId = window.currentPlaylist.id || window.currentPlaylist.Id;
+                    if (playlistId) {
+                        try {
+                            const songs = await window.pywebview.api.get_playlist_songs(playlistId);
+                            if (songs) {
+                                window.currentPlaylistSongs = songs;
+                                window._pvSongsData = songs;
+                                window._pvRenderSorted();
+                            }
+                        } catch (e) { console.error("Failed to refresh playlist view:", e); }
+                    }
+                }
             } catch (err) {
                 console.error('Metadata save error:', err);
                 const notyf = new Notyf({ position: { x: 'right', y: 'bottom' } });
