@@ -378,9 +378,8 @@
             const container = entry.target;
             if (entry.isIntersecting) {
                 if (!container.hasAttribute('data-rendered')) {
-                    const songDataStr = container.getAttribute('data-path');
-                    if (songDataStr) {
-                        const songData = JSON.parse(songDataStr);
+                    const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
+                    if (songData) {
                         container.innerHTML = window.generateSongRowHtml(songData);
                         container.setAttribute('data-rendered', 'true');
 
@@ -421,33 +420,30 @@
         let seenFiles = {};
 
         document.querySelectorAll(".song-row").forEach(row => {
-            const rawDataStr = row.getAttribute("data-path");
-            if (rawDataStr) {
-                try {
-                    const rowData = JSON.parse(rawDataStr.replace(/&quot;/g, '"'));
-                    if (rowData.File === fileName) {
-                        let isMatch = false;
-                        if (targetInstanceId) {
-                            if (rowData._instanceId === targetInstanceId) {
-                                isMatch = true;
-                            }
-                        } else {
-                            if (!seenFiles[fileName]) {
-                                isMatch = true;
-                                seenFiles[fileName] = true;
-                            }
-                        }
-                        
-                        if (isMatch) {
-                            row.classList.add(...activeClasses);
-                            const title = row.querySelector(".song-title");
-                            if (title) {
-                                title.classList.remove("text-zinc-100");
-                                title.classList.add("text-orange-400");
-                            }
-                            const coverContainer = row.querySelector(".cover-art-container");
-                            if (coverContainer) {
-                                coverContainer.insertAdjacentHTML('beforebegin', `
+            const rowData = typeof window.songDataFromRow === 'function' ? window.songDataFromRow(row) : null;
+            if (rowData && rowData.File === fileName) {
+                let isMatch = false;
+                if (targetInstanceId) {
+                    if (rowData._instanceId === targetInstanceId) {
+                        isMatch = true;
+                    }
+                } else {
+                    if (!seenFiles[fileName]) {
+                        isMatch = true;
+                        seenFiles[fileName] = true;
+                    }
+                }
+                
+                if (isMatch) {
+                    row.classList.add(...activeClasses);
+                    const title = row.querySelector(".song-title");
+                    if (title) {
+                        title.classList.remove("text-zinc-100");
+                        title.classList.add("text-orange-400");
+                    }
+                    const coverContainer = row.querySelector(".cover-art-container");
+                    if (coverContainer) {
+                        coverContainer.insertAdjacentHTML('beforebegin', `
                         <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
                             <div class="visualizer-bar"></div>
                             <div class="visualizer-bar"></div>
@@ -455,10 +451,8 @@
                             <div class="visualizer-bar"></div>
                         </div>
                                 `);
-                            }
-                        }
                     }
-                } catch (e) { }
+                }
             }
         });
     };
@@ -540,16 +534,14 @@
         }
 
         document.querySelectorAll('.song-row-container').forEach(container => {
-            let cData = container._songData;
-            if (!cData) {
-                const raw = container.getAttribute("data-path");
-                if (raw) {
-                    try { cData = JSON.parse(raw.replace(/&quot;/g, '"')); } catch (e) { }
-                }
-            }
+            const cData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
             if (cData && cData.File === oldFilename) {
-                container.setAttribute('data-path', JSON.stringify(newSongData));
                 container._songData = newSongData;
+                if (container.hasAttribute('data-home-idx')) {
+                    container.removeAttribute('data-path');
+                } else {
+                    container.setAttribute('data-path', JSON.stringify(newSongData));
+                }
                 // Force re-render by clearing rendered state and re-observing
                 container.removeAttribute('data-rendered');
                 container.innerHTML = '';
@@ -638,18 +630,20 @@
                 return 0;
             });
         }
+        window._homeRenderedSongs = sorted;
         let tableHtmlBuffer = "";
         sorted.forEach((song, idx) => {
             if (!song._instanceId) song._instanceId = 'home_' + idx + '_' + Date.now();
             tableHtmlBuffer += `
-            <div class="song-row-container" style="min-height: 64px;" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+            <div class="song-row-container" style="min-height: 64px;" data-home-idx="${idx}">
             </div>`;
         });
         const tableBody = document.getElementById("table-body");
         if (tableBody) {
             tableBody.innerHTML = tableHtmlBuffer;
             const containers = tableBody.querySelectorAll(".song-row-container");
-            containers.forEach(container => {
+            containers.forEach((container, i) => {
+                container._songData = sorted[i] || null;
                 if (window.lazyRowObserver) window.lazyRowObserver.observe(container);
             });
         }
@@ -659,11 +653,7 @@
         if (searchInput && searchInput.value.trim()) {
             const value = searchInput.value.toLowerCase();
             document.querySelectorAll("#table-body .song-row-container").forEach(container => {
-                const rawStr = container.getAttribute('data-path');
-                let songData = {};
-                if (rawStr) {
-                    try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch (err) { }
-                }
+                const songData = container._songData || {};
                 const title = (songData.Title || "").toLowerCase();
                 const artist = (songData.Artist || "").toLowerCase();
                 const album = (songData.Album || "").toLowerCase();
@@ -686,10 +676,8 @@
         const list = [];
         document.querySelectorAll("#table-body .song-row-container").forEach(container => {
             if (container.style.display !== "none") {
-                const rawStr = container.getAttribute('data-path');
-                if (rawStr) {
-                    try { list.push(JSON.parse(rawStr.replace(/&quot;/g, '"'))); } catch (err) { }
-                }
+                const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
+                if (songData) list.push(songData);
             }
         });
         return list;
@@ -716,11 +704,7 @@
                 searchTimeout = setTimeout(function () {
                     const containers = document.querySelectorAll("#table-body .song-row-container");
                     containers.forEach(container => {
-                        const rawStr = container.getAttribute('data-path');
-                        let songData = {};
-                        if (rawStr) {
-                            try { songData = JSON.parse(rawStr.replace(/&quot;/g, '"')); } catch (err) { }
-                        }
+                        const songData = container._songData || {};
                         const title = (songData.Title || "").toLowerCase();
                         const artist = (songData.Artist || "").toLowerCase();
                         const album = (songData.Album || "").toLowerCase();

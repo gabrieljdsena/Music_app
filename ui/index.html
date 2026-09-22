@@ -546,6 +546,30 @@
             });
         }
 
+        // Resolve song data from a row element. Rows that don't cache the song
+        // object use data-home-idx (home view) or the legacy data-path JSON
+        // (playlist/queue rows) as a fallback.
+        window.songDataFromRow = function (el) {
+            let target = el;
+            if (el && el.closest) {
+                const c = el.closest('.song-row-container, .queue-item-container, .song-row');
+                if (c) target = c;
+            }
+            if (!target) return null;
+            if (target._songData) return target._songData;
+
+            const idx = target.getAttribute ? target.getAttribute('data-home-idx') : null;
+            if (idx !== null && idx !== '' && window._homeRenderedSongs && window._homeRenderedSongs[idx]) {
+                return window._homeRenderedSongs[idx];
+            }
+
+            const raw = target.getAttribute ? target.getAttribute('data-path') : null;
+            if (raw) {
+                try { return JSON.parse(raw.replace(/&quot;/g, '"').replace(/&apos;/g, "'")); } catch (e) { return null; }
+            }
+            return null;
+        };
+
         // Initialize Notyf globally
         const notyf = new Notyf();
 
