@@ -4,6 +4,7 @@ from .database import DatabaseManager
 from .windows_media import WindowsMediaOverlay
 from .lyrics import LyricsService
 from .apple import AppleService
+from .downloads import DownloadManager
 
 __all__ = [
     'PlaybackController',
@@ -11,5 +12,6 @@ __all__ = [
     'DatabaseManager',
     'WindowsMediaOverlay',
     'LyricsService',
-    'AppleService'
+    'AppleService',
+    'DownloadManager'
 ]

@@ -35,7 +35,23 @@ create table if not exists Settings(
     background_path varchar(255),
     songs_path varchar(255),
     browser varchar(50),
+    queue_songs text,
+    custom_queue integer DEFAULT 0,
     FOREIGN KEY (current_song) REFERENCES Songs(file)
+);
+
+create table if not exists Download_Queue(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    qid uuid not null unique,
+    url varchar(1000),
+    title varchar(255),
+    artist varchar(255),
+    status varchar(50) DEFAULT 'queued',
+    progress real DEFAULT 0,
+    error text,
+    filename varchar(255),
+    created_at datetime default CURRENT_TIMESTAMP,
+    updated_at datetime default CURRENT_TIMESTAMP
 );
 
 create table if not exists Lyrics(

@@ -15,7 +15,8 @@ from services import (
     DatabaseManager,
     WindowsMediaOverlay,
     LyricsService,
-    AppleService
+    AppleService,
+    DownloadManager
 )
 
 class Api:
@@ -33,6 +34,7 @@ class Api:
         
         self._window = None
         self.downloader = Download.MusicDownloader()
+        self._ensure_schema()
         
         # Initialize services
         self.playback = PlaybackController(self)
@@ -41,6 +43,37 @@ class Api:
         self.media_controls = WindowsMediaOverlay(self)
         self.lyrics = LyricsService(self)
         self.apple = AppleService(self)
+        self.download_manager = DownloadManager(self)
+
+    def _ensure_schema(self):
+        """Add columns/tables introduced after the database was first created."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                for column, ddl in {
+                    'queue_songs': 'TEXT',
+                    'custom_queue': 'INTEGER DEFAULT 0',
+                }.items():
+                    try:
+                        conn.execute(f"ALTER TABLE Settings ADD COLUMN {column} {ddl}")
+                    except sqlite3.OperationalError:
+                        pass
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS Download_Queue (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        qid TEXT UNIQUE,
+                        url TEXT,
+                        title TEXT,
+                        artist TEXT,
+                        status TEXT DEFAULT 'queued',
+                        progress REAL DEFAULT 0,
+                        error TEXT,
+                        filename TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+        except Exception as e:
+            print(f" [Python] Schema migration error: {e}")
         
     # ==========================
     # Playback & Queue Wrappers
@@ -278,50 +311,13 @@ class Api:
 
     def recieve_download(self, data):
         print(f" [Python] Received from JS: {data}")
-        
-        def progress_callback(d):
-            if d['status'] == 'downloading':
-                try:
-                    total = d.get('total_bytes') or d.get('total_bytes_estimate')
-                    downloaded = d.get('downloaded_bytes')
-                    if total and downloaded:
-                        percent = (downloaded / total) * 90
-                        safe_data = json.dumps(data)
-                        self._window.evaluate_js(f"if (typeof update_download_progress === 'function') update_download_progress({safe_data}, {percent});")
-                except Exception:
-                    pass
-            elif d['status'] == 'finished':
-                safe_data = json.dumps(data)
-                self._window.evaluate_js(f"if (typeof update_download_progress === 'function') update_download_progress({safe_data}, 90, 'Processing...');")
-            elif d['status'] == 'processing_metadata':
-                safe_data = json.dumps(data)
-                self._window.evaluate_js(f"if (typeof update_download_progress === 'function') update_download_progress({safe_data}, 95, 'Metadata...');")
-            elif d['status'] == 'finished_all':
-                safe_data = json.dumps(data)
-                self._window.evaluate_js(f"if (typeof update_download_progress === 'function') update_download_progress({safe_data}, 100, 'Done!');")
-                
-        try:
-            search_query = data.get('url') or f"{data.get('title', '')} {data.get('artist', '')} audio".strip() if isinstance(data, dict) else data
-            result = self.downloader.download_song(search_query, progress_callback)
-            if isinstance(result, dict) and result.get("status") == "success":
-                try:
-                    with sqlite3.connect(self.db_path) as conn:
-                        conn.execute(
-                            """INSERT INTO Songs (file, downloaded_link, title, artist, date_download)
-                               VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-                               ON CONFLICT(file) DO UPDATE SET
-                                   downloaded_link = excluded.downloaded_link,
-                                   title = excluded.title,
-                                   artist = excluded.artist,
-                                   date_download = CURRENT_TIMESTAMP""",
-                            (result["filename"], result.get("source_url"), result["title"], result.get("artist"))
-                        )
-                except Exception as db_err:
-                    print(f" [Python] DB error saving download: {db_err}")
-            return result
-        except Exception as e:
-            print(f" [Python] Error: {e}")
-            return f"Error: {e}"
+        return self.download_manager.submit(data, block=True)
+
+    def get_download_jobs(self, limit=15):
+        return self.download_manager.get_jobs(limit)
+
+    def retry_download(self, data):
+        return self.download_manager.retry(data)
 
     def send_song_list(self):
         path = Path(settings.path)
@@ -380,14 +376,15 @@ class Api:
                     song_data = self.metadata.get_song_metadata(file_path, file, include_cover=True)
                     self.play_button(song_data, True)
                     
-                    if playlist_id is not None:
-                        playlist_songs = self.db.get_playlist_songs(playlist_id)
-                        if playlist_songs:
-                            self.populate_queue_from_list(song_data, playlist_songs, playlist_id)
+                    if not self.playback.restore_saved_queue(song_data):
+                        if playlist_id is not None:
+                            playlist_songs = self.db.get_playlist_songs(playlist_id)
+                            if playlist_songs:
+                                self.populate_queue_from_list(song_data, playlist_songs, playlist_id)
+                            else:
+                                self.populate_queue(song_data)
                         else:
                             self.populate_queue(song_data)
-                    else:
-                        self.populate_queue(song_data)
                 
         except Exception as e:
             print(f" [Python] Database error: {e}")

@@ -27,6 +27,7 @@
 
   <!-- Download Tab Content -->
   <div x-show="tab === 'download'" class="w-full flex-grow pb-24">
+    <div id="download-jobs-container" class="flex flex-col gap-3 mb-6"></div>
     <div id="download-history-container" class="flex flex-col gap-3">
       <div class="text-center py-8 text-zinc-500"><span class="spinner"></span> Loading Download History...</div>
     </div>
@@ -79,6 +80,75 @@
       container.innerHTML = '<div class="text-red-500 text-center py-4">Error loading download history.</div>';
     }
   };
+
+  window.loadDownloadJobs = async function () {
+    var container = document.getElementById("download-jobs-container");
+    if (!container) return;
+    if (container.offsetParent === null) return;
+
+    try {
+      var jobs = await window.pywebview.api.get_download_jobs(8);
+      if (!jobs || jobs.length === 0) {
+        if (container.dataset.hasContent) {
+          container.innerHTML = '';
+          delete container.dataset.hasContent;
+        }
+        return;
+      }
+      container.dataset.hasContent = '1';
+
+      var html = '<div class="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2 mt-2">Download Jobs</div><div class="flex flex-col gap-2">';
+      for (var i = 0; i < jobs.length; i++) {
+        var job = jobs[i];
+        var pct = Math.round((job.progress || 0) * 100);
+        var statusColors = { running: 'text-sky-400', finished: 'text-emerald-400', failed: 'text-red-400', queued: 'text-zinc-400' };
+        var color = statusColors[job.status] || 'text-zinc-400';
+        var statusText = (job.status || 'queued').toUpperCase();
+        var retryBtn = '';
+        if (job.status === 'failed') {
+          retryBtn = '<button class="history-download-retry-btn cursor-pointer flex-shrink-0 px-3 py-1.5 rounded-lg bg-orange-500/15 text-orange-400 hover:bg-orange-500 hover:text-white transition-colors text-xs font-medium" data-qid="' + job.qid + '" data-title="' + (job.title || '') + '">Retry</button>';
+        }
+        html += '<div class="download-job flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 w-full">';
+        html += '<div class="flex-1 min-w-0">';
+        html += '<div class="flex items-center gap-2"><span class="text-sm text-zinc-100 font-medium truncate">' + (job.title || job.url || 'Unknown') + '</span>';
+        html += '<span class="text-xs ' + color + ' flex-shrink-0">' + statusText + '</span></div>';
+        if (job.artist) html += '<div class="text-xs text-zinc-500 truncate">' + job.artist + '</div>';
+        if (job.error) html += '<div class="text-xs text-red-400/80 truncate">' + job.error + '</div>';
+        if (job.status === 'running' || job.status === 'queued') {
+          html += '<div class="h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden"><div class="h-full rounded-full bg-orange-400 transition-all duration-300" style="width:' + pct + '%"></div></div>';
+          html += '<div class="text-xs text-zinc-500 mt-1">' + pct + '%</div>';
+        }
+        html += '</div>';
+        html += retryBtn;
+        html += '</div>';
+      }
+      html += '</div>';
+
+      if (container.innerHTML !== html) container.innerHTML = html;
+    } catch (e) {
+      console.error("Download jobs error:", e);
+    }
+  };
+
+  document.addEventListener("click", async function (e) {
+    var retryBtn = e.target.closest(".history-download-retry-btn");
+    if (!retryBtn) return;
+    var qid = retryBtn.getAttribute("data-qid");
+    retryBtn.disabled = true;
+    retryBtn.textContent = "Queuing...";
+    try {
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.retry_download) {
+        await window.pywebview.api.retry_download({ job_id: qid });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    window.loadDownloadJobs();
+  });
+
+  setInterval(function () {
+    window.loadDownloadJobs();
+  }, 2500);
 
   window.loadPlayedHistory = async function (page) {
     page = page || 1;
@@ -217,6 +287,29 @@
         }
       });
       actions.appendChild(playBtn);
+
+      // Re-download button for download history rows that have a source link
+      if (dateField === 'DateDownload' && song.DownloadedLink) {
+        var redlBtn = document.createElement('button');
+        redlBtn.className = 'history-redownload-btn cursor-pointer flex items-center justify-center w-10 h-10 rounded-full bg-white/[0.04] text-zinc-400 hover:bg-white/10 hover:text-orange-400 transition-colors shadow-md';
+        redlBtn.title = 'Re-download';
+        redlBtn.innerHTML = '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+        redlBtn._songData = song;
+        redlBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var my = this;
+          var songData = my._songData;
+          if (window.add_progress_bar) window.add_progress_bar(songData, songData.Title || songData.File);
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.retry_download) {
+            window.pywebview.api.retry_download({ url: songData.DownloadedLink, title: songData.Title, artist: songData.Artist }).then(function () {
+              window.loadDownloadJobs();
+            }).catch(function (err) {
+              console.error(err);
+            });
+          }
+        });
+        actions.appendChild(redlBtn);
+      }
 
       row.appendChild(thumb);
       row.appendChild(info);

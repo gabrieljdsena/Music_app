@@ -196,7 +196,7 @@ class DatabaseManager:
             limit = max(int(limit), 1)
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.execute(
-                    "SELECT file, date_download FROM Songs "
+                    "SELECT file, date_download, downloaded_link FROM Songs "
                     "WHERE downloaded_link IS NOT NULL AND downloaded_link != '' "
                     "ORDER BY date_download DESC"
                 )
@@ -204,9 +204,10 @@ class DatabaseManager:
 
             existing = [
                 (file_name, date_download)
-                for file_name, date_download in rows
+                for file_name, date_download, _link in rows
                 if os.path.exists(os.path.join(settings.path, file_name))
             ]
+            link_lookup = {file_name: link for file_name, _date, link in rows}
             total_count = len(existing)
             total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
             if page > total_pages:
@@ -219,6 +220,7 @@ class DatabaseManager:
                 file_path = os.path.join(settings.path, file_name)
                 song_data = self.api.metadata.get_song_metadata(file_path, file_name, include_cover=True)
                 song_data['DateDownload'] = date_download.replace(' ', 'T') + 'Z' if date_download else None
+                song_data['DownloadedLink'] = link_lookup.get(file_name) or ''
                 history_songs.append(song_data)
             return {"items": history_songs, "total_pages": total_pages, "current_page": page}
         except Exception as e:
@@ -411,17 +413,16 @@ class DatabaseManager:
             return f"Error syncing to local DB: {e}"
         
         if songs_to_download:
-            import threading
-            def download_worker():
-                for song_data in songs_to_download:
-                    try:
-                        self.api.recieve_download(song_data)
-                    except Exception as e:
-                        print(f" [Python] Download error for {song_data.get('title')}: {e}")
-                
+            for song_data in songs_to_download:
+                try:
+                    self.api.download_manager.submit(song_data, block=False)
+                except Exception as e:
+                    print(f" [Python] Could not enqueue download for {song_data.get('title')}: {e}")
+
+            def _complete():
                 if getattr(self.api, '_window', None):
                     self.api._window.evaluate_js("if (typeof window.pywebview !== 'undefined' && typeof window.pywebview.api !== 'undefined') window.pywebview.api.send_song_list();")
-                    
-            threading.Thread(target=download_worker, daemon=True).start()
+
+            self.api.download_manager.set_idle_callback(_complete)
             
         return f"Synced {added_count} new entries from remote DB. Started downloading {len(songs_to_download)} songs."

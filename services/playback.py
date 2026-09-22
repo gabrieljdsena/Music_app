@@ -15,17 +15,88 @@ class PlaybackController:
         self.prev_songs = []
         self.unshuffled_song_list = []
         self.current_playlist_id = None
+        self.is_custom_queue = False
         
         self.current_time_offset = 0
         self.last_play_time = 0
         self.pause_time = 0
         self.fallback_to_general_list = True
 
+    # ==========================
+    # Queue persistence
+    # ==========================
+    def _persist_queue(self):
+        """Persist only customized queues (playlist/home queues are re-derivable)."""
+        try:
+            with sqlite3.connect(self.api.db_path) as conn:
+                if self.is_custom_queue:
+                    files = [s.get('File') for s in self.next_songs if s.get('File')]
+                    conn.execute(
+                        "UPDATE Settings SET queue_songs = ?, custom_queue = 1 WHERE id = 1",
+                        (json.dumps(files),)
+                    )
+                else:
+                    conn.execute(
+                        "UPDATE Settings SET queue_songs = NULL, custom_queue = 0 WHERE id = 1"
+                    )
+        except Exception as e:
+            print(f" [Python] Error persisting queue: {e}")
+
+    def restore_saved_queue(self, current_song):
+        """Restore a persisted customized queue on startup.
+
+        Returns True when the queue was restored, False to let the caller fall
+        back to the previous populate_* behavior.
+        """
+        try:
+            with sqlite3.connect(self.api.db_path) as conn:
+                row = conn.execute(
+                    "SELECT queue_songs, custom_queue FROM Settings WHERE id = 1"
+                ).fetchone()
+        except Exception as e:
+            print(f" [Python] Error reading saved queue: {e}")
+            return False
+
+        if not row or not row[1]:
+            return False
+
+        try:
+            files = json.loads(row[0] or '[]')
+        except Exception:
+            files = []
+
+        restored = []
+        for file_name in files:
+            file_path = os.path.join(settings.path, file_name)
+            if os.path.exists(file_path):
+                restored.append(self.api.metadata.get_song_metadata(file_path, file_name))
+
+        if not restored:
+            return False
+
+        self.next_songs = restored
+        self.prev_songs = []
+        self.unshuffled_song_list = list(restored)
+        self.is_custom_queue = True
+        self.fallback_to_general_list = False
+        self.current_playlist_id = None
+
+        if getattr(self.api, '_window', None):
+            self.api._window.evaluate_js(f"""
+                window.is_custom_queue = true;
+                window.queue_songs = {json.dumps(self.next_songs)};
+                if (typeof window.update_queue_ui === 'function') {{
+                    window.update_queue_ui();
+                }}
+            """)
+        return True
+
     def populate_queue(self, current_song):
         self.next_songs.clear()
         self.fallback_to_general_list = True
         self.prev_songs.clear()
         self.current_playlist_id = None
+        self.is_custom_queue = False
         self.unshuffled_song_list = list(self.api.song_list)
 
         found = False
@@ -61,6 +132,7 @@ class PlaybackController:
         self.fallback_to_general_list = False
         self.prev_songs.clear()
         self.current_playlist_id = playlist_id
+        self.is_custom_queue = False
         self.unshuffled_song_list = list(song_list)
 
         found = False
@@ -90,9 +162,12 @@ class PlaybackController:
     def jump_to_queue_index(self, index):
         if 0 <= index < len(self.next_songs):
             self.next_songs = self.next_songs[index+1:]
+            self._persist_queue()
 
     def add_to_queue(self, song_data):
         self.next_songs.append(song_data)
+        self.is_custom_queue = True
+        self._persist_queue()
         if getattr(self.api, '_window', None):
             self.api._window.evaluate_js(f"""
                 window.queue_songs = {json.dumps(self.next_songs)};
@@ -101,6 +176,8 @@ class PlaybackController:
 
     def next_to_queue(self, song_data):
         self.next_songs.insert(0, song_data)
+        self.is_custom_queue = True
+        self._persist_queue()
         if getattr(self.api, '_window', None):
             self.api._window.evaluate_js(f"""
                 window.queue_songs = {json.dumps(self.next_songs)};
@@ -110,6 +187,8 @@ class PlaybackController:
     def clear_queue(self):
         self.next_songs.clear()
         self.fallback_to_general_list = False
+        self.is_custom_queue = False
+        self._persist_queue()
         if getattr(self.api, '_window', None):
             self.api._window.evaluate_js(f"""
                 window.queue_songs = [];
@@ -119,6 +198,8 @@ class PlaybackController:
     def remove_from_queue(self, index):
         if 0 <= index < len(self.next_songs):
             self.next_songs.pop(index)
+            self.is_custom_queue = True
+            self._persist_queue()
             if getattr(self.api, '_window', None):
                 self.api._window.evaluate_js(f"""
                     window.queue_songs = {json.dumps(self.next_songs)};
@@ -129,6 +210,8 @@ class PlaybackController:
         if 0 <= old_index < len(self.next_songs) and 0 <= new_index <= len(self.next_songs):
             item = self.next_songs.pop(old_index)
             self.next_songs.insert(new_index, item)
+            self.is_custom_queue = True
+            self._persist_queue()
             if getattr(self.api, '_window', None):
                 self.api._window.evaluate_js(f"""
                     window.queue_songs = {json.dumps(self.next_songs)};
@@ -139,6 +222,7 @@ class PlaybackController:
         self.api.shuffle = not getattr(self.api, 'shuffle', False)
         if self.api.shuffle and self.next_songs:
             random.shuffle(self.next_songs)
+            self._persist_queue()
             if getattr(self.api, '_window', None):
                 self.api._window.evaluate_js(f"""
                     window.queue_songs = {json.dumps(self.next_songs)};
@@ -312,6 +396,7 @@ class PlaybackController:
 
         if self.next_songs:
             next_song = self.next_songs.pop(0)
+            self._persist_queue()
             if self.api.last_song and self.api.last_song.get('File'):
                 self.prev_songs.append(self.api.last_song)
             
@@ -340,6 +425,7 @@ class PlaybackController:
             
             if self.api.last_song and self.api.last_song.get('File'):
                 self.next_songs.insert(0, self.api.last_song)
+                self._persist_queue()
                 
             if getattr(self.api, '_window', None):
                 self.api._window.evaluate_js(f"""
@@ -364,6 +450,7 @@ class PlaybackController:
             if prev_song:
                 if self.api.last_song and self.api.last_song.get('File'):
                     self.next_songs.insert(0, self.api.last_song)
+                    self._persist_queue()
                     
                 if getattr(self.api, '_window', None):
                     self.api._window.evaluate_js(f"""

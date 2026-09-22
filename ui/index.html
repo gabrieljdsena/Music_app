@@ -458,6 +458,11 @@
 
         window.isSeeking = false;
 
+        // Download progress bars - real implementations are loaded by the Download Songs view.
+        window.add_progress_bar = window.add_progress_bar || function () {};
+        window.update_download_progress = window.update_download_progress || function () {};
+        window.remove_progress_bar = window.remove_progress_bar || function () {};
+
         function updateSliderProgress(slider) {
             if (!slider) return;
             const min = parseFloat(slider.min) || 0;
@@ -494,6 +499,37 @@
         });
 
         window._previousVolume = 1.0;
+
+        window.seek_by = async function (seconds) {
+            const slider = document.getElementById("progressSlider");
+            if (!slider) return;
+            const max = parseFloat(slider.max) || 0;
+            const next = Math.min(Math.max((parseFloat(slider.value) || 0) + seconds, 0), max);
+            slider.value = next;
+            updateSliderProgress(slider);
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.progress_slider_click) {
+                window.isSeeking = true;
+                try {
+                    await window.pywebview.api.progress_slider_click(next);
+                } catch (err) {
+                    console.error(err);
+                }
+                setTimeout(() => { window.isSeeking = false; }, 300);
+            }
+        };
+
+        window.shift_volume = async function (delta) {
+            const slider = document.getElementById("volumeSlider");
+            if (!slider) return;
+            const next = Math.min(Math.max((parseFloat(slider.value) || 0) + delta, 0), 1);
+            slider.value = next;
+            updateSliderProgress(slider);
+            update_volume_icon(slider.value);
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.volume_slider) {
+                await window.pywebview.api.volume_slider(slider.value);
+            }
+        };
+
         window.toggle_mute = async function() {
             const volumeSlider = document.getElementById("volumeSlider");
             if (!volumeSlider) return;
@@ -1908,6 +1944,75 @@
                 }
             }
         });
+
+        // --- Global Keyboard Shortcuts ---
+        document.addEventListener("keydown", async function (e) {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+            const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+            if (tag === "input" || tag === "textarea" || tag === "select") return;
+            if (e.target && e.target.isContentEditable) return;
+
+            switch (e.code) {
+                case "Space":
+                    e.preventDefault();
+                    if (e.target && e.target.closest && e.target.closest("button")) return;
+                    if (window.toggle_play_pause) await window.toggle_play_pause();
+                    break;
+                case "ArrowLeft":
+                    e.preventDefault();
+                    if (window.seek_by) await window.seek_by(-10);
+                    break;
+                case "ArrowRight":
+                    e.preventDefault();
+                    if (window.seek_by) await window.seek_by(10);
+                    break;
+                case "ArrowUp":
+                    e.preventDefault();
+                    if (window.shift_volume) await window.shift_volume(0.05);
+                    break;
+                case "ArrowDown":
+                    e.preventDefault();
+                    if (window.shift_volume) await window.shift_volume(-0.05);
+                    break;
+                case "MediaTrackNext":
+                    e.preventDefault();
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.play_next) {
+                        await window.pywebview.api.play_next();
+                    }
+                    break;
+                case "MediaTrackPrevious":
+                    e.preventDefault();
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.play_prev) {
+                        await window.pywebview.api.play_prev();
+                    }
+                    break;
+                case "MediaPlayPause":
+                    e.preventDefault();
+                    if (window.toggle_play_pause) await window.toggle_play_pause();
+                    break;
+            }
+        });
+
+        // Best-effort Media Session integration
+        if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
+            const mediaAction = (action) => async () => {
+                if (action === "play" || action === "pause") {
+                    if (window.toggle_play_pause) await window.toggle_play_pause();
+                } else if (action === "previoustrack") {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.play_prev) {
+                        await window.pywebview.api.play_prev();
+                    }
+                } else if (action === "nexttrack") {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.play_next) {
+                        await window.pywebview.api.play_next();
+                    }
+                }
+            };
+            ["play", "pause", "previoustrack", "nexttrack"].forEach((action) => {
+                try { navigator.mediaSession.setActionHandler(action, mediaAction(action)); } catch (err) {}
+            });
+        }
 
     </script>
 
