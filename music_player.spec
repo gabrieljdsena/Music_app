@@ -1,7 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
+
+# FFmpeg is auto-downloaded at startup when missing, so the build must not
+# fail if ./ffmpeg was never placed locally (it is gitignored).
+_extra_datas = []
+if os.path.isdir('ffmpeg'):
+    _extra_datas.append(('ffmpeg', 'ffmpeg'))
 
 a = Analysis(
     ['main.py'],
@@ -9,10 +16,9 @@ a = Analysis(
     binaries=[],
     datas=[
         ('ui', 'ui'),
-        ('ffmpeg', 'ffmpeg'),
         ('database.sql', '.'),
         ('node_modules', 'node_modules')
-    ] + collect_data_files('pykakasi'),
+    ] + _extra_datas + collect_data_files('pykakasi'),
     hiddenimports=[
         'webview',
         'pygame',

@@ -130,8 +130,16 @@ class MusicDownloader:
     def download_song(self, search, progress_callback=None):
         self._check_update_ytdlp_once()
 
-        base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
-        ffmpeg_path = os.path.join(base_path, 'ffmpeg', 'bin')
+        # Resolve FFmpeg from PATH, the auto-downloaded copy, or the bundle --
+        # in that order. None lets yt-dlp fall back to PATH.
+        try:
+            from services.startup_maintenance import resolve_ffmpeg_location
+            ffmpeg_path = resolve_ffmpeg_location()
+        except Exception:
+            base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
+            candidate = os.path.join(base_path, 'ffmpeg', 'bin')
+            ffmpeg_path = candidate if os.path.isfile(
+                os.path.join(candidate, 'ffmpeg.exe')) else None
         
         print(f" [Python] Searching and Downloading: {search}")
         
@@ -148,10 +156,11 @@ class MusicDownloader:
             # Video id keeps concurrent downloads from colliding; restrictfilenames
             # removes characters that are invalid on Windows.
             'outtmpl': os.path.join(appdata_path, '%(id)s_%(title)s.%(ext)s'),
-            'ffmpeg_location': ffmpeg_path,
             'restrictfilenames': True,
             'noplaylist': True,
         }
+        if ffmpeg_path:
+            ydl_opts['ffmpeg_location'] = ffmpeg_path
         
         if progress_callback:
             ydl_opts['progress_hooks'] = [progress_callback]

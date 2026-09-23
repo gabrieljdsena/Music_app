@@ -16,7 +16,8 @@ from services import (
     WindowsMediaOverlay,
     LyricsService,
     AppleService,
-    DownloadManager
+    DownloadManager,
+    startup_maintenance
 )
 
 class Api:
@@ -308,6 +309,63 @@ class Api:
 
     def search_yt(self, query):
         return self.downloader.search_yt(query)
+
+    # ==========================
+    # Startup Maintenance
+    # ==========================
+    def get_ffmpeg_status(self):
+        """Non-blocking status check for the settings/startup UI."""
+        try:
+            return startup_maintenance.find_ffmpeg()
+        except Exception as e:
+            return {'found': False, 'exe': None, 'dir': None, 'error': str(e)}
+
+    def get_library_status(self):
+        """Read-only yt-dlp / youtube-lib version comparison (no installs)."""
+        try:
+            return startup_maintenance.check_libraries_status()
+        except Exception as e:
+            print(f" [Python] Library status error: {e}")
+            return []
+
+    def run_startup_maintenance(self):
+        """Blocking re-run of the startup checks (Retry button). Pushes progress to UI."""
+        try:
+            window = self._window
+
+            def push(event):
+                if not window:
+                    return
+                try:
+                    window.evaluate_js(
+                        "if (window.startupToast && window.startupToast.update) "
+                        f"window.startupToast.update({json.dumps(event)});"
+                    )
+                except Exception:
+                    pass
+
+            try:
+                if window:
+                    window.evaluate_js(
+                        "if (window.startupToast && window.startupToast.show) "
+                        "window.startupToast.show('Checking for updates…');"
+                    )
+            except Exception:
+                pass
+            summary = startup_maintenance.run_startup_checks(push)
+            try:
+                if window:
+                    window.evaluate_js(
+                        "if (window.startupToast && window.startupToast.complete) "
+                        f"window.startupToast.complete({json.dumps(summary)});"
+                    )
+            except Exception:
+                pass
+            return summary
+        except Exception as e:
+            print(f" [Python] Startup maintenance error: {e}")
+            return {'ffmpeg': {'status': 'error', 'error': str(e)},
+                    'libraries': [], 'all_ok': False}
 
     def recieve_download(self, data):
         print(f" [Python] Received from JS: {data}")

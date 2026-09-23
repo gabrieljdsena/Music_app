@@ -114,14 +114,85 @@ if os.getenv("DB_HOST"):
 else:
     print(" [Sync] No remote DB configured in .env, sync disabled.")
 
+def _run_startup_maintenance(window):
+    """Background FFmpeg auto-download + YouTube-lib update checks.
+
+    Non-blocking: pushes progress to the startup toast in the UI so the
+    user can keep using the app while it works.
+    """
+    import time as _time
+    import json as _json
+    try:
+        from services import startup_maintenance as _maint
+    except Exception as e:
+        print(f" [Startup] maintenance module unavailable: {e}")
+        return
+
+    # Give the webview DOM a moment to define window.startupToast.
+    _time.sleep(1.0)
+
+    def safe_js(code):
+        try:
+            window.evaluate_js(code)
+        except Exception:
+            pass
+
+    def push(event):
+        try:
+            safe_js(
+                "if (window.startupToast && window.startupToast.update) "
+                f"window.startupToast.update({_json.dumps(event)});"
+            )
+        except Exception:
+            pass
+
+    # Only show the popup when there is actual work to do, otherwise stay
+    # out of the way. A quick synchronous pre-check decides that.
+    try:
+        ffmpeg_ok = _maint.find_ffmpeg().get('found', False)
+    except Exception:
+        ffmpeg_ok = True
+    try:
+        lib_status = _maint.check_libraries_status()
+        libs_ok = all(r.get('status') == 'up-to-date' for r in lib_status) if lib_status else True
+    except Exception:
+        libs_ok = True
+
+    if ffmpeg_ok and libs_ok:
+        print(" [Startup] FFmpeg + libraries up to date, no popup needed.")
+        return
+
+    safe_js(
+        "if (window.startupToast && window.startupToast.show) "
+        "window.startupToast.show('Checking for updates…');"
+    )
+    try:
+        summary = _maint.run_startup_checks(push)
+        print(f" [Startup] summary: ffmpeg={summary.get('ffmpeg', {}).get('status')} "
+              f"libs={[ (r.get('package'), r.get('status')) for r in summary.get('libraries', []) ]}")
+        safe_js(
+            "if (window.startupToast && window.startupToast.complete) "
+            f"window.startupToast.complete({_json.dumps(summary)});"
+        )
+    except Exception as e:
+        print(f" [Startup] maintenance failed: {e}")
+        safe_js(
+            "if (window.startupToast && window.startupToast.update) "
+            f"window.startupToast.update({_json.dumps({'stage': 'done', 'label': 'Startup check failed', 'percent': 100, 'detail': str(e)[:160], 'status': 'error'})});"
+        )
+
+
 def on_start(window):
     pygame.init()
     pygame.mixer.init()
-    
+
+    # Startup maintenance (FFmpeg + yt-dlp updates) in the background.
+    threading.Thread(target=_run_startup_maintenance, args=(window,), daemon=True).start()
+
     # Start the resource monitor in a background thread so it doesn't block the app
     #monitor_thread = threading.Thread(target=monitor.monitor_usage, daemon=True)
     #monitor_thread.start()
-    
+
     # On first run with a remote DB, ask the user if they want to load from it
     if is_first_run and db_sync:
         _prompt_remote_sync(window)
