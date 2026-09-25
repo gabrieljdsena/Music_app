@@ -321,12 +321,36 @@ class PlaybackController:
 
         if self.api.first_play:
             if getattr(self.api, '_window', None):
-                self.api._window.evaluate_js(f"playing_view({json.dumps(current_song)})")
-            pygame.mixer.music.load(os.path.join(settings.path, str(self.api.current_filename)))
+                try:
+                    self.api._window.evaluate_js(f"if (typeof window.playing_view === 'function') window.playing_view({json.dumps(current_song)})")
+                except Exception as e:
+                    print(f" [Python] playing_view JS error (page may not be ready yet): {e}")
 
             if getattr(self.api, '_window', None):
-                self.api._window.evaluate_js(f"window.plaiyng_info({json.dumps(current_song)})")
-
+                try:
+                    self.api._window.evaluate_js(f"if (typeof window.plaiyng_info === 'function') window.plaiyng_info({json.dumps(current_song)})")
+                except Exception as e:
+                    print(f" [Python] plaiyng_info JS error (page may not be ready yet): {e}")
+            try:
+                import logging
+                logging.getLogger('hathor').info(
+                    "play_button file=%r opening=%s", self.api.current_filename, opening)
+                pygame.mixer.music.load(os.path.join(settings.path, str(self.api.current_filename)))
+            except Exception as e:
+                import logging
+                logging.getLogger('hathor').exception(
+                    "Could not load song file %r", self.api.current_filename)
+                print(f" [Python] Could not load song file {self.api.current_filename!r}: {e}")
+                if getattr(self.api, '_window', None):
+                    try:
+                        self.api._window.evaluate_js(
+                            "if (typeof Notyf !== 'undefined') { "
+                            "new Notyf({ position: { x: 'right', y: 'bottom' } })"
+                            ".error('Audio file not found. It may have been moved or deleted.'); }"
+                        )
+                    except Exception:
+                        pass
+                return False
             pygame.mixer.music.set_volume(settings.volume)
             pygame.mixer.music.play()
             self.current_time_offset = 0
@@ -339,14 +363,20 @@ class PlaybackController:
                 if hasattr(self.api, 'media_controls'):
                     self.api.media_controls.set_playing(False)
                 if getattr(self.api, '_window', None):
-                    self.api._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
-                    self.api._window.evaluate_js("if (typeof stop_visualizer === 'function') { stop_visualizer(); }")
+                    try:
+                        self.api._window.evaluate_js("if (typeof window.update_play_button_ui === 'function') { window.update_play_button_ui(false); }")
+                        self.api._window.evaluate_js("if (typeof window.stop_visualizer === 'function') { window.stop_visualizer(); }")
+                    except Exception as e:
+                        print(f" [Python] update_play_button_ui JS error: {e}")
             else:
                 self.api.playing = True
                 if hasattr(self.api, 'media_controls'):
                     self.api.media_controls.set_playing(True)
                 if getattr(self.api, '_window', None):
-                    self.api._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(true); }")
+                    try:
+                        self.api._window.evaluate_js("if (typeof window.update_play_button_ui === 'function') { window.update_play_button_ui(true); }")
+                    except Exception as e:
+                        print(f" [Python] update_play_button_ui JS error: {e}")
 
             try:
                 with sqlite3.connect(self.api.db_path) as conn:
@@ -417,7 +447,10 @@ class PlaybackController:
                 self.api.media_controls.set_stopped()
             self.current_time_offset = 0
             if getattr(self.api, '_window', None):
-                self.api._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
+                try:
+                    self.api._window.evaluate_js("if (typeof window.update_play_button_ui === 'function') { window.update_play_button_ui(false); }")
+                except Exception as e:
+                    print(f" [Python] update_play_button_ui JS error: {e}")
 
     def play_prev(self):
         if self.prev_songs:

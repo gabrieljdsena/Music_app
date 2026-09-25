@@ -91,7 +91,10 @@ class MetadataManager:
                 self.api.media_controls.set_stopped()
                 
             if getattr(self.api, '_window', None):
-                self.api._window.evaluate_js("if (typeof update_play_button_ui === 'function') { update_play_button_ui(false); }")
+                try:
+                    self.api._window.evaluate_js("if (typeof window.update_play_button_ui === 'function') { window.update_play_button_ui(false); }")
+                except Exception as e:
+                    print(f" [Python] update_play_button_ui JS error: {e}")
 
         if os.path.exists(total_path):
             try:

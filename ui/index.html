@@ -302,10 +302,34 @@
             </div>
 
             <!-- Global Lyrics Container (Hidden by Default) -->
+            <style>
+                /* Fade lyric lines out before they can reach the player bar */
+                #lyrics-container {
+                    -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+                    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+                }
+            </style>
             <div id="lyrics-container-view"
-                class="hidden absolute inset-0 z-40 bg-zinc-950/95 backdrop-blur-3xl flex-col items-center overflow-hidden">
+                class="hidden absolute inset-x-0 top-0 bottom-10 z-40 bg-zinc-950/95 backdrop-blur-3xl flex-col items-center overflow-hidden">
+                <div id="np-lyrics-topbar" class="absolute top-0 inset-x-0 z-10 items-center justify-between px-5 sm:px-8 h-16">
+                    <button id="np-lyrics-back" title="Back to Now Playing"
+                        class="flex items-center gap-2 text-zinc-400 hover:text-white transition-all duration-200 px-3 py-2 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m6 9 6 6 6-6" /></svg>
+                        <span class="text-xs font-semibold uppercase tracking-[0.2em] hidden sm:inline">Now Playing</span>
+                    </button>
+                    <div class="flex items-center gap-1">
+                        <button id="np-lq-queue-btn" title="Toggle Queue"
+                            class="text-zinc-400 hover:text-white transition-all p-2.5 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8" /></svg>
+                        </button>
+                        <button id="np-lq-lyrics-btn" title="Toggle Lyrics"
+                            class="text-zinc-400 hover:text-white transition-all p-2.5 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></path></svg>
+                        </button>
+                    </div>
+                </div>
                 <div id="lyrics-container"
-                    class="relative w-full max-w-8xl text-center space-y-6 md:space-y-10 overflow-y-auto overflow-x-hidden break-words h-full px-4 md:px-12 scroll-smooth pb-32 pt-32 custom-scrollbar">
+                    class="relative w-full max-w-8xl text-center space-y-6 md:space-y-10 overflow-y-auto overflow-x-hidden break-words h-full px-4 md:px-12 scroll-smooth pb-40 pt-32 custom-scrollbar">
                     <p class="text-zinc-500 text-2xl md:text-xl font-semibold animate-pulse">Select a song to load
                         lyrics...</p>
                 </div>
@@ -348,7 +372,7 @@
     <div class="fixed bottom-0 left-0 right-0 flex flex-row items-center justify-between h-28 border-t border-orange-500/10 bg-black/40 backdrop-blur-2xl px-6 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
         id="controls">
 
-        <div id="song_plaiyng_div" class="flex-1 flex items-center min-w-0"></div>
+        <div id="song_plaiyng_div" class="flex-1 flex items-center min-w-0 cursor-pointer rounded-xl px-2 py-1 -ml-2 hover:bg-white/5 transition-colors group/np" title="Open Now Playing"></div>
 
         <!-- Center: Buttons and Progress Slider -->
         <div class="flex flex-col items-center justify-center flex-[2] max-w-3xl gap-2">
@@ -454,6 +478,31 @@
 
     <script>
 
+        // ── Error bridge: forward frontend errors to hathor.log via Python ──
+        // (registered first so it outlives any later failure in this script)
+        window.__logToPy = function (msg) {
+            try {
+                const api = (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+                if (api && api.js_log) {
+                    const m = String(msg).slice(0, 2000);
+                    if (m.indexOf('js_log') !== -1) return; // avoid feedback loop
+                    const p = api.js_log(m);
+                    if (p && p.catch) p.catch(function () {});
+                }
+            } catch (e) { /* logging must never break the app */ }
+        };
+        window.addEventListener('error', function (e) {
+            try {
+                window.__logToPy('onerror: ' + (e.message || e.error) + ' @' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || ''));
+            } catch (err) {}
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            try {
+                const r = e.reason;
+                window.__logToPy('unhandledrejection: ' + ((r && (r.stack || r.message || r)) || 'unknown'));
+            } catch (err) {}
+        });
+
         // JS -> Python
 
         window.isSeeking = false;
@@ -472,17 +521,41 @@
             slider.style.setProperty('--range-percent', `${percent}%`);
         }
 
+        // Live volume: push to Python while the slider is still being dragged.
+        // Throttled (trailing edge) so a drag doesn't flood the bridge; the
+        // change event always sends the final value immediately.
+        let _volLiveTimer = null;
+        function scheduleLiveVolume(v) {
+            if (_volLiveTimer) clearTimeout(_volLiveTimer);
+            _volLiveTimer = setTimeout(async function () {
+                _volLiveTimer = null;
+                try {
+                    if (window.pywebview && window.pywebview.api && window.pywebview.api.volume_slider) {
+                        await window.pywebview.api.volume_slider(v);
+                    }
+                } catch (err) {}
+            }, 80);
+        }
+        function flushLiveVolume() {
+            if (_volLiveTimer) {
+                clearTimeout(_volLiveTimer);
+                _volLiveTimer = null;
+            }
+        }
+
         document.addEventListener("input", function (e) {
             if (e.target && (e.target.id === "volumeSlider" || e.target.id === "progressSlider")) {
                 updateSliderProgress(e.target);
             }
             if (e.target && e.target.id === "volumeSlider") {
                 update_volume_icon(e.target.value);
+                scheduleLiveVolume(e.target.value);
             }
         });
 
         document.addEventListener("change", async function (e) {
             if (e.target && e.target.id === "volumeSlider") {
+                flushLiveVolume();
                 await window.pywebview.api.volume_slider(e.target.value);
             }
             if (e.target && e.target.id === "progressSlider") {
@@ -525,6 +598,11 @@
             slider.value = next;
             updateSliderProgress(slider);
             update_volume_icon(slider.value);
+            const npVol = document.getElementById("np-volume");
+            if (npVol) {
+                npVol.value = next;
+                updateSliderProgress(npVol);
+            }
             if (window.pywebview && window.pywebview.api && window.pywebview.api.volume_slider) {
                 await window.pywebview.api.volume_slider(slider.value);
             }
@@ -534,16 +612,21 @@
             const volumeSlider = document.getElementById("volumeSlider");
             if (!volumeSlider) return;
             let currentVol = parseFloat(volumeSlider.value);
-            
+
             if (currentVol > 0) {
                 window._previousVolume = currentVol;
                 volumeSlider.value = 0;
             } else {
                 volumeSlider.value = window._previousVolume > 0 ? window._previousVolume : 1.0;
             }
-            
+
             updateSliderProgress(volumeSlider);
             update_volume_icon(volumeSlider.value);
+            const npVol = document.getElementById("np-volume");
+            if (npVol) {
+                npVol.value = volumeSlider.value;
+                updateSliderProgress(npVol);
+            }
             if (window.pywebview && window.pywebview.api) {
                 await window.pywebview.api.volume_slider(volumeSlider.value);
             }
@@ -822,10 +905,12 @@
             if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.load_settings === 'function') {
                 window.pywebview.api.load_settings();
                 if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
+                if (typeof window.pullCurrentSongState === 'function') window.pullCurrentSongState();
             } else {
                 window.addEventListener('pywebviewready', function () {
                     window.pywebview.api.load_settings();
                     if (typeof window.loadPlaylistsToSidebar === 'function') window.loadPlaylistsToSidebar();
+                    if (typeof window.pullCurrentSongState === 'function') window.pullCurrentSongState();
                 }, { once: true });
             }
 
@@ -916,9 +1001,21 @@
 
             // Resize the frameless window from its edges and corners
             let resize = null;
+            // The top edge/corners overlap the titlebar buttons (zones sit at
+            // z-60 above the titlebar). A press starting on a button must not
+            // start a resize with pointer capture, or the button's click is lost.
+            function isOverWinBtn(x, y) {
+                const btns = document.querySelectorAll('.win-ctrl-btn');
+                for (const b of btns) {
+                    const r = b.getBoundingClientRect();
+                    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+                }
+                return false;
+            }
             resizeZones.forEach(function (zone) {
                 zone.addEventListener('pointerdown', async function (e) {
                     if (resize) return;
+                    if (isOverWinBtn(e.clientX, e.clientY)) return;
                     e.preventDefault();
                     e.stopPropagation();
                     await refreshWinFrame();
@@ -1038,11 +1135,18 @@
                         const mins = Math.floor(pos / 60);
                         const secs = Math.floor(pos % 60).toString().padStart(2, '0');
                         document.getElementById("current_time").innerText = `${mins}:${secs}`;
+                        const npCur = document.getElementById("np-current-time");
+                        if (npCur) npCur.innerText = `${mins}:${secs}`;
 
-                        if (!isDraggingProgress && !window.isSeeking) {
+                        if (!isDraggingProgress && !window.isSeeking && !window.isSeekingNp) {
                             const progressSlider = document.getElementById("progressSlider");
                             progressSlider.value = pos;
                             updateSliderProgress(progressSlider);
+                            const npProg = document.getElementById("np-progress");
+                            if (npProg && document.getElementById("now-playing-fullscreen").classList.contains("np-open")) {
+                                npProg.value = pos;
+                                updateSliderProgress(npProg);
+                            }
                         }
                         if (typeof window.updateHighlightedLine === 'function' && !document.getElementById("lyrics-container-view").classList.contains("hidden")) {
                             window.updateHighlightedLine(pos);
@@ -1074,11 +1178,42 @@
             progressSlider.max = duration;
             progressSlider.value = 0;
             updateSliderProgress(progressSlider);
+            const npTotal = document.getElementById("np-total-time");
+            if (npTotal) npTotal.innerText = `${minutes}:${seconds}`;
+            const npProg = document.getElementById("np-progress");
+            if (npProg) {
+                npProg.max = duration;
+                npProg.value = 0;
+                updateSliderProgress(npProg);
+            }
+            const npCur = document.getElementById("np-current-time");
+            if (npCur) npCur.innerText = "0:00";
             startProgressTracking();
+            if (typeof window.syncNowPlaying === 'function') window.syncNowPlaying(data);
             if (typeof window.fetchLyricsForCurrentSong === 'function') {
                 window.fetchLyricsForCurrentSong(data);
             }
         }
+
+        // Pull the current song from Python if the early startup push
+        // happened before this page's scripts were parsed (avoids a
+        // blank mini-player after launch).
+        window.pullCurrentSongState = async function () {
+            try {
+                const api = (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+                if (!api || typeof api.get_current_song_ui_state !== 'function') return;
+                const mini = document.getElementById("song_plaiyng_div");
+                const miniEmpty = !mini || !mini.innerHTML.trim();
+                if (window.current_playing_song && !miniEmpty) return;
+                const state = await api.get_current_song_ui_state();
+                if (!state || !state.song || !state.song.File) return;
+                if (typeof window.plaiyng_info === 'function') window.plaiyng_info(state.song);
+                if (typeof window.playing_view === 'function') window.playing_view(state.song);
+                if (typeof window.update_play_button_ui === 'function') window.update_play_button_ui(!!state.is_playing);
+            } catch (err) {
+                console.error("pullCurrentSongState failed:", err);
+            }
+        };
 
         window.apply_background = async function (background_path) {
             if (!background_path) {
@@ -1104,6 +1239,11 @@
             volumeSlider.value = parseFloat(volume);
             updateSliderProgress(volumeSlider);
             update_volume_icon(volumeSlider.value);
+            const npVol = document.getElementById("np-volume");
+            if (npVol) {
+                npVol.value = volumeSlider.value;
+                updateSliderProgress(npVol);
+            }
             window.limit_downloads = parseInt(limit_downloads) || 3;
             if (background) {
                 window.apply_background(background);
@@ -1128,24 +1268,380 @@
                 ? `<img src="${current_song.CoverArt}" class="w-full h-full object-cover" alt="${altText}">`
                 : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
             const html = `
-            <div class="flex items-center gap-3 overflow-hidden">
-                <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 transition-all duration-300 overflow-hidden" id="audio-visualizer">
+            <div class="flex items-center gap-3 overflow-hidden max-w-full rounded-xl border border-white/5 bg-white/[0.02] pl-3 pr-4 py-2">
+                <div class="flex items-end justify-center gap-[2px] w-4 h-4 flex-shrink-0 transition-all duration-300 overflow-hidden" id="audio-visualizer">
                     <div class="visualizer-bar"></div>
                     <div class="visualizer-bar"></div>
                     <div class="visualizer-bar"></div>
                     <div class="visualizer-bar"></div>
                 </div>
-                <div class="w-10 h-10 rounded-md bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md">
+                <span class="w-px self-stretch bg-white/10 flex-shrink-0"></span>
+                <div class="w-11 h-11 rounded-lg bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md ring-1 ring-white/10">
                     ${coverArt}
                 </div>
-                <div class="flex flex-col">
-                    <div class="song-title truncate font-medium text-zinc-100 group-hover:text-orange-400 transition-colors truncate">${current_song.Title || "Unknown Title"}</div>
-                    <div class="artist-link cursor-pointer hover:text-orange-400 transition-colors text-sm truncate" data-artist="${(current_song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${current_song.Artist || "Unknown Artist"}</div>
+                <span class="w-px self-stretch bg-white/10 flex-shrink-0"></span>
+                <div class="flex flex-col min-w-0 leading-snug">
+                    <div class="song-title truncate text-sm font-semibold text-zinc-100 group-hover:text-orange-400 transition-colors">${current_song.Title || "Unknown Title"}</div>
+                    <div class="artist-link truncate text-xs text-zinc-500 hover:text-orange-400 hover:underline hover:underline-offset-2 cursor-pointer transition-colors mt-0.5" data-artist="${(current_song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${current_song.Artist || "Unknown Artist"}</div>
                 </div>
             </div>`;
             const container = document.getElementById("song_plaiyng_div");
             if (container) container.innerHTML = html;
+            if (typeof window.syncNowPlaying === 'function') window.syncNowPlaying(current_song);
         }
+
+        // ── Fullscreen Now Playing ──
+        ;(function initNowPlayingFullscreen() {
+            const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>`;
+            const ICON_PAUSE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
+            const COVER_FALLBACK = `<div class="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center"><svg class="w-20 h-20 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+
+            function el(id) { return document.getElementById(id); }
+
+            function setNpPlayIcon(isPlaying) {
+                const btn = el("np-play-btn");
+                if (btn) btn.innerHTML = isPlaying ? ICON_PAUSE : ICON_PLAY;
+            }
+
+            function paintToggle(btn, active) {
+                if (!btn) return;
+                const onCls = ["text-orange-500", "bg-white/15"];
+                const offCls = ["text-zinc-400"];
+                if (active) {
+                    btn.classList.remove(...offCls, "text-zinc-200", "hover:text-white");
+                    btn.classList.add(...onCls, "hover:text-orange-400");
+                } else {
+                    btn.classList.remove(...onCls, "hover:text-orange-400");
+                    if (btn.id === "np-shuffle-btn" || btn.id === "np-repeat-btn") {
+                        btn.classList.add(...offCls, "hover:text-white");
+                    }
+                }
+            }
+
+            function syncNpTogglesFromMain() {
+                const sh = el("shuffleBtn");
+                const rp = el("repeatBtn");
+                paintToggle(el("np-shuffle-btn"), sh ? sh.classList.contains("text-orange-500") : false);
+                paintToggle(el("np-repeat-btn"), rp ? rp.classList.contains("text-orange-500") : false);
+            }
+
+            function paintNpPanelBtn(btn, active) {
+                if (!btn) return;
+                if (active) {
+                    btn.classList.remove("text-zinc-400", "hover:text-white");
+                    btn.classList.add("text-orange-400", "hover:text-orange-300", "bg-white/10");
+                } else {
+                    btn.classList.remove("text-orange-400", "hover:text-orange-300", "bg-white/10");
+                    btn.classList.add("text-zinc-400", "hover:text-white");
+                }
+            }
+
+            function syncNpPanelButtons() {
+                const lyricsView = el("lyrics-container-view");
+                const lyricsOpen = !!(lyricsView && !lyricsView.classList.contains("hidden"));
+                paintNpPanelBtn(el("np-lyrics-btn"), lyricsOpen);
+                paintNpPanelBtn(el("np-lq-lyrics-btn"), lyricsOpen);
+                const queue = el("queue-sidebar");
+                const queueOpen = !!(queue && !queue.classList.contains("max-w-0"));
+                paintNpPanelBtn(el("np-queue-btn"), queueOpen);
+                paintNpPanelBtn(el("np-lq-queue-btn"), queueOpen);
+            }
+            window.syncNpPanelButtons = syncNpPanelButtons;
+
+            window.syncNowPlaying = function (song) {
+                song = song || window.current_playing_song;
+                if (!song) return;
+                const titleEl = el("np-title");
+                const artistEl = el("np-artist");
+                const albumEl = el("np-album");
+                const coverEl = el("np-cover");
+                const bgEl = el("np-bg");
+                if (titleEl) {
+                    titleEl.innerText = song.Title || "Unknown Title";
+                    titleEl.title = song.Title || "Unknown Title";
+                }
+                if (artistEl) {
+                    artistEl.innerText = song.Artist || "Unknown Artist";
+                    artistEl.title = song.Artist || "Unknown Artist";
+                    artistEl.setAttribute("data-artist", song.Artist || "Unknown Artist");
+                }
+                if (albumEl) {
+                    const parts = [];
+                    if (song.Album) parts.push(song.Album);
+                    if (song.Year) parts.push(String(song.Year));
+                    albumEl.innerText = parts.length ? parts.join(" • ") : "Unknown Album";
+                    albumEl.title = albumEl.innerText;
+                    albumEl.setAttribute("data-album", song.Album || "");
+                    albumEl.setAttribute("data-artist", song.Artist || "");
+                }
+                if (coverEl) {
+                    coverEl.innerHTML = song.CoverArt
+                        ? `<img src="${song.CoverArt}" class="w-full h-full object-cover" alt="Album cover for ${song.Title || ""}">`
+                        : COVER_FALLBACK;
+                }
+                if (bgEl) {
+                    bgEl.style.backgroundImage = song.CoverArt ? `url('${song.CoverArt}')` : "none";
+                }
+                const dur = song.Duration || 0;
+                const mins = Math.floor(Math.floor(dur) / 60);
+                const secs = (Math.floor(dur) % 60).toString().padStart(2, '0');
+                const totalEl = el("np-total-time");
+                if (totalEl) totalEl.innerText = `${mins}:${secs}`;
+                const prog = el("np-progress");
+                if (prog) {
+                    prog.max = dur;
+                    if (parseFloat(prog.value) > dur) prog.value = 0;
+                    updateSliderProgress(prog);
+                }
+                setNpPlayIcon(!!window.is_currently_playing);
+                syncNpTogglesFromMain();
+                // Mirror volume on sync
+                const vol = el("volumeSlider");
+                const npVol = el("np-volume");
+                if (vol && npVol) {
+                    npVol.value = vol.value;
+                    updateSliderProgress(npVol);
+                }
+            };
+
+            window.openNowPlaying = function () {
+                if (!window.current_playing_song) return;
+                window.syncNowPlaying(window.current_playing_song);
+                const fs = el("now-playing-fullscreen");
+                if (!fs) return;
+                fs.classList.remove("hidden");
+                // Force reflow so the opacity transition runs
+                void fs.offsetWidth;
+                fs.classList.add("np-open");
+                document.body.classList.add("np-active");
+                if (typeof syncNpPanelButtons === 'function') syncNpPanelButtons();
+            };
+
+            window.closeNowPlaying = function () {
+                const fs = el("now-playing-fullscreen");
+                if (!fs) return;
+                fs.classList.remove("np-open");
+                document.body.classList.remove("np-active");
+                setTimeout(() => {
+                    if (!fs.classList.contains("np-open")) fs.classList.add("hidden");
+                }, 350);
+            };
+
+            window.isNowPlayingOpen = function () {
+                const fs = el("now-playing-fullscreen");
+                return !!fs && !fs.classList.contains("hidden") && fs.classList.contains("np-open");
+            };
+
+            // Keep fullscreen play icon + toggles in sync with the main player
+            document.addEventListener('playback-state-changed', function (e) {
+                setNpPlayIcon(!!(e.detail && e.detail.isPlaying));
+            });
+
+            function bindOnce() {
+                const mini = el("song_plaiyng_div");
+                if (mini && !mini._npBound) {
+                    mini._npBound = true;
+                    mini.addEventListener("click", function (e) {
+                        // Let artist navigation keep working instead of opening fullscreen
+                        if (e.target.closest && e.target.closest(".artist-link")) return;
+                        window.openNowPlaying();
+                    });
+                }
+
+                const closeBtn = el("np-close-btn");
+                if (closeBtn && !closeBtn._npBound) {
+                    closeBtn._npBound = true;
+                    closeBtn.addEventListener("click", window.closeNowPlaying);
+                }
+
+                const playBtn = el("np-play-btn");
+                if (playBtn && !playBtn._npBound) {
+                    playBtn._npBound = true;
+                    playBtn.addEventListener("click", () => { if (window.toggle_play_pause) window.toggle_play_pause(); });
+                }
+                const prevBtn = el("np-prev-btn");
+                if (prevBtn && !prevBtn._npBound) {
+                    prevBtn._npBound = true;
+                    prevBtn.addEventListener("click", () => { if (window.pywebview) window.pywebview.api.play_prev(); });
+                }
+                const nextBtn = el("np-next-btn");
+                if (nextBtn && !nextBtn._npBound) {
+                    nextBtn._npBound = true;
+                    nextBtn.addEventListener("click", () => { if (window.pywebview) window.pywebview.api.play_next(); });
+                }
+                const shBtn = el("np-shuffle-btn");
+                if (shBtn && !shBtn._npBound) {
+                    shBtn._npBound = true;
+                    shBtn.addEventListener("click", async () => {
+                        if (window.toggle_shuffle) await window.toggle_shuffle();
+                        syncNpTogglesFromMain();
+                    });
+                }
+                const rpBtn = el("np-repeat-btn");
+                if (rpBtn && !rpBtn._npBound) {
+                    rpBtn._npBound = true;
+                    rpBtn.addEventListener("click", async () => {
+                        if (window.toggle_repeat) await window.toggle_repeat();
+                        syncNpTogglesFromMain();
+                    });
+                }
+
+                const prog = el("np-progress");
+                if (prog && !prog._npBound) {
+                    prog._npBound = true;
+                    prog.addEventListener("input", () => updateSliderProgress(prog));
+                    prog.addEventListener("change", async (e) => {
+                        window.isSeekingNp = true;
+                        window.isSeeking = true;
+                        try {
+                            const v = parseFloat(e.target.value) || 0;
+                            const main = el("progressSlider");
+                            if (main) {
+                                main.value = v;
+                                updateSliderProgress(main);
+                            }
+                            const cur = el("np-current-time");
+                            if (cur) {
+                                const m = Math.floor(v / 60);
+                                const s = Math.floor(v % 60).toString().padStart(2, '0');
+                                cur.innerText = `${m}:${s}`;
+                            }
+                            if (window.pywebview && window.pywebview.api) {
+                                await window.pywebview.api.progress_slider_click(v);
+                            }
+                        } catch (err) { console.error(err); }
+                        setTimeout(() => { window.isSeekingNp = false; window.isSeeking = false; }, 300);
+                    });
+                }
+
+                const npVol = el("np-volume");
+                if (npVol && !npVol._npBound) {
+                    npVol._npBound = true;
+                    npVol.addEventListener("input", () => {
+                        updateSliderProgress(npVol);
+                        const main = el("volumeSlider");
+                        if (main) {
+                            main.value = npVol.value;
+                            updateSliderProgress(main);
+                            update_volume_icon(main.value);
+                        }
+                        if (typeof scheduleLiveVolume === 'function') scheduleLiveVolume(npVol.value);
+                    });
+                    npVol.addEventListener("change", async (e) => {
+                        if (typeof flushLiveVolume === 'function') flushLiveVolume();
+                        const main = el("volumeSlider");
+                        if (main) {
+                            main.value = e.target.value;
+                            updateSliderProgress(main);
+                            update_volume_icon(main.value);
+                        }
+                        if (window.pywebview && window.pywebview.api) {
+                            await window.pywebview.api.volume_slider(e.target.value);
+                        }
+                    });
+                }
+
+                const artistEl = el("np-artist");
+                if (artistEl && !artistEl._npBound) {
+                    artistEl._npBound = true;
+                    artistEl.classList.add("artist-link");
+                    artistEl.addEventListener("click", function () {
+                        const a = artistEl.getAttribute("data-artist") || artistEl.innerText;
+                        window.closeNowPlaying();
+                        setTimeout(() => { if (typeof window.openArtistPage === 'function') window.openArtistPage(a); }, 150);
+                    });
+                }
+
+                const qBtn = el("np-queue-btn");
+                if (qBtn && !qBtn._npBound) {
+                    qBtn._npBound = true;
+                    qBtn.addEventListener("click", () => {
+                        const t = el("toggle-queue-btn");
+                        if (t) t.click();
+                        setTimeout(syncNpPanelButtons, 50);
+                    });
+                }
+                const lBtn = el("np-lyrics-btn");
+                if (lBtn && !lBtn._npBound) {
+                    lBtn._npBound = true;
+                    lBtn.addEventListener("click", () => {
+                        const t = el("toggle-lyrics-btn");
+                        if (t) t.click();
+                        setTimeout(syncNpPanelButtons, 50);
+                    });
+                }
+                const lyricsBack = el("np-lyrics-back");
+                if (lyricsBack && !lyricsBack._npBound) {
+                    lyricsBack._npBound = true;
+                    lyricsBack.addEventListener("click", () => {
+                        const t = el("toggle-lyrics-btn");
+                        if (t) t.click();
+                        setTimeout(syncNpPanelButtons, 50);
+                    });
+                }
+                const lqQueue = el("np-lq-queue-btn");
+                if (lqQueue && !lqQueue._npBound) {
+                    lqQueue._npBound = true;
+                    lqQueue.addEventListener("click", () => {
+                        const t = el("toggle-queue-btn");
+                        if (t) t.click();
+                        setTimeout(syncNpPanelButtons, 50);
+                    });
+                }
+                const lqLyrics = el("np-lq-lyrics-btn");
+                if (lqLyrics && !lqLyrics._npBound) {
+                    lqLyrics._npBound = true;
+                    lqLyrics.addEventListener("click", () => {
+                        const t = el("toggle-lyrics-btn");
+                        if (t) t.click();
+                        setTimeout(syncNpPanelButtons, 50);
+                    });
+                }
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", bindOnce);
+            } else {
+                bindOnce();
+            }
+            // Re-bind if DOM is re-rendered
+            setTimeout(bindOnce, 1500);
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key !== "Escape") return;
+                // Esc closes lyrics first (revealing fullscreen underneath),
+                // then fullscreen itself.
+                const lyricsView = el("lyrics-container-view");
+                if (lyricsView && !lyricsView.classList.contains("hidden")) {
+                    const t = el("toggle-lyrics-btn");
+                    if (t) t.click();
+                    setTimeout(syncNpPanelButtons, 50);
+                    return;
+                }
+                if (window.isNowPlayingOpen && window.isNowPlayingOpen()) {
+                    window.closeNowPlaying();
+                }
+            });
+
+            // Keep np volume + toggles fresh when main controls change
+            document.addEventListener("input", function (e) {
+                if (e.target && e.target.id === "volumeSlider") {
+                    const npVol = el("np-volume");
+                    if (npVol) {
+                        npVol.value = e.target.value;
+                        updateSliderProgress(npVol);
+                    }
+                }
+                if (e.target && e.target.id === "progressSlider") {
+                    const npProg = el("np-progress");
+                    const fs = el("now-playing-fullscreen");
+                    if (npProg && fs && fs.classList.contains("np-open") && !window.isSeekingNp) {
+                        npProg.value = e.target.value;
+                        updateSliderProgress(npProg);
+                    }
+                }
+            });
+        })();
 
         // --- Global Queue Logic ---
         window.queue_songs = window.queue_songs || [];
@@ -1908,10 +2404,24 @@
             } else if (e.target.closest(".song-row")) {
                 const row = e.target.closest(".song-row");
                 if (!e.target.closest(".bento-btn")) {
-                    const songPathStr = row.getAttribute("data-path");
-                    if (songPathStr) {
+                    // Prefer the cached song object (index-based rows) over the
+                    // data-path attribute, whose &quot; encoding breaks on titles
+                    // containing HTML-entity-like sequences (e.g. "&quot;").
+                    let songPath = null;
+                    try {
+                        const container = row.closest(".song-row-container, .queue-item-container");
+                        if (container && container._songData) {
+                            songPath = container._songData;
+                        } else if (typeof window.songDataFromRow === 'function') {
+                            songPath = window.songDataFromRow(row);
+                        }
+                    } catch (err) { console.error("Song cache lookup failed:", err); }
+                    const songPathStr = songPath ? null : row.getAttribute("data-path");
+                    if (songPath || songPathStr) {
                         try {
-                            const songPath = JSON.parse(songPathStr.replace(/&quot;/g, '"'));
+                            if (!songPath) {
+                                songPath = JSON.parse(songPathStr.replace(/&quot;/g, '"').replace(/&apos;/g, "'"));
+                            }
                             window.current_playing_song = songPath;
                             window.set_active_song_ui(songPath);
 
@@ -1932,7 +2442,17 @@
                                 }
                             }
                             await window.play_button(songPath);
-                        } catch (err) { }
+                        } catch (err) {
+                            console.error("Failed to play song row:", err);
+                            if (typeof window.__logToPy === 'function') {
+                                window.__logToPy('song-row click failed: ' + ((err && (err.stack || err.message)) || err));
+                            }
+                            if (typeof Notyf !== 'undefined') {
+                                new Notyf({ position: { x: 'right', y: 'bottom' } }).error('Could not play this song.');
+                            }
+                        }
+                    } else {
+                        console.error("Song row has no playable data attached.");
                     }
                 }
                 if (contextMenu && !contextMenu.classList.contains("hidden")) {
@@ -2248,6 +2768,148 @@
             return { show: show, update: update, complete: complete, hide: hide };
         })();
     </script>
+
+    <!-- ══ Fullscreen Now Playing ══ -->
+    <style>
+        #now-playing-fullscreen {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #now-playing-fullscreen.np-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #now-playing-fullscreen .np-bg-layer {
+            transition: background-image 0.6s ease;
+        }
+        #now-playing-fullscreen .np-content {
+            transform: translateY(24px) scale(0.98);
+            transition: transform 0.4s cubic-bezier(0.21, 1.02, 0.73, 1);
+        }
+        #now-playing-fullscreen.np-open .np-content {
+            transform: translateY(0) scale(1);
+        }
+        /* Lyrics / queue opened from fullscreen must paint above it */
+        body.np-active #lyrics-container-view {
+            position: fixed;
+            top: 40px; /* below the custom titlebar */
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 95;
+        }
+        body.np-active #queue-sidebar {
+            z-index: 95;
+        }
+        /* Top bar merged into fullscreen lyrics (the overlay's own bar
+           sits behind the lyrics layer), only relevant when np-active */
+        #np-lyrics-topbar {
+            display: none;
+        }
+        body.np-active #np-lyrics-topbar {
+            display: flex;
+        }
+        /* While fullscreen lyrics are open, hide the overlay's own top bar
+           so it can't ghost through the translucent lyrics background */
+        body.np-active.lyrics-active #now-playing-fullscreen .np-topbar {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #np-cover-wrap {
+            transition: transform 0.4s cubic-bezier(0.21, 1.02, 0.73, 1), box-shadow 0.4s ease;
+        }
+        #np-cover-wrap:hover {
+            transform: scale(1.015);
+        }
+        @keyframes np-spin-slow {
+            to { transform: rotate(360deg); }
+        }
+        .np-vinyl-glow {
+            background: conic-gradient(from 0deg, rgba(249,115,22,0.35), rgba(249,115,22,0.05), rgba(255,255,255,0.08), rgba(249,115,22,0.35));
+            animation: np-spin-slow 14s linear infinite;
+        }
+    </style>
+    <div id="now-playing-fullscreen" class="fixed inset-0 z-[90] hidden overflow-hidden bg-zinc-950" role="dialog" aria-modal="true" aria-label="Now Playing">
+        <!-- Blurred cover background -->
+        <div class="np-bg-layer absolute inset-0 bg-cover bg-center scale-110 blur-[90px] brightness-[0.45] saturate-[1.3]" id="np-bg"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-zinc-950/70 to-zinc-950/95"></div>
+        <div class="absolute -top-[10%] left-1/2 -translate-x-1/2 w-[50vw] h-[30vh] bg-orange-500/15 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <!-- Top bar -->
+        <div class="np-topbar relative z-10 flex items-center justify-between px-5 sm:px-8 h-16 transition-opacity duration-200">
+            <button id="np-close-btn" title="Close (Esc)" class="flex items-center gap-2 text-zinc-400 hover:text-white transition-all duration-200 px-3 py-2 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m6 9 6 6 6-6" /></svg>
+                <span class="text-xs font-semibold uppercase tracking-[0.2em] hidden sm:inline">Now Playing</span>
+            </button>
+            <div class="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500 sm:hidden">Now Playing</div>
+            <div class="flex items-center gap-1">
+                <button id="np-queue-btn" title="Toggle Queue" class="text-zinc-400 hover:text-white transition-all p-2.5 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8" /></svg>
+                </button>
+                <button id="np-lyrics-btn" title="Toggle Lyrics" class="text-zinc-400 hover:text-white transition-all p-2.5 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="np-content relative z-10 h-[calc(100%-4rem)] overflow-y-auto custom-scrollbar">
+            <div class="min-h-full w-full max-w-5xl mx-auto px-6 sm:px-10 pb-10 flex flex-col md:flex-row items-center justify-center gap-10 md:gap-14">
+                <!-- Cover -->
+                <div class="flex-shrink-0 relative">
+                    <div class="np-vinyl-glow absolute -inset-3 rounded-[2rem] blur-2xl opacity-60 pointer-events-none"></div>
+                    <div id="np-cover-wrap" class="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-[22rem] lg:h-[22rem] rounded-3xl overflow-hidden bg-zinc-800/80 border border-white/10 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.8),0_0_60px_-20px_rgba(249,115,22,0.35)]">
+                        <div id="np-cover" class="w-full h-full"></div>
+                    </div>
+                </div>
+
+                <!-- Info + controls -->
+                <div class="flex flex-col w-full max-w-xl min-w-0 items-center md:items-start text-center md:text-left">
+                    <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-orange-400/90">
+                        <span class="w-6 h-px bg-orange-400/60 inline-block"></span>
+                        Now Playing
+                    </div>
+                    <h1 id="np-title" class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight line-clamp-2">Nothing playing</h1>
+                    <div id="np-artist" class="mt-2 text-base sm:text-lg text-zinc-400 font-medium truncate max-w-full cursor-pointer hover:text-orange-400 transition-colors">—</div>
+                    <div id="np-album" class="mt-1 text-sm text-zinc-500 truncate max-w-full">—</div>
+
+                    <!-- Progress -->
+                    <div class="w-full mt-8 flex items-center gap-3">
+                        <span id="np-current-time" class="text-xs text-zinc-400 font-mono w-10 text-right flex-shrink-0">0:00</span>
+                        <input type="range" id="np-progress" min="0" step="0.1" value="0" class="w-full cursor-pointer outline-none">
+                        <span id="np-total-time" class="text-xs text-zinc-400 font-mono w-10 flex-shrink-0">0:00</span>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="w-full mt-4 flex items-center justify-center md:justify-start gap-4 sm:gap-6">
+                        <button id="np-shuffle-btn" title="Toggle Shuffle" class="text-zinc-400 hover:text-white transition-all duration-200 hover:scale-110 active:scale-95 p-2.5 rounded-full hover:bg-white/10 focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M11.47 7.72a.75.75 0 0 1 1.06 0l7.5 7.5a.75.75 0 1 1-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 0 1-1.06-1.06l7.5-7.5Z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <button id="np-prev-btn" title="Previous" class="text-zinc-200 hover:text-white transition-all duration-200 hover:scale-110 active:scale-95 p-2.5 rounded-full hover:bg-white/10 focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M21 16.811c0 .864-.933 1.406-1.683.977l-7.108-4.061a1.125 1.125 0 0 1 0-1.954l7.108-4.061A1.125 1.125 0 0 1 21 8.689v8.122ZM11.25 16.811c0 .864-.933 1.406-1.683.977l-7.108-4.061a1.125 1.125 0 0 1 0-1.954l7.108-4.061a1.125 1.125 0 0 1 1.683.977v8.122Z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <button id="np-play-btn" title="Play / Pause" class="flex items-center justify-center w-16 h-16 bg-white text-zinc-950 hover:bg-orange-400 hover:text-white transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_35px_rgba(251,146,60,0.5)] focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 ml-1"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <button id="np-next-btn" title="Next" class="text-zinc-200 hover:text-white transition-all duration-200 hover:scale-110 active:scale-95 p-2.5 rounded-full hover:bg-white/10 focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path fill-rule="evenodd" d="M3 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061A1.125 1.125 0 0 1 3 16.811V8.69ZM12.75 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061a1.125 1.125 0 0 1-1.683-.977V8.69Z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <button id="np-repeat-btn" title="Toggle Repeat" class="text-zinc-400 hover:text-white transition-all duration-200 hover:scale-110 active:scale-95 p-2.5 rounded-full hover:bg-white/10 focus:outline-none cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M12 5.25c1.213 0 2.415.046 3.605.135a3.256 3.256 0 0 1 3.01 3.01c.044.583.077 1.17.1 1.759L17.03 8.47a.75.75 0 1 0-1.06 1.06l3 3a.75.75 0 0 0 1.06 0l3-3a.75.75 0 0 0-1.06-1.06l-1.752 1.751c-.023-.65-.06-1.296-.108-1.939a4.756 4.756 0 0 0-4.392-4.392 49.422 49.422 0 0 0-7.436 0A4.756 4.756 0 0 0 3.89 8.282c-.017.224-.033.45-.046.676a.75.75 0 0 0 1.497.076c.013-.209.028-.417.044-.623a3.256 3.256 0 0 1 3.01-3.01c1.19-.09 2.392-.136 3.605-.136Zm-6.97 6.22a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.752-1.751c.023.65.06 1.296.108 1.939a4.756 4.756 0 0 0 4.392 4.392 49.413 49.413 0 0 0 7.436 0 4.756 4.756 0 0 0 4.392-4.392c.017-.223.032-.449.046-.676a.75.75 0 0 0-1.497-.076c-.013.209-.028.417-.044.623a3.256 3.256 0 0 1-3.01 3.01 47.953 47.953 0 0 1-7.21 0 3.256 3.256 0 0 1-3.01-3.01 47.759 47.759 0 0 1-.1-1.759L6.97 15.53a.75.75 0 1 0 1.06-1.06l-3-3Z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- Volume -->
+                    <div class="w-full mt-6 flex items-center justify-center md:justify-start gap-3 max-w-xs">
+                        <span class="text-zinc-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.5A2.25 2.25 0 0 0 2.25 9.75v4.5a2.25 2.25 0 0 0 2.25 2.25h2.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06ZM18.75 12c0-1.24-.51-2.35-1.34-3.14a.75.75 0 1 0-1.03 1.1c.41.38.67.92.67 1.51s-.26 1.13-.67 1.51a.75.75 0 1 0 1.03 1.1c.83-.79 1.34-1.9 1.34-3.14Z" /></svg></span>
+                        <input type="range" id="np-volume" min="0" max="1" step="0.01" value="1" class="w-full cursor-pointer outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Persistent Bento Context Menu -->
     <div id="bento-context-menu"

@@ -6,3 +6,4 @@ music_player.db
 dist/
 build/
 CA.pem
+hathor.log

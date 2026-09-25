@@ -32,6 +32,9 @@ class Api:
         self.shuffle = False
         self.repeat = False
         self.song_list = []
+        # pywebview 6.x `window.state` is a State dict (never the string
+        # 'maximized'), so the maximized flag is tracked here instead.
+        self._is_maximized = False
         
         self._window = None
         self.downloader = Download.MusicDownloader()
@@ -197,11 +200,16 @@ class Api:
     def toggle_maximize_window(self):
         if not self._window:
             return False
-        if str(getattr(self._window, 'state', 'normal')).lower() == 'maximized':
-            self._window.restore()
-        else:
-            self._window.maximize()
-        return True
+        try:
+            if self._is_maximized:
+                self._window.restore()
+            else:
+                self._window.maximize()
+            self._is_maximized = not self._is_maximized
+            return True
+        except Exception as e:
+            print(f" [Python] toggle_maximize_window error: {e}")
+            return False
 
     def window_action(self, action):
         if not self._window:
@@ -401,7 +409,10 @@ class Api:
             local_list.append(song_data)
         self.song_list = local_list
         if self._window:
-            self._window.evaluate_js(f"song_list({json.dumps(self.song_list)})")
+            try:
+                self._window.evaluate_js(f"if (typeof window.song_list === 'function') window.song_list({json.dumps(self.song_list)})")
+            except Exception as e:
+                print(f" [Python] song_list JS error (page may not be ready yet): {e}")
     
     def load_settings(self):
         safe_bg = json.dumps(settings.background)
@@ -446,6 +457,34 @@ class Api:
                 
         except Exception as e:
             print(f" [Python] Database error: {e}")
+
+    def js_log(self, message):
+        """Receive log lines from the frontend (window.onerror /
+        unhandledrejection forwarders). Written to hathor.log."""
+        try:
+            import logging
+            logging.getLogger('hathor').info("JS: %s", str(message)[:2000])
+        except Exception:
+            pass
+        return True
+
+    def get_current_song_ui_state(self):
+        """Let the frontend pull the current song when it's ready.
+
+        Covers the startup race where Python pushes `playing_view` /
+        `plaiyng_info` before the webview DOM has parsed its scripts
+        (which previously surfaced as `ReferenceError: playing_view
+        is not defined`). The UI calls this on startup and renders
+        locally if the early push was skipped.
+        """
+        try:
+            song = getattr(self, 'last_song', None)
+            if not song or not song.get('File'):
+                return {'song': None, 'is_playing': False}
+            return {'song': song, 'is_playing': bool(getattr(self, 'playing', False))}
+        except Exception as e:
+            print(f" [Python] get_current_song_ui_state error: {e}")
+            return {'song': None, 'is_playing': False}
 
     def search_itunes_metadata(self, title, artist=None):
         try:

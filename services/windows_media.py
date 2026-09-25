@@ -26,7 +26,10 @@ class WindowsMediaOverlay:
         if args.button == media.SystemMediaTransportControlsButton.PLAY or args.button == media.SystemMediaTransportControlsButton.PAUSE:
             is_playing = self.api.play_button(None)
             if getattr(self.api, '_window', None) and is_playing is not None:
-                self.api._window.evaluate_js(f"update_play_button_ui({'true' if is_playing else 'false'});")
+                try:
+                    self.api._window.evaluate_js(f"if (typeof window.update_play_button_ui === 'function') window.update_play_button_ui({'true' if is_playing else 'false'});")
+                except Exception as e:
+                    print(f" [Python] update_play_button_ui JS error: {e}")
                 
         elif args.button == media.SystemMediaTransportControlsButton.NEXT:
             if hasattr(self.api, 'playback'):

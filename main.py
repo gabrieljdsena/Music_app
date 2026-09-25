@@ -20,11 +20,65 @@ import webview
 import threading
 import sqlite3
 import json
+import logging
 import pygame
 #import monitor
 import settings
 from api import Api
 from sync import DatabaseSync
+
+
+# Persistent file log (hathor.log next to the DB) so issues can be
+# diagnosed even when no console is visible (e.g. frozen builds).
+def _setup_file_logging():
+    try:
+        if getattr(sys, 'frozen', False):
+            log_dir = os.path.dirname(sys.executable)
+        else:
+            log_dir = os.path.dirname(os.path.abspath(__file__))
+        log_file = os.path.join(log_dir, 'hathor.log')
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s [%(levelname)s] %(message)s',
+            handlers=[
+                logging.FileHandler(log_file, encoding='utf-8'),
+                logging.StreamHandler(sys.stdout),
+            ],
+            force=True,
+        )
+    except Exception as e:
+        print(f" [Python] Could not set up file logging: {e}")
+
+_setup_file_logging()
+_log = logging.getLogger('hathor')
+_log.info("=== Hathor starting ===")
+
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    try:
+        _log.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
+    except Exception:
+        pass
+
+sys.excepthook = _log_uncaught
+
+if hasattr(threading, 'excepthook'):
+    _orig_thread_excepthook = threading.excepthook
+
+    def _log_thread_uncaught(args):
+        try:
+            _log.error(
+                "Uncaught thread exception in %s", getattr(args, 'thread', None),
+                exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
+            )
+        except Exception:
+            pass
+        try:
+            _orig_thread_excepthook(args)
+        except Exception:
+            pass
+
+    threading.excepthook = _log_thread_uncaught
 
 
 # 1. Setup paths
@@ -85,7 +139,11 @@ window = webview.create_window(
     x=center_x,
     y=center_y,
     min_size=(895, 400),
-    frameless=True
+    frameless=True,
+    # The app implements its own titlebar drag (pointer events + move_window).
+    # pywebview's native easy_drag would make EVERY mousedown in the app move
+    # the window (and fight with sliders/seekbars), so it must stay off.
+    easy_drag=False
 )
 
 # 4. Link the window back to the API so it can use evaluate_js
@@ -102,6 +160,12 @@ def save_window_size(width, height):
 
 def on_resized(width, height):
     global resize_timer
+    # Don't persist the maximized footprint as the restored window size.
+    try:
+        if getattr(api, '_is_maximized', False):
+            return
+    except Exception:
+        pass
     if resize_timer is not None:
         resize_timer.cancel()
     resize_timer = threading.Timer(0.4, save_window_size, args=(width, height))
