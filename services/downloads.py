@@ -36,6 +36,7 @@ class DownloadManager:
         url = str(payload.get('url') or '').strip()
         title = str(payload.get('title') or '')
         artist = str(payload.get('artist') or '')
+        is_podcast = bool(payload.get('is_podcast'))
 
         if not url:
             url = f"{title} {artist} audio".strip()
@@ -50,6 +51,7 @@ class DownloadManager:
             'url': url,
             'title': title,
             'artist': artist,
+            'is_podcast': is_podcast,
             'status': 'queued',
             'progress': 0,
             'error': None,
@@ -79,7 +81,8 @@ class DownloadManager:
         if payload.get('job_id'):
             row = self._fetch_job(payload.get('job_id'))
             if row:
-                payload = {'url': row[0], 'title': row[1], 'artist': row[2]}
+                payload = {'url': row[0], 'title': row[1], 'artist': row[2],
+                           'is_podcast': bool(row[3]) if len(row) > 3 else False}
             else:
                 return False
         url = str(payload.get('url') or '').strip()
@@ -160,12 +163,17 @@ class DownloadManager:
                     self._update(job, 'downloading', progress=100)
                     self._push_progress(job, 100, 'Done!')
 
-            result = self.api.downloader.download_song(job['url'], progress_callback)
+            result = self.api.downloader.download_song(
+                job['url'],
+                progress_callback,
+                dest_path=settings.podcasts_path if job.get('is_podcast') else None,
+                is_podcast=bool(job.get('is_podcast')),
+            )
 
             if isinstance(result, dict) and result.get('status') == 'success':
                 job['result'] = result
                 job['filename'] = result.get('filename')
-                self._save_song_record(result)
+                self._save_song_record(result, is_podcast=bool(job.get('is_podcast')))
                 self._update(job, 'done', progress=100)
             else:
                 error = str(result) if isinstance(result, str) else "Download failed"
@@ -184,11 +192,12 @@ class DownloadManager:
             with self._lock:
                 self._active = max(0, self._active - 1)
 
-    def _save_song_record(self, result):
+    def _save_song_record(self, result, is_podcast=False):
+        table = 'Podcasts' if is_podcast else 'Songs'
         try:
             with sqlite3.connect(self.api.db_path) as conn:
                 conn.execute(
-                    """INSERT INTO Songs (file, downloaded_link, title, artist, date_download)
+                    f"""INSERT INTO {table} (file, downloaded_link, title, artist, date_download)
                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
                        ON CONFLICT(file) DO UPDATE SET
                            downloaded_link = excluded.downloaded_link,
@@ -206,9 +215,14 @@ class DownloadManager:
     def _insert(self, job):
         try:
             with sqlite3.connect(self.api.db_path) as conn:
+                try:
+                    conn.execute("ALTER TABLE Download_Queue ADD COLUMN is_podcast INTEGER DEFAULT 0")
+                except Exception:
+                    pass
                 conn.execute(
-                    "INSERT INTO Download_Queue (qid, url, title, artist, status, progress) VALUES (?, ?, ?, ?, ?, ?)",
-                    (job['id'], job['url'], job['title'], job['artist'], job['status'], job['progress'])
+                    "INSERT INTO Download_Queue (qid, url, title, artist, status, progress, is_podcast) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (job['id'], job['url'], job['title'], job['artist'], job['status'], job['progress'],
+                     1 if job.get('is_podcast') else 0)
                 )
         except Exception as e:
             print(f" [Download] DB insert error: {e}")
@@ -229,8 +243,12 @@ class DownloadManager:
     def _fetch_job(self, job_id):
         try:
             with sqlite3.connect(self.api.db_path) as conn:
+                try:
+                    conn.execute("ALTER TABLE Download_Queue ADD COLUMN is_podcast INTEGER DEFAULT 0")
+                except Exception:
+                    pass
                 row = conn.execute(
-                    "SELECT url, title, artist FROM Download_Queue WHERE qid = ? ORDER BY id DESC LIMIT 1",
+                    "SELECT url, title, artist, is_podcast FROM Download_Queue WHERE qid = ? ORDER BY id DESC LIMIT 1",
                     (str(job_id),)
                 ).fetchone()
             return row

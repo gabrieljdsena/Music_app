@@ -8,20 +8,23 @@ Notes for developers working on Hathor.
 main.py               Entry point; window + startup, first-run remote prompt
 api.py                pywebview JS bridge (all methods callable from the UI)
 Download.py           yt-dlp downloader + iTunes metadata/artwork
-sync.py               DatabaseSync — MySQL/TiDB background sync
+sync.py               DatabaseSync — manual one-shot MySQL/TiDB push (+schema)
 database.sql          SQLite schema
 settings.py           Loads persisted settings from SQLite
 monitor.py            Debug RAM monitor (disabled)
 services/
-  playback.py         PlaybackController — queue, shuffle, repeat, position
-  metadata.py         MetadataManager — mutagen tag read/write, covers, deletes
-  database.py         DatabaseManager — SQLite CRUD + remote import
-  lyrics.py           LyricsService — fetch, cache, LRC parse, romaji
+  playback.py         PlaybackController — queue, shuffle, repeat, position, crossfade engine, queue-source persistence
+  metadata.py         MetadataManager — mutagen tag read/write, covers, deletes (songs + podcasts)
+  database.py         DatabaseManager — SQLite CRUD, library/podcast listings, daily mix, recents, queue rebuild + remote import
+  lyrics.py           LyricsService — fetch, cache, LRC parse, romaji, track-only fallback
   windows_media.py    WindowsMediaOverlay — winsdk SMTC media keys/overlay
-  __init__.py         Exports the five services
+  downloads.py        DownloadManager — bounded download pool, job log, retries
+  apple.py            AppleService — artist/album artwork lookups
+  startup_maintenance.py  FFmpeg auto-download + yt-dlp update checks
+  __init__.py         Exports the services
 ui/
   index.html          Main single-page app shell
-  views/*.html        View fragments (home, playlists, download, history, settings)
+  views/*.html        View fragments (home dashboard, all_songs, daily_mix, podcasts, artist, album, playlists, download, history, settings)
   modals/*.html       Modal fragments (add/edit playlist, edit song)
   input.css           Tailwind source (v4 syntax)
   output.css          Compiled Tailwind output (generated)
@@ -60,6 +63,7 @@ Edit **`ui/input.css`** (Tailwind v4 source) or `ui/css.css`, then restart the a
 - Follow the existing services pattern: define a class that takes `api` as its constructor arg so it can read shared state (`api.playing`, `api.song_list`, ...) and push to the UI via `api._window.evaluate_js(...)`.
 - Export it from `services/__init__.py`.
 - Keep `api.py` thin: delegate to the service and return its result.
+- New views that play audio must pass a queue `source` (`{type, id}`) to `populate_queue_from_list` so restarts rebuild the right queue; new tables need a `CREATE TABLE IF NOT EXISTS` in both `database.sql` and `Api._ensure_schema`, plus a remote mirror in `sync.py` if they should sync.
 
 ## Building the executable (PyInstaller)
 

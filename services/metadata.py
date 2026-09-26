@@ -44,8 +44,8 @@ class MetadataManager:
                 print(f" [Python] Failed to load metadata for {file_name}: {e}")
         return song_data
 
-    def get_cover_art_base64(self, file_name):
-        file_path = os.path.join(settings.path, file_name)
+    def get_cover_art_base64(self, file_name, base_path=None):
+        file_path = os.path.join(base_path or settings.path, file_name)
         if os.path.exists(file_path):
             try:
                 song_file = ID3(file_path)
@@ -130,11 +130,61 @@ class MetadataManager:
             except Exception as e:
                 print(f" [Python] Error deleting file: {e}")
 
+    def delete_podcast(self, song_data):
+        """Delete a podcast episode: file + Podcasts row (+ remote tombstone)."""
+        filename = song_data.get('File')
+        total_path = os.path.join(settings.podcasts_path, filename)
+
+        last_filename = self.api.last_song.get('File')
+
+        if str(last_filename) == str(filename):
+            pygame.mixer.music.stop()
+            if hasattr(pygame.mixer.music, 'unload'):
+                pygame.mixer.music.unload()
+            self.api.playing = False
+            self.api.first_play = True
+
+            if hasattr(self.api, 'media_controls'):
+                self.api.media_controls.set_stopped()
+
+            if getattr(self.api, '_window', None):
+                try:
+                    self.api._window.evaluate_js("if (typeof window.update_play_button_ui === 'function') { window.update_play_button_ui(false); }")
+                except Exception as e:
+                    print(f" [Python] update_play_button_ui JS error: {e}")
+
+        if os.path.exists(total_path):
+            try:
+                os.remove(total_path)
+                try:
+                    with sqlite3.connect(self.api.db_path) as conn:
+                        conn.execute("DELETE FROM Podcasts WHERE file = ?", (filename,))
+                    if getattr(self.api, 'db', None):
+                        self.api.db.record_deletion("podcasts", filename)
+                except Exception as db_err:
+                    print(f" [Python] Error cleaning up podcast from database: {db_err}")
+
+                if hasattr(self.api, 'playback'):
+                    self.api.playback.next_songs = [s for s in getattr(self.api.playback, 'next_songs', []) if s.get('File') != filename]
+                    self.api.playback.prev_songs = [s for s in getattr(self.api.playback, 'prev_songs', []) if s.get('File') != filename]
+                    queue_json = json.dumps(self.api.playback.next_songs)
+                else:
+                    self.api.next_songs = [s for s in getattr(self.api, 'next_songs', []) if s.get('File') != filename]
+                    self.api.prev_songs = [s for s in getattr(self.api, 'prev_songs', []) if s.get('File') != filename]
+                    queue_json = json.dumps(self.api.next_songs)
+
+                if getattr(self.api, '_window', None):
+                    self.api._window.evaluate_js(f"window.queue_songs = {queue_json}; if (typeof window.update_queue_ui === 'function') window.update_queue_ui();")
+            except Exception as e:
+                print(f" [Python] Error deleting file: {e}")
+
     def update_song_metadata(self, song_data):
         filename = song_data.get('File')
         print(f" [Python] Updating metadata for: {filename}")
         try:
-            total_path = os.path.join(settings.path, filename)
+            is_podcast = bool(song_data.get('IsPodcast'))
+            base_path = settings.podcasts_path if is_podcast else settings.path
+            total_path = os.path.join(base_path, filename)
             if not os.path.exists(total_path):
                 return False
 
@@ -227,7 +277,7 @@ class MetadataManager:
                         if (typeof window.fetchLyricsForCurrentSong === 'function') window.fetchLyricsForCurrentSong(window.current_playing_song);
                     """)
                 
-                pygame.mixer.music.load(os.path.join(settings.path, filename))
+                pygame.mixer.music.load(os.path.join(base_path, filename))
                 pygame.mixer.music.play(0, resume_pos)
                 
                 if hasattr(self.api, 'playback'):
@@ -242,12 +292,17 @@ class MetadataManager:
                 else:
                     self.api.playing = True
                     
-                if hasattr(self.api, 'media_controls'):
+            if hasattr(self.api, 'media_controls'):
+                # The OS overlay (winsdk) is flaky and must never fail a save
+                # whose tags already hit the disk.
+                try:
                     self.api.media_controls.update_overlay(
                         self.api.last_song.get('Title', 'Unknown'),
                         self.api.last_song.get('Artist', 'Unknown'),
                         self.api.last_song.get('CoverArt')
                     )
+                except Exception as e:
+                    print(f" [Python] Media overlay error (save unaffected): {e}")
 
             # Update backend lists
             lists_to_update = [getattr(self.api, 'song_list', [])]
@@ -292,7 +347,8 @@ class MetadataManager:
             # Database update
             try:
                 with sqlite3.connect(self.api.db_path) as conn:
-                    conn.execute("UPDATE Songs SET title = ?, artist = ? WHERE file = ?",
+                    table = "Podcasts" if is_podcast else "Songs"
+                    conn.execute(f"UPDATE {table} SET title = ?, artist = ? WHERE file = ?",
                         (song_data.get('Title', ''), song_data.get('Artist', ''), filename))
             except Exception as e:
                 print(f" [Python] DB error updating song: {e}")

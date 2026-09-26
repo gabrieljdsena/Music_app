@@ -54,6 +54,56 @@ class LyricsService:
 
         return clean_track, clean_artist
 
+    @staticmethod
+    def _artist_usable(artist_name):
+        """Whether the artist is real enough for an exact (/api/get) lookup."""
+        if not artist_name:
+            return False
+        return artist_name.strip().lower() not in ("unknown", "unknown artist")
+
+    def _lyrics_track_only_search(self, clean_track, duration_seconds=None):
+        """Fallback for songs with no known artist: track-only /api/search.
+
+        Accepts only a case-insensitive exact track-name match (skipping
+        instrumentals), so it can never attach the wrong song's lyrics.
+        Returns None quietly when nothing unambiguous is found.
+        """
+        if not clean_track:
+            return None
+        try:
+            params = {"track_name": clean_track}
+            if duration_seconds:
+                params["duration"] = int(duration_seconds)
+            url = "https://lrclib.net/api/search?" + urllib.parse.urlencode(params)
+            req = urllib.request.Request(url, headers={'User-Agent': 'MyMusicPlayer/1.0'})
+            with urllib.request.urlopen(req) as response:
+                if response.status != 200:
+                    return None
+                results = json.loads(response.read().decode()) or []
+            norm = re.sub(r'\s+', ' ', clean_track).strip().lower()
+            for item in results:
+                if not isinstance(item, dict) or item.get("instrumental"):
+                    continue
+                cand = re.sub(r'\s+', ' ', str(item.get("trackName") or "")).strip().lower()
+                if not cand or cand != norm:
+                    continue
+                synced = item.get("syncedLyrics")
+                plain = item.get("plainLyrics")
+                if not synced and not plain:
+                    return None
+                self.save_lyrics_for_current(synced, plain)
+                if kks:
+                    synced = self.romanize_text(synced, is_lrc=True) if synced else None
+                    plain = self.romanize_text(plain, is_lrc=False) if plain else None
+                return {"synced": synced, "plain": plain}
+            return None
+        except urllib.error.HTTPError as e:
+            print(f" [Python] Lyrics track search failed (HTTP {e.code}) for '{clean_track}'")
+            return None
+        except Exception as e:
+            print(f" [Python] Failed to fetch lyrics: {e}")
+            return None
+
     def save_lyrics_for_current(self, synced, plain):
         """Cache lyrics for the currently playing song so they're reused offline."""
         song_file = self.api.current_filename
@@ -97,9 +147,13 @@ class LyricsService:
                 print(f" [Python] Lyrics cache read error: {e}")
 
         # 2. Fetch from lrclib.net on cache miss
-        base_url = "https://lrclib.net/api/get"
-        
         clean_track, clean_artist = self._clean_track_artist(track_name, artist_name)
+        if not clean_track or not self._artist_usable(clean_artist):
+            # /api/get requires both fields (else HTTP 400): fall back to a
+            # track-only search and accept only an unambiguous match.
+            return self._lyrics_track_only_search(clean_track, duration_seconds)
+
+        base_url = "https://lrclib.net/api/get"
 
         params = {
             "track_name": clean_track,
@@ -140,7 +194,7 @@ class LyricsService:
             if e.code == 404:
                 print(f" [Python] Lyrics not found for {track_name} by {artist_name}")
             else:
-                print(f" [Python] HTTP Error: {e.code}")
+                print(f" [Python] Lyrics lookup failed (HTTP {e.code}) for '{track_name}' by '{artist_name}'")
         except Exception as e:
             print(f" [Python] Failed to fetch lyrics: {e}")
 

@@ -55,6 +55,22 @@ REMOTE_SCHEMA = [
         date_played TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS playlist_history (
+        id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        playlist_id BIGINT NOT NULL,
+        date_played TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS podcasts (
+        file VARCHAR(255) PRIMARY KEY,
+        downloaded_link VARCHAR(255),
+        title VARCHAR(255) NOT NULL,
+        date_download TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        artist VARCHAR(255)
+    )
+    """,
 ]
 
 
@@ -180,6 +196,29 @@ class DatabaseSync:
             remote_conn.commit()
         self._align_auto_increment(remote_conn, "playlists")
 
+    def _sync_podcasts(self, sqlite_conn, remote_conn):
+        """Upsert all podcasts from SQLite -> MySQL."""
+        try:
+            rows = sqlite_conn.execute("SELECT file, downloaded_link, title, date_download, artist FROM Podcasts").fetchall()
+        except Exception:
+            return
+        if not rows:
+            return
+        with remote_conn.cursor() as cur:
+            cur.executemany(
+                """
+                INSERT INTO podcasts (file, downloaded_link, title, date_download, artist)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    downloaded_link = VALUES(downloaded_link),
+                    title = VALUES(title),
+                    date_download = VALUES(date_download),
+                    artist = VALUES(artist)
+                """,
+                rows
+            )
+            remote_conn.commit()
+
     def _sync_song_playlist(self, sqlite_conn, remote_conn):
         """Full replace of song-playlist associations."""
         rows = sqlite_conn.execute("SELECT id, song_file, playlist_id, date_added FROM Song_Playlist").fetchall()
@@ -212,6 +251,31 @@ class DatabaseSync:
             remote_conn.commit()
         self._align_auto_increment(remote_conn, "lyrics")
 
+    def _sync_daily_mix(self, sqlite_conn, remote_conn):
+        """Push the local daily mix (last writer wins for a given date).
+
+        Only prunes remote mixes older than our newest local one, so an
+        outdated device can never delete a newer mix pushed by another one.
+        """
+        try:
+            rows = sqlite_conn.execute("SELECT mix_date, song_files FROM Daily_Mix").fetchall()
+        except Exception:
+            return
+        if not rows:
+            return
+        newest = max(r[0] for r in rows)
+        with remote_conn.cursor() as cur:
+            cur.execute("DELETE FROM daily_mix WHERE mix_date < %s", (newest,))
+            cur.executemany(
+                """
+                INSERT INTO daily_mix (mix_date, song_files)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE song_files = VALUES(song_files)
+                """,
+                [(r[0], r[1]) for r in rows]
+            )
+            remote_conn.commit()
+
     def _sync_history(self, sqlite_conn, remote_conn, table_sqlite, table_pg, columns):
         """Incremental sync for append-only history tables using max ID."""
         with remote_conn.cursor() as cur:
@@ -242,6 +306,7 @@ class DatabaseSync:
         """Propagate locally-deleted rows to the remote DB via tombstones."""
         REMOTE_DELETE_COLUMNS = {
             'songs': 'file',
+            'podcasts': 'file',
             'playlists': 'id',
             'lyrics': 'song_file',
             'music_history': 'song_file',
@@ -269,9 +334,11 @@ class DatabaseSync:
 
             self._apply_deletions(sqlite_conn, remote_conn)
             self._sync_songs(sqlite_conn, remote_conn)
+            self._sync_podcasts(sqlite_conn, remote_conn)
             self._sync_playlists(sqlite_conn, remote_conn)
             self._sync_song_playlist(sqlite_conn, remote_conn)
             self._sync_lyrics(sqlite_conn, remote_conn)
+            self._sync_daily_mix(sqlite_conn, remote_conn)
             self._sync_history(
                 sqlite_conn, remote_conn,
                 "Music_History", "music_history",
@@ -314,7 +381,11 @@ class DatabaseSync:
         print(" [Sync] Sync thread stopped.")
 
     def start(self):
-        """Initialize MySQL schema and start the background sync thread."""
+        """Initialize MySQL schema and start the background sync thread.
+
+        NOTE: background auto-sync is currently disabled (manual-only mode).
+        Kept for potential future use; nothing calls it.
+        """
         try:
             self._init_schema()
         except Exception as e:
@@ -324,6 +395,15 @@ class DatabaseSync:
         self._thread = threading.Thread(target=self._loop, daemon=True, name="db-sync")
         self._thread.start()
         print(f" [Sync] Background sync started (every {SYNC_INTERVAL}s).")
+
+    def sync_once(self):
+        """Run a single local -> remote push cycle on demand (manual button)."""
+        try:
+            self._init_schema()
+        except Exception as e:
+            return f"Could not connect to remote DB: {e}"
+        self._run_sync()
+        return "Local library pushed to remote DB."
 
     def stop(self):
         """Signal the sync thread to stop."""

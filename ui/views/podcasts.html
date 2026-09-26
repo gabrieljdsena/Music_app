@@ -1,0 +1,471 @@
+<div class="flex flex-col w-full h-full relative items-start">
+    <div class="flex-1 flex flex-col min-w-0 w-full h-full">
+        <!-- Header -->
+        <div class="max-w-5xl mx-auto w-full px-6 sm:px-8 pt-6 flex items-center gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-2xl font-bold text-zinc-100 truncate">Podcasts</h1>
+                    <p id="podcasts-count" class="text-xs text-zinc-500 tracking-wide">Loading…</p>
+                </div>
+            </div>
+            <div class="ml-auto flex items-center gap-2">
+                <button id="pod-play-all" title="Play all"
+                    class="flex items-center justify-center w-11 h-11 bg-orange-500 text-white rounded-full hover:bg-orange-400 transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(249,115,22,0.3)] focus:outline-none cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 ml-0.5">
+                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Bar Header (Glassmorphism) -->
+        <div id="search-header"
+            class="sticky top-0 w-full z-50 backdrop-blur-2xl bg-zinc-900/20 rounded-2xl border-b border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 sm:px-8 py-4 mt-4 flex justify-end items-center">
+            <div class="relative max-w-5xl mx-auto w-full flex justify-end">
+                <div class="relative group">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" placeholder="Search episodes..." id="pod_txt_search" spellcheck="false"
+                        class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-10 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
+                    <button
+                        id="pod_clearBtn"
+                        class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors duration-200 hidden"
+                        onclick="window.clearPodcastSearch()"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10 pt-6">
+            <div id="podcasts-list" class="flex flex-col gap-1">
+                <div class="py-16 text-center text-zinc-500 text-sm animate-pulse">Loading your episodes…</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="edit-song-modal-container"></div>
+
+<div id="pod-context-menu"
+    class="hidden fixed z-50 w-48 py-1 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl">
+    <button id="podm-play"
+        class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+            </path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Play
+    </button>
+    <button id="podm-next"
+        class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+        </svg>
+        Play Next
+    </button>
+    <button id="podm-addq"
+        class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 10h16M4 14h16M4 18h8m4-4v8m-4-4h8"></path>
+        </svg>
+        Add to Queue
+    </button>
+    <button id="podm-getmeta"
+        class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        Get Metadata
+    </button>
+    <button id="podm-edit"
+        class="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+            </path>
+        </svg>
+        Edit Info
+    </button>
+    <button id="podm-delete"
+        class="w-full text-left px-4 py-2 text-sm hover:bg-white/5 transition-colors flex items-center gap-2 text-red-400 hover:text-red-300 cursor-pointer">
+        <svg class="w-4 h-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+            </path>
+        </svg>
+        Delete
+    </button>
+</div>
+
+<script>
+    window._podSongsData = [];
+    window._podMenuFile = null;
+
+    function _podFormatDuration(totalSecs) {
+        totalSecs = Math.floor(totalSecs || 0);
+        if (!totalSecs) return '—';
+        const h = Math.floor(totalSecs / 3600);
+        const m = Math.floor((totalSecs % 3600) / 60);
+        const s = (totalSecs % 60).toString().padStart(2, '0');
+        if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s}`;
+        return `${m}:${s}`;
+    }
+
+    function _podFormatDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    window._podVisibleSongs = function () {
+        const list = [];
+        document.querySelectorAll("#podcasts-list .podcast-row").forEach(row => {
+            if (row.style.display !== "none" && row._songData) list.push(row._songData);
+        });
+        return list;
+    };
+
+    async function _podPlay(song) {
+        song.IsPodcast = true;
+        window.current_playing_song = song;
+        if (window.set_active_song_ui) window.set_active_song_ui(song);
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+            await window.pywebview.api.populate_queue_from_list(
+                song, window._podVisibleSongs(), null, { type: 'podcast', id: song.File });
+        }
+        await window.play_button(song);
+    }
+
+    function _podOpenMenu(file, x, y) {
+        const menu = document.getElementById('pod-context-menu');
+        if (!menu || !file) return;
+        window._podMenuFile = file;
+        menu.classList.remove('hidden');
+        const w = menu.offsetWidth || 192;
+        const h = menu.offsetHeight || 200;
+        const pad = 8;
+        let left = x, top = y;
+        if (left + w > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - w - pad);
+        if (top + h > window.innerHeight - pad) top = Math.max(pad, window.innerHeight - h - pad);
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+    }
+
+    function _podCloseMenu() {
+        const menu = document.getElementById('pod-context-menu');
+        if (menu) menu.classList.add('hidden');
+        window._podMenuFile = null;
+    }
+
+    function _podSongByFile(file) {
+        return ((window._podSongsData || []).find(s => s.File === file)) || null;
+    }
+
+    async function _podDetails(file) {
+        const api = (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+        if (api && typeof api.get_podcast_details === 'function') {
+            try {
+                const det = await api.get_podcast_details(file);
+                if (det && det.File) return det;
+            } catch (e) { console.error('Podcast details failed:', e); }
+        }
+        return _podSongByFile(file) || { File: file, IsPodcast: true };
+    }
+
+    async function _podRefreshFile(file) {
+        const det = await _podDetails(file);
+        if (!det || !det.File) return;
+        det.IsPodcast = true;
+        const idx = (window._podSongsData || []).findIndex(s => s.File === file);
+        if (idx > -1) window._podSongsData[idx] = det;
+        window._podRender();
+    }
+
+    async function _podGetMetadata(file) {
+        _podCloseMenu();
+        await _podRefreshFile(file);
+        if (typeof Notyf !== 'undefined') {
+            new Notyf({ position: { x: 'right', y: 'bottom' } }).success('Metadata loaded');
+        }
+    }
+
+    async function _podEdit(file) {
+        _podCloseMenu();
+        const song = await _podDetails(file);
+        song.IsPodcast = true;
+        if (typeof window.openEditModal === 'function') window.openEditModal(song);
+    }
+
+    async function _podDelete(file) {
+        const confirmed = (typeof Swal !== 'undefined')
+            ? (await Swal.fire({
+                title: 'Delete episode?',
+                text: 'The file will be permanently removed.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it'
+            })).isConfirmed
+            : confirm('Delete this episode?');
+        if (!confirmed) return;
+        try {
+            if (window.pywebview && window.pywebview.api) {
+                await window.pywebview.api.delete_podcast({ File: file });
+            }
+            window._podSongsData = (window._podSongsData || []).filter(s => s.File !== file);
+            const row = document.querySelector(`#podcasts-list .podcast-row[data-file="${CSS.escape(file)}"]`);
+            if (row) {
+                row.style.transition = 'opacity 0.2s';
+                row.style.opacity = '0';
+                setTimeout(() => row.remove(), 200);
+            }
+            const countEl = document.getElementById("podcasts-count");
+            if (countEl) {
+                const n = document.querySelectorAll("#podcasts-list .podcast-row").length - (row ? 1 : 0);
+                countEl.textContent = `${Math.max(0, n)} episode${n === 1 ? '' : 's'}`;
+            }
+        } catch (e) {
+            console.error("Failed to delete podcast:", e);
+        }
+    }
+
+    window._podRender = function () {
+        const list = document.getElementById("podcasts-list");
+        if (!list) return;
+        const songs = window._podSongsData || [];
+        list.innerHTML = '';
+        const countEl = document.getElementById("podcasts-count");
+        if (countEl) countEl.textContent = `${songs.length} episode${songs.length === 1 ? '' : 's'}`;
+        if (!songs.length) {
+            list.innerHTML = `<div class="py-16 flex flex-col items-center justify-center text-center opacity-70">
+                <p class="text-zinc-400 font-medium text-lg">No episodes yet</p>
+                <p class="text-sm text-zinc-500 mt-2 max-w-md">Download something and mark it as podcast / audio to build this library.</p>
+            </div>`;
+            return;
+        }
+        songs.forEach((song) => {
+            song.IsPodcast = true;
+            const row = document.createElement('div');
+            row.className = 'podcast-row grid grid-cols-[minmax(0,1fr)_auto_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group';
+            row.setAttribute('data-file', song.File || '');
+            row._songData = song;
+
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-3 overflow-hidden';
+            const cover = document.createElement('div');
+            cover.className = 'w-12 h-12 rounded-lg bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md';
+            if (song.CoverArt) {
+                const img = document.createElement('img');
+                img.src = song.CoverArt;
+                img.alt = song.Title || '';
+                img.className = 'w-full h-full object-cover';
+                cover.appendChild(img);
+            } else {
+                cover.innerHTML = `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg></div>`;
+            }
+            const meta = document.createElement('div');
+            meta.className = 'flex flex-col min-w-0';
+            const title = document.createElement('div');
+            title.className = 'podcast-title text-sm font-medium text-zinc-100 truncate group-hover:text-orange-400 transition-colors';
+            title.textContent = song.Title || 'Unknown Title';
+            const sub = document.createElement('div');
+            sub.className = 'text-xs text-zinc-500 truncate mt-0.5';
+            const parts = [];
+            if (song.Artist && song.Artist !== 'Unknown') parts.push(song.Artist);
+            const dstr = _podFormatDate(song.DateDownload);
+            if (dstr) parts.push(dstr);
+            sub.textContent = parts.join(' • ');
+            meta.appendChild(title);
+            meta.appendChild(sub);
+            left.appendChild(cover);
+            left.appendChild(meta);
+
+            const dur = document.createElement('div');
+            dur.className = 'text-sm text-zinc-500 font-medium text-right whitespace-nowrap';
+            dur.textContent = _podFormatDuration(song.Duration);
+
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'pod-menu-btn p-2 rounded-full text-zinc-600 hover:text-white hover:bg-white/10 transition-all focus:outline-none cursor-pointer';
+            menuBtn.title = 'More actions';
+            menuBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-white pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="5" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="19" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="12" cy="19" r="1.5"/><circle cx="19" cy="19" r="1.5"/></svg>`;
+            menuBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const r = menuBtn.getBoundingClientRect();
+                const menu = document.getElementById('pod-context-menu');
+                const w = (menu && !menu.classList.contains('hidden')) ? menu.offsetWidth : 192;
+                _podOpenMenu(song.File, r.right - w, r.bottom + 5);
+            });
+
+            row.appendChild(left);
+            row.appendChild(dur);
+            row.appendChild(menuBtn);
+            row.addEventListener('click', () => _podPlay(song));
+            list.appendChild(row);
+        });
+
+        const searchInput = document.getElementById("pod_txt_search");
+        if (searchInput && searchInput.value.trim()) {
+            window._podApplySearch(searchInput.value.toLowerCase());
+        }
+        if (window.current_playing_song && typeof window.set_active_song_ui === 'function') {
+            try { window.set_active_song_ui(window.current_playing_song); } catch (e) {}
+        }
+    };
+
+    window._podApplySearch = function (value) {
+        document.querySelectorAll("#podcasts-list .podcast-row").forEach(row => {
+            const s = row._songData || {};
+            const hay = `${s.Title || ''} ${s.Artist || ''}`.toLowerCase();
+            row.style.display = hay.indexOf(value) > -1 ? "" : "none";
+        });
+    };
+
+    window._podReload = async function () {
+        try {
+            const api = (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+            if (!api || typeof api.get_podcasts !== 'function') return;
+            window._podSongsData = await api.get_podcasts() || [];
+            window._podRender();
+        } catch (e) {
+            console.error("Failed to load podcasts:", e);
+        }
+    };
+
+    document.getElementById('pod-play-all').addEventListener('click', async function () {
+        const songs = window._podVisibleSongs();
+        if (!songs || songs.length === 0) return;
+        const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
+        const isFromHere = currentFile && songs.some(s => s.File === currentFile);
+        if (isFromHere) {
+            await window.toggle_play_pause();
+            return;
+        }
+        await _podPlay(songs[0]);
+    });
+
+    // Podcast bento menu wiring (fresh elements on every view load)
+    (function _podWireMenu() {
+        const byId = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.onclick = fn;
+        };
+        const menuSong = () => {
+            const f = window._podMenuFile;
+            const s = f && _podSongByFile(f);
+            if (s) s.IsPodcast = true;
+            return s || null;
+        };
+        const toast = (msg) => {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf({ position: { x: 'right', y: 'bottom' } }).success(msg);
+            }
+        };
+        byId('podm-play', () => {
+            const s = menuSong();
+            _podCloseMenu();
+            if (s) _podPlay(s);
+        });
+        byId('podm-next', () => {
+            const s = menuSong();
+            _podCloseMenu();
+            if (!s) return;
+            window.is_custom_queue = true;
+            window.queue_songs.unshift(s);
+            if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.next_to_queue) {
+                window.pywebview.api.next_to_queue(s);
+            }
+            toast({ message: `<b>${s.Title}</b> will play next`, duration: 3000 });
+        });
+        byId('podm-addq', () => {
+            const s = menuSong();
+            _podCloseMenu();
+            if (!s) return;
+            window.is_custom_queue = true;
+            window.queue_songs.push(s);
+            if (typeof window.update_queue_ui === 'function') window.update_queue_ui();
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.add_to_queue) {
+                window.pywebview.api.add_to_queue(s);
+            }
+            toast({ message: `Added <b>${s.Title}</b> to Queue`, duration: 3000 });
+        });
+        byId('podm-getmeta', () => { const f = window._podMenuFile; if (f) _podGetMetadata(f); });
+        byId('podm-edit', () => { const f = window._podMenuFile; if (f) _podEdit(f); });
+        byId('podm-delete', () => { const f = window._podMenuFile; _podCloseMenu(); if (f) _podDelete(f); });
+    })();
+
+    if (!window._podMenuEvents) {
+        window._podMenuEvents = true;
+        document.addEventListener('click', function (e) {
+            if (e.target && (e.target.closest('#pod-context-menu') || e.target.closest('.pod-menu-btn'))) return;
+            _podCloseMenu();
+        });
+        document.addEventListener('contextmenu', function (e) {
+            const row = (e.target && e.target.closest) ? e.target.closest('.podcast-row') : null;
+            if (!row) {
+                _podCloseMenu();
+                return;
+            }
+            e.preventDefault();
+            const file = row.getAttribute('data-file');
+            _podOpenMenu(file, e.clientX, e.clientY);
+        });
+    }
+
+    window.clearPodcastSearch = function () {
+        const input = document.getElementById("pod_txt_search");
+        if (input) {
+            input.value = "";
+            const clearBtn = document.getElementById("pod_clearBtn");
+            if (clearBtn) clearBtn.classList.add("hidden");
+            window._podApplySearch("");
+            input.focus();
+        }
+    };
+
+    if (!window.podSearchAttached) {
+        window.podSearchAttached = true;
+        let searchTimeout;
+        document.addEventListener("keyup", function (e) {
+            if (e.target && e.target.id === "pod_txt_search") {
+                clearTimeout(searchTimeout);
+                const value = e.target.value.toLowerCase();
+                const clearBtn = document.getElementById('pod_clearBtn');
+                if (clearBtn) clearBtn.classList.toggle('hidden', !(e.target.value.length > 0));
+                searchTimeout = setTimeout(() => window._podApplySearch(value), 150);
+            }
+        });
+    }
+
+    window._podReload();
+
+    fetch('modals/edit_song.html')
+        .then(response => response.text())
+        .then(html => {
+            const c = document.getElementById('edit-song-modal-container');
+            if (!c) return;
+            c.innerHTML = html;
+            const scripts = c.getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                window.eval(scripts[i].innerText);
+            }
+        }).catch(err => console.error('Failed to load modal:', err));
+</script>

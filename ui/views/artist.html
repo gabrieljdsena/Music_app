@@ -358,7 +358,7 @@
                     if (window.set_active_song_ui) window.set_active_song_ui(firstSong);
 
                     if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
-                        await window.pywebview.api.populate_queue_from_list(firstSong, window.currentArtistSongs, null);
+                        await window.pywebview.api.populate_queue_from_list(firstSong, window.currentArtistSongs, null, { type: 'artist', id: window.currentArtistName || null });
                     }
                     await window.play_button(firstSong);
                 }

@@ -77,6 +77,16 @@
       <input type="file" id="txtFileInput" accept=".txt" class="hidden">
     </div>
 
+    <!-- Save-as toggle: songs library vs podcasts library -->
+    <div class="flex justify-center mt-4">
+      <div class="inline-flex items-center gap-1 p-1 rounded-full bg-white/[0.05] border border-white/10">
+        <button id="dlModeSong" onclick="setDlMode(false)"
+          class="px-4 py-1.5 text-xs font-semibold rounded-full bg-orange-500 text-white transition-all duration-200 cursor-pointer">Songs</button>
+        <button id="dlModePod" onclick="setDlMode(true)"
+          class="px-4 py-1.5 text-xs font-semibold rounded-full text-zinc-400 hover:text-white transition-all duration-200 cursor-pointer">Podcast / Audio</button>
+      </div>
+    </div>
+
     <!-- Trending tags -->
     <div id="trending-tags" class="flex flex-wrap gap-2 mt-5 justify-center items-center min-h-[28px]">
       <span class="text-xs text-gray-500 tracking-wider uppercase">Trending:</span>
@@ -140,6 +150,37 @@
     y: 'bottom'
     }
   });
+
+  // Save-as mode: false = music library, true = podcasts library
+  window._downloadAsPodcast = window._downloadAsPodcast || false;
+
+  window.setDlMode = function(podcast) {
+    window._downloadAsPodcast = !!podcast;
+    [[document.getElementById('dlModeSong'), !podcast],
+     [document.getElementById('dlModePod'), podcast]].forEach(([btn, active]) => {
+      if (!btn) return;
+      btn.classList.toggle('bg-orange-500', active);
+      btn.classList.toggle('text-white', active);
+      btn.classList.toggle('text-zinc-400', !active);
+      btn.classList.toggle('hover:text-white', !active);
+    });
+  };
+
+  function _dlPayload(url, title) {
+    return window._downloadAsPodcast ? { url: url, title: title, is_podcast: true } : url;
+  }
+
+  function _dlSuccessLabel() {
+    return window._downloadAsPodcast ? 'Podcast Downloaded' : 'Song Downloaded';
+  }
+
+  function _dlRefreshLibrary() {
+    if (window._downloadAsPodcast) {
+      if (typeof window._podReload === 'function') window._podReload();
+    } else if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
+      window.pywebview.api.send_song_list();
+    }
+  }
 
   // New Search functionality
   window.search_click = async function() {
@@ -206,17 +247,15 @@
     
     searchInput.value = "";
     try {
-        const response = await window.pywebview.api.recieve_download(val);
+        const response = await window.pywebview.api.recieve_download(_dlPayload(val, val));
         const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
         if (isError) {
             notyf.error({ message: `Failed to download: ${val}`, duration: 0, dismissible: true });
             if (typeof window.update_download_progress === 'function') window.update_download_progress(val, 100, 'Failed');
         } else {
-            notyf.success(`Song Downloaded: ${val}`);
-            // Refresh song list so metadata is up-to-date
-            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
-                window.pywebview.api.send_song_list();
-            }
+            notyf.success(`${_dlSuccessLabel()}: ${val}`);
+            // Refresh the matching library so metadata is up-to-date
+            _dlRefreshLibrary();
         }
     } catch (e) {
         notyf.error({ message: `Download error: ${val}`, duration: 0, dismissible: true });
@@ -296,17 +335,15 @@
     
     try {
         // Pass the direct URL to the backend
-        const response = await window.pywebview.api.recieve_download(url);
+        const response = await window.pywebview.api.recieve_download(_dlPayload(url, title));
         const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
         if (isError) {
             notyf.error({ message: `Failed to download: ${title}`, duration: 0, dismissible: true });
             if (typeof window.update_download_progress === 'function') window.update_download_progress(url, 100, 'Failed');
         } else {
-            notyf.success(`Song Downloaded: ${title}`);
-            // Refresh song list so metadata is up-to-date
-            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
-                window.pywebview.api.send_song_list();
-            }
+            notyf.success(`${_dlSuccessLabel()}: ${title}`);
+            // Refresh the matching library so metadata is up-to-date
+            _dlRefreshLibrary();
         }
     } catch (e) {
         notyf.error({ message: `Failed to download: ${title}`, duration: 0, dismissible: true });
@@ -451,7 +488,7 @@
                       currentBarId = url;
                       window.add_progress_bar(currentBarId, bestResult.title);
                       
-                      const response = await window.pywebview.api.recieve_download(url);
+                      const response = await window.pywebview.api.recieve_download(_dlPayload(url, bestResult.title));
                       const isError = response === false || (typeof response === 'number' && response !== 0) || (typeof response === 'string' && response.toLowerCase().includes('error'));
                       if (isError) {
                           notyf.error({ message: `Failed: ${bestResult.title}`, duration: 0, dismissible: true });

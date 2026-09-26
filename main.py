@@ -25,7 +25,6 @@ import pygame
 #import monitor
 import settings
 from api import Api
-from sync import DatabaseSync
 
 
 # Persistent file log (hathor.log next to the DB) so issues can be
@@ -171,11 +170,12 @@ def on_resized(width, height):
     resize_timer = threading.Timer(0.4, save_window_size, args=(width, height))
     resize_timer.start()
 
-# 5. Setup MySQL/TiDB remote sync
-db_sync = None
-if os.getenv("DB_HOST"):
-    db_sync = DatabaseSync(db_path)
-else:
+# 5. Remote sync is manual-only (Settings buttons). No background thread.
+# `remote_configured` gates the first-run pull prompt; pushes/pulls otherwise
+# happen exclusively via Api.sync_local_to_remote /
+# Api.sync_remote_to_local_and_download.
+remote_configured = bool(os.getenv("DB_HOST"))
+if not remote_configured:
     print(" [Sync] No remote DB configured in .env, sync disabled.")
 
 def _run_startup_maintenance(window):
@@ -258,13 +258,10 @@ def on_start(window):
     #monitor_thread.start()
 
     # On first run with a remote DB, ask the user if they want to load from it
-    if is_first_run and db_sync:
+    if is_first_run and remote_configured:
         _prompt_remote_sync(window)
     else:
         api.load_current_song()
-        # Start background MySQL sync
-        if db_sync:
-            db_sync.start()
 
 def _prompt_remote_sync(window):
     """Show a SweetAlert2 dialog asking the user to load data from the remote DB."""
@@ -325,16 +322,12 @@ def _prompt_remote_sync(window):
             else:
                 print(" [Python] User chose to start fresh.")
             
-            # Load songs & start regular sync regardless of choice
+            # Load songs regardless of choice (sync stays manual-only)
             api.load_current_song()
-            if db_sync:
-                db_sync.start()
-                
+                 
         except Exception as e:
             print(f" [Python] Remote sync prompt error: {e}")
             api.load_current_song()
-            if db_sync:
-                db_sync.start()
     
     threading.Thread(target=do_prompt, daemon=True).start()
 

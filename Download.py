@@ -127,7 +127,7 @@ class MusicDownloader:
             name = name[:150].rstrip()
         return name or 'Unknown'
 
-    def download_song(self, search, progress_callback=None):
+    def download_song(self, search, progress_callback=None, dest_path=None, is_podcast=False):
         self._check_update_ytdlp_once()
 
         # Resolve FFmpeg from PATH, the auto-downloaded copy, or the bundle --
@@ -143,7 +143,7 @@ class MusicDownloader:
         
         print(f" [Python] Searching and Downloading: {search}")
         
-        appdata_path = settings.path
+        appdata_path = dest_path or settings.path
         os.makedirs(appdata_path, exist_ok=True)
         
         ydl_opts = {
@@ -184,18 +184,26 @@ class MusicDownloader:
             
             if progress_callback:
                 progress_callback({'status': 'processing_metadata'})
-                
-            # Try to get better metadata from iTunes
-            itunes_metadata = self.search_itunes(info.get('title'), info.get('uploader'))
-            
-            if itunes_metadata:
-                metadata = itunes_metadata
-            else:
-                # Fallback to yt-dlp data
+
+            if is_podcast:
+                # Podcasts keep the uploader's own title/author: no iTunes
+                # song-match (it mangles episode names) and no artwork fetch.
                 metadata = {
                     'title': info.get('title', ''),
                     'artist': info.get('uploader', '')
                 }
+            else:
+                # Try to get better metadata from iTunes
+                itunes_metadata = self.search_itunes(info.get('title'), info.get('uploader'))
+
+                if itunes_metadata:
+                    metadata = itunes_metadata
+                else:
+                    # Fallback to yt-dlp data
+                    metadata = {
+                        'title': info.get('title', ''),
+                        'artist': info.get('uploader', '')
+                    }
             
             final_path = self.apply_metadata(output_file, metadata)
             if not final_path:

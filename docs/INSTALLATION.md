@@ -85,7 +85,7 @@ On first run, `main.py` creates the SQLite database (`music_player.db`) from `da
 %appdata%\musicPlayer
 ```
 
-for `.mp3` files. You can point it at another folder later from the settings view (or via `update_songs_path` in the API).
+for `.mp3` files. You can point it at another folder later from the settings view (or via `update_songs_path` in the API). The podcasts library works the same way from its own folder (`%appdata%\musicPlayerPodcasts` by default).
 
 ## Troubleshooting
 

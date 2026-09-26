@@ -1,759 +1,273 @@
-<div class="flex flex-col xl:flex-row w-full h-full relative items-start">
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 w-full h-full">
-        <!-- Search Bar Header (Glassmorphism) -->
-        <div id="search-header"
-            class="sticky top-0 w-full z-50 backdrop-blur-2xl bg-zinc-900/20 rounded-2xl border-b border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 sm:px-8 py-4 flex justify-end items-center">
-            <div class="relative max-w-5xl mx-auto w-full flex justify-end">
-                <div class="relative group">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                        class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+<div class="max-w-6xl mx-auto w-full pt-8 px-6 sm:px-8 pb-24 flex flex-col gap-8">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                <path d="M11.47 3.84a.75.75 0 011.06 0l8.99 8.99a.75.75 0 11-1.06 1.06L12 5.43 3.53 13.89a.75.75 0 11-1.06-1.06L11.47 3.84z" />
+                <path d="M4.5 12.93v7.32c0 .41.34.75.75.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h2.5a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-7.32l-7.5-7.5-7.5 7.5z" />
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-3xl font-bold text-zinc-100">Home</h1>
+            <p id="home-date-subtitle" class="text-sm text-zinc-500 mt-1 tracking-wide">Pick what to listen to</p>
+        </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- All Songs card -->
+        <div id="home-card-all-songs"
+            class="group relative rounded-3xl overflow-hidden p-6 sm:p-8 flex flex-col gap-6 bg-zinc-900/40 border border-white/5 hover:border-orange-500/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 cursor-pointer hover:shadow-orange-500/10 min-h-[260px]">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none"></div>
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+            <div class="relative z-10 flex items-start justify-between">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
-                    <input type="text" placeholder="Search..." id="txt_search" spellcheck="false"
-                        class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-10 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
-                    <button
-                        id="home_clearBtn"
-                        class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors duration-200 hidden"
-                        onclick="window.clearHomeSearch()"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </button>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/40 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 ml-0.5">
+                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" />
+                    </svg>
                 </div>
             </div>
-        </div>
-        <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10 pt-6">
-            <div id="table">
-                <!-- Header Row -->
-                <div id="table-header"
-                    class="grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
-                        data-sort-key="Title" onclick="window._homeSortColumn('Title')">Song <span
-                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
-                        data-sort-key="Album" onclick="window._homeSortColumn('Album')">Album <span
-                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
-                        data-sort-key="Duration" onclick="window._homeSortColumn('Duration')">Duration <span
-                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
-                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
-                        data-sort-key="DateDownload" onclick="window._homeSortColumn('DateDownload')">Downloaded
-                        <span class="sort-arrow text-orange-400 text-[10px]"></span>
-                    </div>
-                    <div></div>
-                </div>
 
-                <!-- Body Row -->
-                <div id="table-body" class="flex flex-col gap-1 pb-2">
-                    <!-- Loading placeholders -->
-                    <div
-                        class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-full"></div>
-                                <div class="h-3 bg-white/10 rounded w-2/3"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-32"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 100ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-4/5"></div>
-                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-24"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 200ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-5/6"></div>
-                                <div class="h-3 bg-white/10 rounded w-3/4"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-28"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 300ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-3/4"></div>
-                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-32"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 400ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-11/12"></div>
-                                <div class="h-3 bg-white/10 rounded w-2/3"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-20"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 500ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-4/5"></div>
-                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-24"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 600ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-full"></div>
-                                <div class="h-3 bg-white/10 rounded w-3/4"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-36"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 700ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-3/4"></div>
-                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-28"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 800ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-4/5"></div>
-                                <div class="h-3 bg-white/10 rounded w-2/3"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-32"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 900ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-5/6"></div>
-                                <div class="h-3 bg-white/10 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-24"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 1000ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-full"></div>
-                                <div class="h-3 bg-white/10 rounded w-3/4"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-28"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
-                    <div class="song-row grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 items-center p-3 px-4 -mx-4 rounded-xl animate-pulse opacity-50"
-                        style="animation-delay: 1100ms">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-md bg-white/10 flex-shrink-0"></div>
-                            <div class="flex flex-col gap-2 w-full max-w-[200px]">
-                                <div class="h-4 bg-white/10 rounded w-3/4"></div>
-                                <div class="h-3 bg-white/10 rounded w-1/3"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="h-4 bg-white/10 rounded w-32"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="h-4 bg-white/10 rounded w-10"></div>
-                        </div>
-                        <div class="flex justify-end">
-                            <div class="w-5 h-5 rounded-full bg-white/10"></div>
-                        </div>
-                    </div>
+            <div class="relative z-10 mt-auto">
+                <h2 class="text-2xl font-bold text-zinc-100 group-hover:text-orange-400 transition-colors">All Songs</h2>
+                <p id="home-all-songs-count" class="text-sm text-zinc-500 mt-1">Loading library…</p>
+                <p class="text-xs text-zinc-600 mt-3 leading-relaxed">Browse, search and sort your full library.</p>
+            </div>
+        </div>
+
+        <!-- Daily Mix card -->
+        <div id="home-card-daily-mix"
+            class="group relative rounded-3xl overflow-hidden p-6 sm:p-8 flex flex-col gap-6 bg-zinc-900/40 border border-white/5 hover:border-orange-500/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 cursor-pointer hover:shadow-orange-500/10 min-h-[260px]">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none"></div>
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-orange-600/15 rounded-full blur-[80px] pointer-events-none"></div>
+
+            <div class="relative z-10 flex items-start justify-between">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
                 </div>
+                <span id="home-daily-badge" class="text-[11px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/30">Today</span>
+            </div>
+
+            <div class="relative z-10 mt-auto">
+                <h2 class="text-2xl font-bold text-zinc-100 group-hover:text-orange-400 transition-colors">Daily Mix</h2>
+                <p id="home-daily-count" class="text-sm text-zinc-500 mt-1">Generating your mix…</p>
+                <p class="text-xs text-zinc-600 mt-3 leading-relaxed">Fresh every day.</p>
             </div>
         </div>
     </div>
+
+    <!-- Recently Played (horizontal) -->
+    <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between px-1">
+            <h2 class="text-xl font-bold text-zinc-100">Recently Played</h2>
+            <button onclick="_homeGo('history')"
+                class="text-xs font-semibold uppercase tracking-widest text-zinc-500 hover:text-orange-400 transition-colors cursor-pointer focus:outline-none">See all</button>
+        </div>
+        <div id="home-recent-row" class="flex gap-4 overflow-x-auto pb-3 custom-scrollbar">
+            <div class="text-sm text-zinc-500 animate-pulse py-8">Loading…</div>
+        </div>
+    </div>
+
+    <!-- Recently Downloaded (horizontal) -->
+    <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between px-1">
+            <h2 class="text-xl font-bold text-zinc-100">Recently Downloaded</h2>
+            <button onclick="_homeGo('history')"
+                class="text-xs font-semibold uppercase tracking-widest text-zinc-500 hover:text-orange-400 transition-colors cursor-pointer focus:outline-none">See all</button>
+        </div>
+        <div id="home-downloaded-row" class="flex gap-4 overflow-x-auto pb-3 custom-scrollbar">
+            <div class="text-sm text-zinc-500 animate-pulse py-8">Loading…</div>
+        </div>
+    </div>
+
 </div>
-
-
 
 <div id="edit-song-modal-container"></div>
 <div id="add-playlist-modal-container"></div>
 
 <script>
-    window.generateSongRowHtml = function (song) {
-        const durationSecs = Math.floor(song.Duration || 0);
-        const minutes = Math.floor(durationSecs / 60);
-        const seconds = (durationSecs % 60).toString().padStart(2, '0');
-        const formattedDuration = `${minutes}:${seconds}`;
-
-        const coverArt = song.CoverArt
-            ? `<img src="${song.CoverArt}" class="w-full h-full object-cover" alt="${song.Title}">`
-            : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
-
-        const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
-        const thisFile = song.File;
-        const isActive = currentFile && thisFile && (currentFile === thisFile);
-        const activeClasses = isActive ? "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30" : "";
-        const titleColor = isActive ? "text-orange-400" : "text-zinc-100";
-
-        const visualizerHtml = isActive ? `
-            <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-                <div class="visualizer-bar"></div>
-            </div>
-        ` : '';
-
-        const isPlaylist = song.DateAdded !== undefined;
-        const gridCols = "grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto]";
-
-        let dateAddedHtml = "";
-        if (isPlaylist) {
-            let dateStr = "";
-            if (song.DateAdded) {
-                const d = new Date(song.DateAdded);
-                if (!isNaN(d.getTime())) {
-                    dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                }
-            }
-            dateAddedHtml = `<div class="text-sm text-zinc-500 text-right truncate"><span class="hover:text-zinc-400">${dateStr}</span></div>`;
-        } else {
-            let dateDownloadStr = "";
-            if (song.DateDownload) {
-                const d = new Date(song.DateDownload);
-                if (!isNaN(d.getTime())) {
-                    dateDownloadStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                }
-            }
-            dateAddedHtml = `<div class="text-sm text-zinc-500 text-right truncate"><span class="hover:text-zinc-400">${dateDownloadStr}</span></div>`;
+    function _homeGo(page) {
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo(page);
+        } else if (typeof navigateTo === 'function') {
+            navigateTo(page);
         }
+    }
 
-        return `
-        <div class="song-row grid ${gridCols} gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group ${activeClasses}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
-            <div class="flex items-center gap-3 overflow-hidden">
-                ${visualizerHtml}
-                <div class="w-10 h-10 rounded-md bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md cover-art-container">
-                    ${coverArt}
-                </div>
-                <div class="flex flex-col overflow-hidden">
-                    <div class="song-title font-medium ${titleColor} group-hover:text-orange-400 transition-colors truncate">${song.Title || "Unknown Title"}</div>
-                    <div class="artist-link cursor-pointer hover:text-orange-400 transition-colors text-sm truncate" data-artist="${(song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${song.Artist || "Unknown Artist"}</div>
-                </div>
-            </div>
-            <div class="text-sm text-zinc-500 truncate"><span class="album-link hover:text-orange-400 transition-colors cursor-pointer" data-album="${(song.Album || "Unknown Album").replace(/"/g, '&quot;')}" data-artist="${(song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${song.Album || "Unknown Album"}</span></div>
-            <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
-            ${dateAddedHtml}
-            <div class="flex items-center justify-end">
-                <button class="bento-btn p-2 hover:bg-white/10 hover:cursor-pointer rounded-full transition-colors focus:outline-none" aria-label="Menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <circle cx="5" cy="5" r="1.5"/>
-                        <circle cx="12" cy="5" r="1.5"/>
-                        <circle cx="19" cy="5" r="1.5"/>
-                        <circle cx="5" cy="12" r="1.5"/>
-                        <circle cx="12" cy="12" r="1.5"/>
-                        <circle cx="19" cy="12" r="1.5"/>
-                        <circle cx="5" cy="19" r="1.5"/>
-                        <circle cx="12" cy="19" r="1.5"/>
-                        <circle cx="19" cy="19" r="1.5"/>
-                    </svg>
-                </button>
-            </div>
-        </div>`;
-    };
+    document.getElementById('home-card-all-songs').addEventListener('click', () => _homeGo('all_songs'));
+    document.getElementById('home-card-daily-mix').addEventListener('click', () => _homeGo('daily_mix'));
 
-    if (window.lazyRowObserver) window.lazyRowObserver.disconnect();
-    window.lazyRowObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const container = entry.target;
-            if (entry.isIntersecting) {
-                if (!container.hasAttribute('data-rendered')) {
-                    const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
-                    if (songData) {
-                        container.innerHTML = window.generateSongRowHtml(songData);
-                        container.setAttribute('data-rendered', 'true');
+    // Home dashboard exposes no song list (cards only).
+    window._homeSongsData = [];
+    window._homeRenderedSongs = [];
+    window._homeRecentSongs = [];
+    window._homeDownloadedSongs = [];
+    window.get_current_home_view_songs = function () { return []; };
 
-                        const cover = container.querySelector('.lazy-cover');
-                        if (cover && window.lazyCoverObserver) {
-                            window.lazyCoverObserver.observe(cover);
-                        }
-                    }
-                }
+    function _homePlayFromStrip(song, queueKey) {
+        (async () => {
+            const queue = window[queueKey] || [];
+            const source = queueKey === '_homeDownloadedSongs'
+                ? { type: 'recently_downloaded', id: null }
+                : { type: 'recently_played', id: null };
+            window.current_playing_song = song;
+            if (window.set_active_song_ui) window.set_active_song_ui(song);
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+                await window.pywebview.api.populate_queue_from_list(song, queue, null, source);
+            }
+            await window.play_button(song);
+        })();
+    }
+
+    function _homeRenderStrip(rowId, songs, queueKey, emptyText) {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        window[queueKey] = songs || [];
+        row.innerHTML = '';
+        if (!window[queueKey].length) {
+            row.innerHTML = `<div class="py-8 text-sm text-zinc-500">${emptyText}</div>`;
+            return;
+        }
+        window[queueKey].forEach((song) => {
+            const card = document.createElement('div');
+            card.className = 'home-strip-card group relative w-36 sm:w-44 flex-shrink-0 rounded-2xl overflow-hidden bg-zinc-900/40 border border-white/5 hover:border-orange-500/40 transition-all duration-300 cursor-pointer';
+            if (song.File) card.setAttribute('data-file', song.File);
+            card._songData = song;
+
+            const cover = document.createElement('div');
+            cover.className = 'strip-cover aspect-square w-full bg-zinc-800 overflow-hidden relative';
+            if (song.CoverArt) {
+                const img = document.createElement('img');
+                img.src = song.CoverArt;
+                img.alt = song.Title || '';
+                img.className = 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-500';
+                cover.appendChild(img);
             } else {
-                if (container.hasAttribute('data-rendered')) {
-                    container.style.minHeight = container.offsetHeight + 'px';
-                    container.innerHTML = '';
-                    container.removeAttribute('data-rendered');
-                }
+                const lazy = document.createElement('div');
+                lazy.className = 'w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover';
+                if (song.File) lazy.setAttribute('data-filename', song.File);
+                lazy.innerHTML = `<svg class="w-10 h-10 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>`;
+                cover.appendChild(lazy);
+                if (window.lazyCoverObserver) window.lazyCoverObserver.observe(lazy);
             }
-        });
-    }, { rootMargin: '300px' });
 
-    // Helper function to guarantee only one active song UI at a time
-    window.set_active_song_ui = function (songData) {
-        const activeClasses = ["bg-orange-500/10", "scale-[1.02]", "shadow-xl", "relative", "z-10", "ring-1", "ring-orange-500/30"];
-
-        document.querySelectorAll(".song-row").forEach(row => {
-            row.classList.remove(...activeClasses);
-            const title = row.querySelector(".song-title");
-            if (title) {
-                title.classList.remove("text-orange-400");
-                title.classList.add("text-zinc-100");
-            }
-        });
-        document.querySelectorAll(".list-visualizer").forEach(vis => vis.remove());
-
-        if (!songData) return;
-        const fileName = songData.File;
-        const targetInstanceId = songData._instanceId || null;
-        
-        let seenFiles = {};
-
-        document.querySelectorAll(".song-row").forEach(row => {
-            const rowData = typeof window.songDataFromRow === 'function' ? window.songDataFromRow(row) : null;
-            if (rowData && rowData.File === fileName) {
-                let isMatch = false;
-                if (targetInstanceId) {
-                    if (rowData._instanceId === targetInstanceId) {
-                        isMatch = true;
-                    }
-                } else {
-                    if (!seenFiles[fileName]) {
-                        isMatch = true;
-                        seenFiles[fileName] = true;
-                    }
-                }
-                
-                if (isMatch) {
-                    row.classList.add(...activeClasses);
-                    const title = row.querySelector(".song-title");
-                    if (title) {
-                        title.classList.remove("text-zinc-100");
-                        title.classList.add("text-orange-400");
-                    }
-                    const coverContainer = row.querySelector(".cover-art-container");
-                    if (coverContainer) {
-                        coverContainer.insertAdjacentHTML('beforebegin', `
-                        <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
-                            <div class="visualizer-bar"></div>
-                        </div>
-                                `);
-                    }
-                }
-            }
-        });
-    };
-
-    // Initialize a small cache to save RAM while scrolling up/down
-    window._coverCache = window._coverCache || new Map();
-
-    // Setup the Intersection Observer for lazy loading covers
-    window.lazyCoverObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            const container = entry.target;
-            const fileName = container.getAttribute('data-filename');
-
-            if (entry.isIntersecting) {
-                if (fileName && !container.hasAttribute('data-loaded')) {
-                    // Store the fallback HTML if not already stored
-                    if (!container.hasAttribute('data-fallback')) {
-                        container._fallbackHTML = container.innerHTML;
-                        container.setAttribute('data-fallback', 'true');
-                    }
-
-                    // Debounce fetching: wait 150ms before asking Python to prevent IPC flooding
-                    container._loadTimeout = setTimeout(() => {
-                        container.setAttribute('data-loaded', 'true');
-
-                        // Check JS memory cache first
-                        if (window._coverCache.has(fileName)) {
-                            container.innerHTML = `<img src="${window._coverCache.get(fileName)}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
-                            return;
-                        }
-
-                        if (window.pywebview && window.pywebview.api) {
-                            window.pywebview.api.get_cover_art_base64(fileName).then(base64 => {
-                                if (base64) {
-                                    // Limit cache size to ~30 images to free up memory
-                                    if (window._coverCache.size > 30) {
-                                        const firstKey = window._coverCache.keys().next().value;
-                                        window._coverCache.delete(firstKey);
-                                    }
-                                    window._coverCache.set(fileName, base64);
-
-                                    if (container.hasAttribute('data-loaded')) {
-                                        container.innerHTML = `<img src="${base64}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
-                                    }
-                                }
-                            }).catch(e => console.error(e));
-                        }
-                    }, 150);
-                }
-            } else {
-                // Cancel pending load if user scrolled past it quickly
-                if (container._loadTimeout) {
-                    clearTimeout(container._loadTimeout);
-                    container._loadTimeout = null;
-                }
-
-                // Unload the image when it goes off screen to free up memory
-                if (container.hasAttribute('data-loaded')) {
-                    container.removeAttribute('data-loaded');
-                    if (container.hasAttribute('data-fallback') && container._fallbackHTML) {
-                        container.innerHTML = container._fallbackHTML;
-                    }
-                }
-            }
-        });
-    }, { rootMargin: "100px" }); // Reduced margin to avoid loading too many off-screen elements
-
-    window.update_song_row_ui = function (oldFilename, newSongData) {
-        // Always invalidate cover cache for this file so fresh art loads
-        if (window._coverCache) {
-            window._coverCache.delete(oldFilename);
-            if (newSongData.File && newSongData.File !== oldFilename) {
-                window._coverCache.delete(newSongData.File);
-            }
-            // If new cover art is provided, cache it
-            if (newSongData.CoverArt && newSongData.CoverArt !== 'REMOVE') {
-                window._coverCache.set(newSongData.File || oldFilename, newSongData.CoverArt);
-            }
-        }
-
-        document.querySelectorAll('.song-row-container').forEach(container => {
-            const cData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
-            if (cData && cData.File === oldFilename) {
-                container._songData = newSongData;
-                if (container.hasAttribute('data-home-idx')) {
-                    container.removeAttribute('data-path');
-                } else {
-                    container.setAttribute('data-path', JSON.stringify(newSongData));
-                }
-                // Force re-render by clearing rendered state and re-observing
-                container.removeAttribute('data-rendered');
-                container.innerHTML = '';
-                if (window.lazyRowObserver) {
-                    window.lazyRowObserver.unobserve(container);
-                    window.lazyRowObserver.observe(container);
-                }
-            }
-        });
-
-        // Update in-memory arrays so sorting/filtering/scrolling uses new data
-        if (window._homeSongsData) {
-            window._homeSongsData.forEach(song => {
-                if (song.File === oldFilename) {
-                    Object.assign(song, newSongData);
-                }
-            });
-        }
-        if (window._pvSongsData) {
-            window._pvSongsData.forEach(song => {
-                if (song.File === oldFilename) {
-                    Object.assign(song, newSongData);
-                }
-            });
-        }
-        if (window.currentPlaylistSongs) {
-            window.currentPlaylistSongs.forEach(song => {
-                if (song.File === oldFilename) {
-                    Object.assign(song, newSongData);
-                }
-            });
-        }
-        if (window.currentArtistSongs) {
-            window.currentArtistSongs.forEach(song => {
-                if (song.File === oldFilename) {
-                    Object.assign(song, newSongData);
-                }
-            });
-        }
-        if (window.currentAlbumSongs) {
-            window.currentAlbumSongs.forEach(song => {
-                if (song.File === oldFilename) {
-                    Object.assign(song, newSongData);
-                }
-            });
-        }
-
-        // Refresh lists to fix layout gaps and re-sort if necessary
-        if (typeof window._homeRenderSorted === 'function') {
-            window._homeRenderSorted();
-        }
-        if (typeof window._pvRenderSorted === 'function') {
-            window._pvRenderSorted();
-        }
-        if (typeof window._avRenderSorted === 'function') {
-            window._avRenderSorted();
-        }
-    };
-
-    // Python -> JS
-    // ── Sorting state for home view ──
-    window._homeSortKey = null;
-    window._homeSortDir = 'asc'; // 'asc' or 'desc'
-    window._homeSongsData = []; // keep a reference to the raw data
-
-    window._homeSortColumn = function (key) {
-        if (window._homeSortKey === key) {
-            window._homeSortDir = window._homeSortDir === 'asc' ? 'desc' : 'asc';
-        } else {
-            window._homeSortKey = key;
-            window._homeSortDir = 'asc';
-        }
-        // Update arrow indicators
-        document.querySelectorAll('#table-header [data-sort-key] .sort-arrow').forEach(el => {
-            el.textContent = '';
-        });
-        const activeHeader = document.querySelector(`#table-header [data-sort-key="${key}"] .sort-arrow`);
-        if (activeHeader) {
-            activeHeader.textContent = window._homeSortDir === 'asc' ? '▲' : '▼';
-        }
-        window._homeRenderSorted();
-    };
-
-    window._homeRenderSorted = function () {
-        let sorted = [...window._homeSongsData];
-        const key = window._homeSortKey;
-        const dir = window._homeSortDir;
-        if (key) {
-            sorted.sort((a, b) => {
-                let valA, valB;
-                if (key === 'Duration') {
-                    valA = a.Duration || 0;
-                    valB = b.Duration || 0;
-                } else if (key === 'DateDownload') {
-                    valA = a.DateDownload ? new Date(a.DateDownload).getTime() : 0;
-                    valB = b.DateDownload ? new Date(b.DateDownload).getTime() : 0;
-                } else {
-                    valA = (a[key] || '').toString().toLowerCase();
-                    valB = (b[key] || '').toString().toLowerCase();
-                }
-                if (valA < valB) return dir === 'asc' ? -1 : 1;
-                if (valA > valB) return dir === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-        window._homeRenderedSongs = sorted;
-        let tableHtmlBuffer = "";
-        sorted.forEach((song, idx) => {
-            if (!song._instanceId) song._instanceId = 'home_' + idx + '_' + Date.now();
-            tableHtmlBuffer += `
-            <div class="song-row-container" style="min-height: 64px;" data-home-idx="${idx}">
+            const overlay = document.createElement('div');
+            overlay.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center';
+            overlay.innerHTML = `<div class="w-11 h-11 rounded-full bg-orange-500 hover:bg-orange-400 flex items-center justify-center text-white shadow-lg shadow-orange-500/40 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 ml-0.5"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" /></svg>
             </div>`;
+            cover.appendChild(overlay);
+
+            const meta = document.createElement('div');
+            meta.className = 'p-3 flex flex-col min-w-0';
+            const title = document.createElement('div');
+            title.className = 'strip-title text-sm font-medium text-zinc-100 truncate group-hover:text-orange-400 transition-colors';
+            title.textContent = song.Title || 'Unknown Title';
+            const artist = document.createElement('div');
+            artist.className = 'text-xs text-zinc-500 truncate mt-0.5';
+            artist.textContent = song.Artist || 'Unknown Artist';
+            meta.appendChild(title);
+            meta.appendChild(artist);
+
+            card.appendChild(cover);
+            card.appendChild(meta);
+            card.addEventListener('click', () => _homePlayFromStrip(song, queueKey));
+            row.appendChild(card);
         });
-        const tableBody = document.getElementById("table-body");
-        if (tableBody) {
-            tableBody.innerHTML = tableHtmlBuffer;
-            const containers = tableBody.querySelectorAll(".song-row-container");
-            containers.forEach((container, i) => {
-                container._songData = sorted[i] || null;
-                if (window.lazyRowObserver) window.lazyRowObserver.observe(container);
-            });
-        }
-
-        // Re-apply active search filter after sort
-        const searchInput = document.getElementById("txt_search");
-        if (searchInput && searchInput.value.trim()) {
-            const value = searchInput.value.toLowerCase();
-            document.querySelectorAll("#table-body .song-row-container").forEach(container => {
-                const songData = container._songData || {};
-                const title = (songData.Title || "").toLowerCase();
-                const artist = (songData.Artist || "").toLowerCase();
-                const album = (songData.Album || "").toLowerCase();
-                if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
-                    container.style.display = "";
-                } else {
-                    container.style.display = "none";
-                }
-            });
-        }
-    };
-
-    window.song_list = function (data) {
-        if (window._coverCache) window._coverCache.clear(); // Clear cover cache on refresh
-        window._homeSongsData = data;
-        window._homeRenderSorted();
     }
 
-    window.get_current_home_view_songs = function() {
-        const list = [];
-        document.querySelectorAll("#table-body .song-row-container").forEach(container => {
-            if (container.style.display !== "none") {
-                const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
-                if (songData) list.push(songData);
+    (function initHomeDashboard() {
+        const dateEl = document.getElementById('home-date-subtitle');
+        if (dateEl) {
+            try {
+                dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+            } catch (e) {}
+        }
+
+        async function api() {
+            if (window.pywebview && window.pywebview.api) return window.pywebview.api;
+            await new Promise(resolve => window.addEventListener('pywebviewready', resolve, { once: true }));
+            return window.pywebview.api;
+        }
+
+        (async () => {
+            try {
+                const py = await api();
+                if (py && typeof py.get_library_count === 'function') {
+                    const count = await py.get_library_count();
+                    const el = document.getElementById('home-all-songs-count');
+                    if (el) el.textContent = `${count} song${count === 1 ? '' : 's'} in your library`;
+                } else if (py && typeof py.get_all_songs === 'function') {
+                    const songs = await py.get_all_songs();
+                    const el = document.getElementById('home-all-songs-count');
+                    if (el) el.textContent = `${(songs || []).length} songs in your library`;
+                }
+            } catch (e) {
+                const el = document.getElementById('home-all-songs-count');
+                if (el) el.textContent = 'Browse your full library';
             }
-        });
-        return list;
-    };
 
-    if (!window.homeEventHandlersAttached) {
-        window.homeEventHandlersAttached = true;
-
-        let searchTimeout;
-        document.addEventListener("keyup", function (e) {
-            if (e.target && e.target.id === "txt_search") {
-                clearTimeout(searchTimeout);
-                const value = e.target.value.toLowerCase();
-
-                const clearBtn = document.getElementById('home_clearBtn');
-                if (clearBtn) {
-                    if (e.target.value.length > 0) {
-                        clearBtn.classList.remove('hidden');
-                    } else {
-                        clearBtn.classList.add('hidden');
+            try {
+                const py = await api();
+                if (py && typeof py.get_daily_mix === 'function') {
+                    const mix = await py.get_daily_mix();
+                    const songs = (mix && mix.songs) || [];
+                    const date = (mix && mix.date) || '';
+                    const el = document.getElementById('home-daily-count');
+                    if (el) {
+                        let dateStr = date;
+                        try {
+                            dateStr = new Date(date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                        } catch (err) {}
+                        el.textContent = `${songs.length} songs · ${dateStr}`;
                     }
                 }
-
-                searchTimeout = setTimeout(function () {
-                    const containers = document.querySelectorAll("#table-body .song-row-container");
-                    containers.forEach(container => {
-                        const songData = container._songData || {};
-                        const title = (songData.Title || "").toLowerCase();
-                        const artist = (songData.Artist || "").toLowerCase();
-                        const album = (songData.Album || "").toLowerCase();
-                        if (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) {
-                            container.style.display = "";
-                        } else {
-                            container.style.display = "none";
-                        }
-                    });
-                }, 150);
+            } catch (e) {
+                const el = document.getElementById('home-daily-count');
+                if (el) el.textContent = 'A fresh mix every day';
             }
-        });
 
-    }
+            try {
+                const py = await api();
+                if (py && typeof py.get_recently_played === 'function') {
+                    const recent = await py.get_recently_played(15);
+                    _homeRenderStrip('home-recent-row', recent || [], '_homeRecentSongs', 'Nothing played yet — play something and it will show up here.');
+                }
+            } catch (e) {
+                const row = document.getElementById('home-recent-row');
+                if (row) row.innerHTML = `<div class="py-8 text-sm text-zinc-500">Could not load recently played.</div>`;
+            }
 
-    window.clearHomeSearch = function() {
-        const input = document.getElementById("txt_search");
-        if (input) {
-            input.value = "";
-            const clearBtn = document.getElementById("home_clearBtn");
-            if (clearBtn) clearBtn.classList.add("hidden");
-            input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-            input.focus();
-        }
-    };
+            try {
+                const py = await api();
+                if (py && typeof py.get_recently_downloaded === 'function') {
+                    const downloaded = await py.get_recently_downloaded(15);
+                    _homeRenderStrip('home-downloaded-row', downloaded || [], '_homeDownloadedSongs', 'Nothing downloaded yet — grab some music and it will show up here.');
+                }
+            } catch (e) {
+                const row = document.getElementById('home-downloaded-row');
+                if (row) row.innerHTML = `<div class="py-8 text-sm text-zinc-500">Could not load recently downloaded.</div>`;
+            }
+
+            // If something is already playing, mark it in the strips.
+            if (window.current_playing_song && typeof window.set_active_song_ui === 'function') {
+                try { window.set_active_song_ui(window.current_playing_song); } catch (e) {}
+            }
+        })();
+    })();
 
     fetch('modals/edit_song.html')
         .then(response => response.text())
         .then(html => {
             document.getElementById('edit-song-modal-container').innerHTML = html;
-
-            // Execute any script tags inside the fetched HTML (since innerHTML doesn't auto-run scripts)
             const scripts = document.getElementById('edit-song-modal-container').getElementsByTagName('script');
             for (let i = 0; i < scripts.length; i++) {
                 window.eval(scripts[i].innerText);
@@ -769,5 +283,4 @@
                 window.eval(scripts[i].innerText);
             }
         }).catch(err => console.error('Failed to load add_playlist modal:', err));
-
 </script>

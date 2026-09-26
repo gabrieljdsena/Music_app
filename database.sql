@@ -6,6 +6,14 @@ create table if not exists Songs(
     artist varchar(255) null
 );
 
+create table if not exists Podcasts(
+    file varchar(255) PRIMARY KEY,
+    downloaded_link varchar(255) null,
+    title varchar(255) not null,
+    date_download datetime default CURRENT_TIMESTAMP,
+    artist varchar(255) null
+);
+
 create table if not exists Playlists(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title varchar(255) not null,
@@ -34,9 +42,13 @@ create table if not exists Settings(
     window_height int,
     background_path varchar(255),
     songs_path varchar(255),
+    podcasts_path varchar(255),
     browser varchar(50),
     queue_songs text,
     custom_queue integer DEFAULT 0,
+    queue_source text,
+    crossfade_enabled integer DEFAULT 0,
+    crossfade_seconds real DEFAULT 5,
     FOREIGN KEY (current_song) REFERENCES Songs(file)
 );
 
@@ -50,6 +62,7 @@ create table if not exists Download_Queue(
     progress real DEFAULT 0,
     error text,
     filename varchar(255),
+    is_podcast integer DEFAULT 0,
     created_at datetime default CURRENT_TIMESTAMP,
     updated_at datetime default CURRENT_TIMESTAMP
 );
@@ -80,6 +93,12 @@ create table if not exists Sync_Deletions(
     table_name varchar(255) not null,
     row_key varchar(255) not null,
     deleted_at datetime default CURRENT_TIMESTAMP
+);
+
+create table if not exists Daily_Mix(
+    mix_date varchar(10) PRIMARY KEY,
+    song_files text not null,
+    created_at datetime default CURRENT_TIMESTAMP
 );
 
 

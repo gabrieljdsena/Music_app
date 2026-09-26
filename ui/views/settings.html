@@ -51,6 +51,39 @@
             </div>
         </div>
 
+        <!-- Podcasts Folder -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-zinc-200 font-medium">Podcasts / Audio Folder</h3>
+                    <p class="text-xs text-zinc-500 mt-0.5">Separate library for non-music downloads</p>
+                    <p id="current-podcasts-path"
+                        class="text-xs text-orange-400/80 mt-1 font-mono truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button
+                    onclick="if(window.pywebview && window.pywebview.api) { if(typeof notyf !== 'undefined') notyf.success('Syncing podcasts...'); window.pywebview.api.sync_local_podcasts_to_db().then(res => { if(typeof notyf !== 'undefined') notyf.success(res); else alert(res); }); }"
+                    class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                    Sync Now
+                </button>
+                <button
+                    onclick="if(window.pywebview && window.pywebview.api) window.pywebview.api.pick_podcasts_folder().then(res => { if(res) { document.getElementById('current-podcasts-path').innerText = res; document.getElementById('current-podcasts-path').title = res; if (typeof notyf !== 'undefined') { notyf.success('Folder updated'); } else { alert('Folder updated to: ' + res); } } })"
+                    class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                    Change Folder
+                </button>
+            </div>
+        </div>
+
         <!-- Setting Row 2 -->
         <div
             class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
@@ -116,6 +149,43 @@
                 Save
             </button>
         </div>
+        <!-- Playback: Crossfade & Gapless -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-zinc-200 font-medium">Crossfade</h3>
+                    <p class="text-xs text-zinc-500 mt-0.5">Overlap the end of each song into the next. Gapless handoff is always on.</p>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span class="flex items-center gap-2 text-xs text-zinc-400 select-none">
+                            <input id="crossfade_enabled" type="checkbox" class="hidden" tabindex="-1">
+                            <button id="crossfade_toggle" type="button" role="switch" aria-checked="false"
+                                aria-label="Enable crossfade" data-on="0" class="xf-switch">
+                                <span class="xf-knob"></span>
+                            </button>
+                            Enabled
+                        </span>
+                        <input id="crossfade_seconds" type="range" min="1" max="12" step="1" value="5"
+                            class="w-32 sm:w-40 cursor-pointer outline-none">
+                        <span id="crossfade_seconds_label"
+                            class="text-xs text-orange-400/80 font-mono w-8">5s</span>
+                    </div>
+                </div>
+            </div>
+            <button id="saveCrossfadeBtn"
+                onclick="if(window.pywebview && window.pywebview.api) { const en = document.getElementById('crossfade_enabled').checked; const sec = parseFloat(document.getElementById('crossfade_seconds').value); window.pywebview.api.set_crossfade(en, sec).then(res => { if(typeof notyf !== 'undefined') notyf.success(res); else alert(res); }); }"
+                class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                Save
+            </button>
+        </div>
         <!-- Setting Row 4 -->
         <div
             class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
@@ -148,6 +218,30 @@
                     class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-zinc-200 font-medium">Sync Local to Remote DB</h3>
+                    <p class="text-xs text-zinc-500 mt-0.5">Pushes your songs, playlists, lyrics and history to the remote database</p>
+                </div>
+            </div>
+            <button
+                onclick="if(window.pywebview && window.pywebview.api) { if(typeof notyf !== 'undefined') notyf.success('Pushing to remote database...'); window.pywebview.api.sync_local_to_remote().then(res => { if(typeof notyf !== 'undefined') notyf.success(res); else alert(res); }); }"
+                class="px-5 py-2.5 hover:cursor-pointer text-sm font-medium text-zinc-200 bg-white/5 hover:bg-orange-500 hover:text-white border border-white/10 hover:border-orange-500 rounded-lg transition-all duration-300 shadow-md">
+                Push to Remote
+            </button>
+        </div>
+
+        <!-- Setting Row 6 -->
+        <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all duration-300 group">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-400 transition-colors border border-white/5 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10">
                         </path>
                     </svg>
@@ -166,9 +260,87 @@
     </div>
 </div>
 
+<style>
+    /* Themed toggle switch (matches orange gradient buttons/logo) */
+    .xf-switch {
+        width: 40px; height: 22px; border-radius: 9999px; flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative; cursor: pointer; padding: 0;
+        transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .xf-switch:hover { border-color: rgba(249, 115, 22, 0.4); }
+    .xf-switch .xf-knob {
+        position: absolute; top: 50%; transform: translateY(-50%); left: 3px;
+        width: 16px; height: 16px; border-radius: 9999px; background: #71717a;
+        transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s;
+    }
+    .xf-switch[data-on="1"] {
+        background: linear-gradient(to right, #fb923c, #ea580c);
+        border-color: rgba(249, 115, 22, 0.5);
+        box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+    }
+    .xf-switch[data-on="1"] .xf-knob { left: 21px; background: #fff; }
+</style>
+
 <script>
     // Request settings when this view loads
     if (window.pywebview && window.pywebview.api) {
         window.pywebview.api.load_settings();
     }
+
+    // Crossfade controls Live-update the label, then load saved prefs
+    (function initCrossfadeRow() {
+        const slider = document.getElementById('crossfade_seconds');
+        const label = document.getElementById('crossfade_seconds_label');
+        const checkbox = document.getElementById('crossfade_enabled');
+        const toggle = document.getElementById('crossfade_toggle');
+        window.paintCrossfadeToggle = function (on) {
+            on = !!on;
+            if (checkbox) checkbox.checked = on;
+            if (toggle) {
+                toggle.dataset.on = on ? '1' : '0';
+                toggle.setAttribute('aria-checked', on ? 'true' : 'false');
+            }
+        };
+        if (toggle) {
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.paintCrossfadeToggle(!(checkbox && checkbox.checked));
+            });
+        }
+        if (slider && label) {
+            const syncLabel = () => { label.textContent = `${slider.value}s`; };
+            const syncFill = () => {
+                const min = parseFloat(slider.min) || 0;
+                const max = parseFloat(slider.max) || 100;
+                const val = parseFloat(slider.value) || 0;
+                const pct = max === min ? 0 : ((val - min) / (max - min)) * 100;
+                slider.style.setProperty('--range-percent', `${pct}%`);
+            };
+            const syncAll = () => { syncLabel(); syncFill(); };
+            slider.addEventListener('input', syncAll);
+            syncAll();
+        }
+        async function load() {
+            try {
+                const api = (window.pywebview && window.pywebview.api) ? window.pywebview.api : null;
+                if (!api || typeof api.get_playback_settings !== 'function') return;
+                const prefs = await api.get_playback_settings();
+                if (!prefs) return;
+                window.paintCrossfadeToggle(!!prefs.crossfade_enabled);
+                if (slider) {
+                    slider.value = prefs.crossfade_seconds || 5;
+                    slider.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } catch (e) {
+                console.error('Failed to load playback settings:', e);
+            }
+        }
+        if (window.pywebview && window.pywebview.api) {
+            load();
+        } else {
+            window.addEventListener('pywebviewready', load, { once: true });
+        }
+    })();
 </script>

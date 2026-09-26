@@ -56,6 +56,10 @@ class Api:
                 for column, ddl in {
                     'queue_songs': 'TEXT',
                     'custom_queue': 'INTEGER DEFAULT 0',
+                    'queue_source': 'TEXT',
+                    'podcasts_path': 'TEXT',
+                    'crossfade_enabled': 'INTEGER DEFAULT 0',
+                    'crossfade_seconds': 'REAL DEFAULT 5',
                 }.items():
                     try:
                         conn.execute(f"ALTER TABLE Settings ADD COLUMN {column} {ddl}")
@@ -76,6 +80,26 @@ class Api:
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS Daily_Mix (
+                        mix_date varchar(10) PRIMARY KEY,
+                        song_files text not null,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS Podcasts (
+                        file varchar(255) PRIMARY KEY,
+                        downloaded_link varchar(255),
+                        title varchar(255) NOT NULL,
+                        date_download DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        artist varchar(255)
+                    )
+                """)
+                try:
+                    conn.execute("ALTER TABLE Download_Queue ADD COLUMN is_podcast INTEGER DEFAULT 0")
+                except sqlite3.OperationalError:
+                    pass
         except Exception as e:
             print(f" [Python] Schema migration error: {e}")
         
@@ -85,8 +109,8 @@ class Api:
     def populate_queue(self, current_song):
         return self.playback.populate_queue(current_song)
 
-    def populate_queue_from_list(self, current_song, song_list, playlist_id=None):
-        return self.playback.populate_queue_from_list(current_song, song_list, playlist_id)
+    def populate_queue_from_list(self, current_song, song_list, playlist_id=None, source=None):
+        return self.playback.populate_queue_from_list(current_song, song_list, playlist_id, source)
             
     def jump_to_queue_index(self, index):
         return self.playback.jump_to_queue_index(index)
@@ -126,8 +150,22 @@ class Api:
         return self.playback.play_prev()
 
     def progress_slider_click(self, sec):
+        try:
+            self.playback._cancel_crossfade()
+        except Exception:
+            pass
+        # Always (re)load through the music module: after a crossfade the
+        # module may still hold the previous song.
+        try:
+            if self.current_filename:
+                base = settings.podcasts_path if (self.last_song or {}).get('IsPodcast') else settings.path
+                pygame.mixer.music.load(os.path.join(base, str(self.current_filename)))
+        except Exception as e:
+            print(f" [Python] Could not load song file for seek: {e}")
+            return
         pygame.mixer.music.play(0, float(sec))
         self.playback.current_time_offset = float(sec)
+        self.playback.last_play_time = time.time()
         if not self.playing:
             pygame.mixer.music.pause()
             self.playback.pause_time = float(sec)
@@ -257,6 +295,33 @@ class Api:
     def get_songs_by_album(self, album):
         return self.db.get_songs_by_album(album)
 
+    def get_all_songs(self):
+        return self.db.get_all_songs()
+
+    def get_podcasts(self):
+        return self.db.get_podcasts()
+
+    def get_podcast_details(self, file):
+        return self.db.get_podcast_details(file)
+
+    def sync_local_podcasts_to_db(self):
+        return self.db.sync_local_podcasts_to_db()
+
+    def delete_podcast(self, song_data):
+        return self.metadata.delete_podcast(song_data)
+
+    def get_library_count(self):
+        return self.db.get_library_count()
+
+    def get_daily_mix(self):
+        return self.db.get_daily_mix()
+
+    def get_recently_played(self, limit=15):
+        return self.db.get_recently_played(limit)
+
+    def get_recently_downloaded(self, limit=15):
+        return self.db.get_recently_downloaded(limit)
+
     def get_download_history(self, page=1, limit=10):
         return self.db.get_download_history(page, limit)
 
@@ -269,6 +334,17 @@ class Api:
     def sync_remote_to_local_and_download(self):
         return self.db.sync_remote_to_local_and_download()
 
+    def sync_local_to_remote(self):
+        """Manual one-shot push of the local library to the remote DB."""
+        if not os.getenv("DB_HOST"):
+            return "No remote DB configured. Remote sync unavailable."
+        try:
+            from sync import DatabaseSync
+            return DatabaseSync(self.db_path).sync_once()
+        except Exception as e:
+            print(f" [Python] Push sync error: {e}")
+            return f"Error: {e}"
+
     # ==========================
     # Native Application Logic
     # ==========================
@@ -280,6 +356,52 @@ class Api:
                 conn.execute("UPDATE Settings SET current_volume = ?", (volume,))
         except Exception as e:
             print(f" [Python] Database error: {e}")
+        # Keep the crossfade channel in sync when it is the active output
+        try:
+            self.playback.sync_output_volume()
+        except Exception:
+            pass
+
+    def get_playback_settings(self):
+        """Crossfade prefs for the Settings UI."""
+        try:
+            enabled = bool(getattr(settings, 'crossfade_enabled', False))
+        except Exception:
+            enabled = False
+        try:
+            seconds = float(getattr(settings, 'crossfade_seconds', 5) or 0)
+        except (TypeError, ValueError):
+            seconds = 5.0
+        return {'crossfade_enabled': enabled, 'crossfade_seconds': seconds}
+
+    def set_crossfade(self, enabled, seconds):
+        """Persist crossfade prefs and apply them live."""
+        if isinstance(enabled, str):
+            enabled = enabled.lower() in ('1', 'true', 'on', 'yes')
+        else:
+            enabled = bool(enabled)
+        try:
+            seconds = max(0.0, min(12.0, float(seconds)))
+        except (TypeError, ValueError):
+            seconds = 5.0
+        settings.crossfade_enabled = enabled
+        settings.crossfade_seconds = seconds
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "UPDATE Settings SET crossfade_enabled = ?, crossfade_seconds = ?",
+                    (int(enabled), seconds),
+                )
+        except Exception as e:
+            print(f" [Python] Database error: {e}")
+        try:
+            self.playback.crossfade_enabled = enabled
+            self.playback.crossfade_seconds = seconds
+        except Exception:
+            pass
+        if enabled and seconds > 0:
+            return f"Crossfade on ({seconds:g}s). Gapless handoff always on."
+        return "Crossfade off. Gapless handoff always on."
 
     def update_download_limit(self, limit):
         settings.limit_downloads = str(limit)
@@ -312,6 +434,14 @@ class Api:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute("UPDATE Settings SET songs_path = ?", (songs_path,))
+        except Exception as e:
+            print(f" [Python] Database error: {e}")
+
+    def update_podcasts_path(self, podcasts_path):
+        settings.podcasts_path = str(podcasts_path)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("UPDATE Settings SET podcasts_path = ?", (podcasts_path,))
         except Exception as e:
             print(f" [Python] Database error: {e}")
 
@@ -417,8 +547,9 @@ class Api:
     def load_settings(self):
         safe_bg = json.dumps(settings.background)
         safe_path = json.dumps(settings.path)
+        safe_podcasts = json.dumps(getattr(settings, 'podcasts_path', ''))
         if self._window:
-            self._window.evaluate_js(f"if (typeof window.load_settings === 'function') window.load_settings({settings.volume}, {settings.limit_downloads}, {safe_bg}, {safe_path});")
+            self._window.evaluate_js(f"if (typeof window.load_settings === 'function') window.load_settings({settings.volume}, {settings.limit_downloads}, {safe_bg}, {safe_path}, {safe_podcasts});")
 
     def load_current_song(self):
         try:
@@ -434,29 +565,99 @@ class Api:
                         self.song_list = local_list
 
             with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor().execute("SELECT current_song, current_playlist FROM Settings LIMIT 1")
+                cursor = conn.cursor().execute("SELECT current_song, current_playlist, queue_source FROM Settings LIMIT 1")
                 data = cursor.fetchone()
                 if data and data[0]:
                     file = data[0]
                     playlist_id = data[1]
-                    self.playback.current_playlist_id = playlist_id
+                    try:
+                        source = json.loads(data[2]) if len(data) > 2 and data[2] else None
+                    except Exception:
+                        source = None
+                    # Legacy rows predate queue_source: a stored playlist id
+                    # still means "playing from that playlist".
+                    if not isinstance(source, dict) and playlist_id is not None:
+                        source = {'type': 'playlist', 'id': playlist_id}
+                    if isinstance(source, dict):
+                        self.playback.current_playlist_id = (
+                            source.get('id') if source.get('type') == 'playlist' else None
+                        )
+                    else:
+                        self.playback.current_playlist_id = playlist_id
                     
-                    file_path = os.path.join(settings.path, file)
+                    base_path = settings.podcasts_path if isinstance(source, dict) and source.get('type') == 'podcast' else settings.path
+                    file_path = os.path.join(base_path, file)
                     song_data = self.metadata.get_song_metadata(file_path, file, include_cover=True)
+                    if isinstance(source, dict) and source.get('type') == 'podcast':
+                        song_data['IsPodcast'] = True
                     self.play_button(song_data, True)
                     
                     if not self.playback.restore_saved_queue(song_data):
-                        if playlist_id is not None:
-                            playlist_songs = self.db.get_playlist_songs(playlist_id)
-                            if playlist_songs:
-                                self.populate_queue_from_list(song_data, playlist_songs, playlist_id)
-                            else:
-                                self.populate_queue(song_data)
-                        else:
+                        if not self._rebuild_queue_from_source(song_data, file, source):
                             self.populate_queue(song_data)
                 
         except Exception as e:
             print(f" [Python] Database error: {e}")
+
+    def _rebuild_queue_from_source(self, song_data, file, source):
+        """Rebuild the queue from the persisted playback context.
+
+        Returns True when the queue was rebuilt (current song found in the
+        source list), False to let the caller fall back to the general list.
+        A stale source (deleted playlist, reset daily mix, renamed artist)
+        simply misses and falls back.
+        """
+        try:
+            if not isinstance(source, dict):
+                return False
+            stype = source.get('type')
+            sid = source.get('id')
+            songs = None
+            playlist_id = None
+            refresh_source = source
+
+            if stype == 'playlist':
+                try:
+                    playlist_id = int(sid)
+                except (TypeError, ValueError):
+                    return False
+                songs = self.db.get_playlist_songs(playlist_id)
+            elif stype == 'daily_mix':
+                # The mix resets every day: rebuild from TODAY's mix. If the
+                # song isn't in it anymore, the caller falls back gracefully.
+                mix = self.db.get_daily_mix()
+                songs = mix.get('songs', []) if isinstance(mix, dict) else []
+                refresh_source = {'type': 'daily_mix', 'id': mix.get('date') if isinstance(mix, dict) else None}
+            elif stype == 'artist' and sid:
+                songs = self.db.get_songs_by_artist(str(sid))
+            elif stype == 'album' and sid:
+                songs = self.db.get_songs_by_album(str(sid))
+            elif stype == 'recently_played':
+                songs = self.db.get_recently_played()
+            elif stype == 'recently_downloaded':
+                songs = self.db.get_recently_downloaded()
+            elif stype == 'podcast' and file:
+                # Single-episode queue (no playlists/queue for podcasts). The
+                # episode may be gone (folder moved, file deleted) -> fall back.
+                pod_path = os.path.join(settings.podcasts_path, file)
+                if os.path.exists(pod_path):
+                    song_data = self.metadata.get_song_metadata(pod_path, file)
+                    song_data['IsPodcast'] = True
+                    self.populate_queue_from_list(song_data, [song_data], None, source)
+                    return True
+                return False
+            elif stype == 'all_songs':
+                return False
+            else:
+                return False
+
+            if not songs or not any(s.get('File') == file for s in songs):
+                return False
+            self.populate_queue_from_list(song_data, songs, playlist_id, refresh_source)
+            return True
+        except Exception as e:
+            print(f" [Python] Queue rebuild error: {e}")
+            return False
 
     def js_log(self, message):
         """Receive log lines from the frontend (window.onerror /
@@ -518,6 +719,18 @@ class Api:
             )
             if result and len(result) > 0:
                 self.update_songs_path(result[0])
+                return result[0]
+        return None
+
+    def pick_podcasts_folder(self):
+        import webview
+        if self._window:
+            result = self._window.create_file_dialog(
+                webview.FOLDER_DIALOG,
+                allow_multiple=False
+            )
+            if result and len(result) > 0:
+                self.update_podcasts_path(result[0])
                 return result[0]
         return None
 

@@ -173,7 +173,7 @@
     </style>
 
     <!-- FIX: Added w-full to ensure the page container respects the screen width -->
-    <div id="page" class="flex flex-row w-full flex-1" style="min-height:0;">
+    <div id="page" class="flex flex-row w-full flex-1 mb-28" style="min-height:0;">
         <aside id="sidebar"
             class="w-64 flex-shrink-0 flex flex-col border-r border-orange-500/10 bg-black/40 backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-10 relative shadow-[4px_0_24px_rgba(0,0,0,0.5)] overflow-hidden">
             <!-- Glassmorphism glare effect -->
@@ -236,6 +236,20 @@
                             clip-rule="evenodd" />
                     </svg>
                     <span class="nav-text font-medium tracking-wide">Download</span>
+                </a>
+                <a href="#" data-target="podcasts"
+                    class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white group-[.active-nav]:text-white group-[.active-nav]:bg-orange-500/10 hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden"
+                    title="Podcasts">
+                    <div
+                        class="nav-indicator absolute left-0 top-1/4 bottom-1/4 w-1 bg-orange-500 rounded-r-full scale-y-0 group-hover:scale-y-100 group-[.active-nav]:scale-y-100 transition-transform duration-300 origin-center">
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                        class="w-6 h-6 mr-3 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-[.active-nav]:scale-110 group-hover:text-orange-400 group-[.active-nav]:text-orange-400">
+                        <path
+                            d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                    </svg>
+                    <span class="nav-text font-medium tracking-wide">Podcasts</span>
                 </a>
                 <a href="#" data-target="playlist_home"
                     class="nav-link group flex items-center p-3 rounded-xl text-zinc-400 hover:text-white group-[.active-nav]:text-white group-[.active-nav]:bg-orange-500/10 hover:bg-orange-500/10 transition-all duration-300 relative overflow-hidden"
@@ -774,6 +788,377 @@
             return null;
         };
 
+        // Active list-view songs for queue building. Tries every known
+        // list view (home legacy, all_songs, daily_mix) in order.
+        window.get_current_list_view_songs = function () {
+            const getters = [
+                'get_current_home_view_songs',
+                'get_current_all_songs_view_songs',
+                'get_current_daily_view_songs'
+            ];
+            for (const name of getters) {
+                try {
+                    if (typeof window[name] === 'function') {
+                        const list = window[name]();
+                        if (list && list.length > 0) return list;
+                    }
+                } catch (e) {}
+            }
+            return [];
+        };
+
+        // ── Shared song-row helpers (used by All Songs / Daily Mix / playlists) ──
+        // Defined once here so views don't depend on home.html having loaded.
+        window._coverCache = window._coverCache || new Map();
+
+        if (!window.generateSongRowHtml) {
+        window.generateSongRowHtml = function (song) {
+            const durationSecs = Math.floor(song.Duration || 0);
+            const minutes = Math.floor(durationSecs / 60);
+            const seconds = (durationSecs % 60).toString().padStart(2, '0');
+            const formattedDuration = `${minutes}:${seconds}`;
+
+            const coverArt = song.CoverArt
+                ? `<img src="${song.CoverArt}" class="w-full h-full object-cover" alt="${song.Title}">`
+                : `<div class="w-full h-full bg-zinc-800 flex items-center justify-center lazy-cover" data-filename="${song.File ? song.File.replace(/"/g, '&quot;') : ''}"><svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></div>`;
+
+            const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
+            const thisFile = song.File;
+            const isActive = currentFile && thisFile && (currentFile === thisFile);
+            const activeClasses = isActive ? "bg-orange-500/10 scale-[1.02] shadow-xl relative z-10 ring-1 ring-orange-500/30" : "";
+            const titleColor = isActive ? "text-orange-400" : "text-zinc-100";
+
+            const visualizerHtml = isActive ? `
+                <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                </div>
+            ` : '';
+
+            const isPlaylist = song.DateAdded !== undefined;
+            const gridCols = "grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto]";
+
+            let dateAddedHtml = "";
+            if (isPlaylist) {
+                let dateStr = "";
+                if (song.DateAdded) {
+                    const d = new Date(song.DateAdded);
+                    if (!isNaN(d.getTime())) {
+                        dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    }
+                }
+                dateAddedHtml = `<div class="text-sm text-zinc-500 text-right truncate"><span class="hover:text-zinc-400">${dateStr}</span></div>`;
+            } else {
+                let dateDownloadStr = "";
+                if (song.DateDownload) {
+                    const d = new Date(song.DateDownload);
+                    if (!isNaN(d.getTime())) {
+                        dateDownloadStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    }
+                }
+                dateAddedHtml = `<div class="text-sm text-zinc-500 text-right truncate"><span class="hover:text-zinc-400">${dateDownloadStr}</span></div>`;
+            }
+
+            return `
+            <div class="song-row grid ${gridCols} gap-4 items-center p-3 px-4 -mx-4 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer group ${activeClasses}" data-path="${JSON.stringify(song).replace(/"/g, '&quot;')}">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    ${visualizerHtml}
+                    <div class="w-10 h-10 rounded-md bg-zinc-800 flex-shrink-0 overflow-hidden shadow-md cover-art-container">
+                        ${coverArt}
+                    </div>
+                    <div class="flex flex-col overflow-hidden">
+                        <div class="song-title font-medium ${titleColor} group-hover:text-orange-400 transition-colors truncate">${song.Title || "Unknown Title"}</div>
+                        <div class="artist-link cursor-pointer hover:text-orange-400 transition-colors text-sm truncate" data-artist="${(song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${song.Artist || "Unknown Artist"}</div>
+                    </div>
+                </div>
+                <div class="text-sm text-zinc-500 truncate"><span class="album-link hover:text-orange-400 transition-colors cursor-pointer" data-album="${(song.Album || "Unknown Album").replace(/"/g, '&quot;')}" data-artist="${(song.Artist || "Unknown Artist").replace(/"/g, '&quot;')}">${song.Album || "Unknown Album"}</span></div>
+                <div class="text-sm text-zinc-500 font-medium text-right">${formattedDuration}</div>
+                ${dateAddedHtml}
+                <div class="flex items-center justify-end">
+                    <button class="bento-btn p-2 hover:bg-white/10 hover:cursor-pointer rounded-full transition-colors focus:outline-none" aria-label="Menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="5" cy="5" r="1.5"/>
+                            <circle cx="12" cy="5" r="1.5"/>
+                            <circle cx="19" cy="5" r="1.5"/>
+                            <circle cx="5" cy="12" r="1.5"/>
+                            <circle cx="12" cy="12" r="1.5"/>
+                            <circle cx="19" cy="12" r="1.5"/>
+                            <circle cx="5" cy="19" r="1.5"/>
+                            <circle cx="12" cy="19" r="1.5"/>
+                            <circle cx="19" cy="19" r="1.5"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>`;
+        };
+        }
+
+        if (!window.set_active_song_ui) {
+        window.set_active_song_ui = function (songData) {
+            const activeClasses = ["bg-orange-500/10", "scale-[1.02]", "shadow-xl", "relative", "z-10", "ring-1", "ring-orange-500/30"];
+
+            document.querySelectorAll(".song-row").forEach(row => {
+                row.classList.remove(...activeClasses);
+                const title = row.querySelector(".song-title");
+                if (title) {
+                    title.classList.remove("text-orange-400");
+                    title.classList.add("text-zinc-100");
+                }
+            });
+            document.querySelectorAll(".list-visualizer").forEach(vis => vis.remove());
+
+            // Home strip cards (Recently Played / Downloaded) share the same
+            // clearing: badges are .list-visualizer so already removed above.
+            document.querySelectorAll(".home-strip-card").forEach(card => {
+                card.classList.remove("ring-1", "ring-orange-500/30");
+                const title = card.querySelector(".strip-title");
+                if (title) title.classList.remove("text-orange-400");
+            });
+            // Podcast rows too.
+            document.querySelectorAll(".podcast-row").forEach(card => {
+                card.classList.remove("bg-orange-500/10", "ring-1", "ring-orange-500/30");
+                const title = card.querySelector(".podcast-title");
+                if (title) title.classList.remove("text-orange-400");
+            });
+
+            if (!songData) return;
+            const fileName = songData.File;
+            const targetInstanceId = songData._instanceId || null;
+
+            let seenFiles = {};
+
+            document.querySelectorAll(".song-row").forEach(row => {
+                const rowData = typeof window.songDataFromRow === 'function' ? window.songDataFromRow(row) : null;
+                if (rowData && rowData.File === fileName) {
+                    let isMatch = false;
+                    if (targetInstanceId) {
+                        if (rowData._instanceId === targetInstanceId) {
+                            isMatch = true;
+                        }
+                    } else {
+                        if (!seenFiles[fileName]) {
+                            isMatch = true;
+                            seenFiles[fileName] = true;
+                        }
+                    }
+
+                    if (isMatch) {
+                        row.classList.add(...activeClasses);
+                        const title = row.querySelector(".song-title");
+                        if (title) {
+                            title.classList.remove("text-zinc-100");
+                            title.classList.add("text-orange-400");
+                        }
+                        const coverContainer = row.querySelector(".cover-art-container");
+                        if (coverContainer) {
+                            coverContainer.insertAdjacentHTML('beforebegin', `
+                            <div class="flex items-end justify-center gap-[2px] w-4 h-4 ml-1 flex-shrink-0 list-visualizer transition-all duration-300 overflow-hidden">
+                                <div class="visualizer-bar"></div>
+                                <div class="visualizer-bar"></div>
+                                <div class="visualizer-bar"></div>
+                                <div class="visualizer-bar"></div>
+                            </div>
+                                    `);
+                        }
+                    }
+                }
+            });
+
+            // Mark matching home strip cards too (a song can be in both strips).
+            const stripPlaying = !!window.is_currently_playing;
+            document.querySelectorAll(".home-strip-card").forEach(card => {
+                if (card.getAttribute("data-file") === fileName) {
+                    card.classList.add("ring-1", "ring-orange-500/30");
+                    const title = card.querySelector(".strip-title");
+                    if (title) title.classList.add("text-orange-400");
+                    const cover = card.querySelector(".strip-cover");
+                    if (cover && !cover.querySelector(".strip-playing-badge")) {
+                        cover.insertAdjacentHTML('beforeend', `
+                        <div class="strip-playing-badge list-visualizer absolute bottom-2 left-2 z-10 flex items-end justify-center gap-[2px] h-4 transition-all duration-300 overflow-hidden drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] ${stripPlaying ? 'w-4 opacity-100' : 'w-0 opacity-0'}">
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                        </div>
+                                `);
+                    }
+                }
+            });
+            // And podcast rows.
+            document.querySelectorAll(".podcast-row").forEach(card => {
+                if (card.getAttribute("data-file") === fileName) {
+                    card.classList.add("bg-orange-500/10", "ring-1", "ring-orange-500/30");
+                    const title = card.querySelector(".podcast-title");
+                    if (title) title.classList.add("text-orange-400");
+                }
+            });
+        };
+        }
+
+        if (!window.lazyCoverObserver) {
+        window.lazyCoverObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                const container = entry.target;
+                const fileName = container.getAttribute('data-filename');
+
+                if (entry.isIntersecting) {
+                    if (fileName && !container.hasAttribute('data-loaded')) {
+                        if (!container.hasAttribute('data-fallback')) {
+                            container._fallbackHTML = container.innerHTML;
+                            container.setAttribute('data-fallback', 'true');
+                        }
+
+                        container._loadTimeout = setTimeout(() => {
+                            container.setAttribute('data-loaded', 'true');
+
+                            if (window._coverCache.has(fileName)) {
+                                container.innerHTML = `<img src="${window._coverCache.get(fileName)}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
+                                return;
+                            }
+
+                            if (window.pywebview && window.pywebview.api) {
+                                window.pywebview.api.get_cover_art_base64(fileName).then(base64 => {
+                                    if (base64) {
+                                        if (window._coverCache.size > 30) {
+                                            const firstKey = window._coverCache.keys().next().value;
+                                            window._coverCache.delete(firstKey);
+                                        }
+                                        window._coverCache.set(fileName, base64);
+
+                                        if (container.hasAttribute('data-loaded')) {
+                                            container.innerHTML = `<img src="${base64}" loading="lazy" class="w-full h-full object-cover opacity-0 transition-opacity duration-500" onload="this.classList.remove('opacity-0')">`;
+                                        }
+                                    }
+                                }).catch(e => console.error(e));
+                            }
+                        }, 150);
+                    }
+                } else {
+                    if (container._loadTimeout) {
+                        clearTimeout(container._loadTimeout);
+                        container._loadTimeout = null;
+                    }
+
+                    if (container.hasAttribute('data-loaded')) {
+                        container.removeAttribute('data-loaded');
+                        if (container.hasAttribute('data-fallback') && container._fallbackHTML) {
+                            container.innerHTML = container._fallbackHTML;
+                        }
+                    }
+                }
+            });
+        }, { rootMargin: "100px" });
+        }
+
+        if (!window.lazyRowObserver) {
+        window.lazyRowObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const container = entry.target;
+                if (entry.isIntersecting) {
+                    if (!container.hasAttribute('data-rendered')) {
+                        const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
+                        if (songData) {
+                            container.innerHTML = window.generateSongRowHtml(songData);
+                            container.setAttribute('data-rendered', 'true');
+
+                            const cover = container.querySelector('.lazy-cover');
+                            if (cover && window.lazyCoverObserver) {
+                                window.lazyCoverObserver.observe(cover);
+                            }
+                        }
+                    }
+                } else {
+                    if (container.hasAttribute('data-rendered')) {
+                        container.style.minHeight = container.offsetHeight + 'px';
+                        container.innerHTML = '';
+                        container.removeAttribute('data-rendered');
+                    }
+                }
+            });
+        }, { rootMargin: '300px' });
+        }
+
+        if (!window.update_song_row_ui) {
+        window.update_song_row_ui = function (oldFilename, newSongData) {
+            if (window._coverCache) {
+                window._coverCache.delete(oldFilename);
+                if (newSongData.File && newSongData.File !== oldFilename) {
+                    window._coverCache.delete(newSongData.File);
+                }
+                if (newSongData.CoverArt && newSongData.CoverArt !== 'REMOVE') {
+                    window._coverCache.set(newSongData.File || oldFilename, newSongData.CoverArt);
+                }
+            }
+
+            document.querySelectorAll('.song-row-container').forEach(container => {
+                const cData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
+                if (cData && cData.File === oldFilename) {
+                    container._songData = newSongData;
+                    if (container.hasAttribute('data-home-idx')) {
+                        container.removeAttribute('data-path');
+                    } else {
+                        container.setAttribute('data-path', JSON.stringify(newSongData));
+                    }
+                    container.removeAttribute('data-rendered');
+                    container.innerHTML = '';
+                    if (window.lazyRowObserver) {
+                        window.lazyRowObserver.unobserve(container);
+                        window.lazyRowObserver.observe(container);
+                    }
+                }
+            });
+
+            [['window._homeSongsData', '_homeSongsData'], ['window._pvSongsData', '_pvSongsData'], ['window._allSongsData', '_allSongsData'], ['window._dailySongsData', '_dailySongsData']].forEach(([_, key]) => {
+                if (window[key]) {
+                    window[key].forEach(song => {
+                        if (song.File === oldFilename) {
+                            Object.assign(song, newSongData);
+                        }
+                    });
+                }
+            });
+            if (window.currentPlaylistSongs) {
+                window.currentPlaylistSongs.forEach(song => {
+                    if (song.File === oldFilename) {
+                        Object.assign(song, newSongData);
+                    }
+                });
+            }
+            if (window.currentArtistSongs) {
+                window.currentArtistSongs.forEach(song => {
+                    if (song.File === oldFilename) {
+                        Object.assign(song, newSongData);
+                    }
+                });
+            }
+            if (window.currentAlbumSongs) {
+                window.currentAlbumSongs.forEach(song => {
+                    if (song.File === oldFilename) {
+                        Object.assign(song, newSongData);
+                    }
+                });
+            }
+
+            if (typeof window._homeRenderSorted === 'function') {
+                try { window._homeRenderSorted(); } catch (e) {}
+            }
+            if (typeof window._pvRenderSorted === 'function') {
+                try { window._pvRenderSorted(); } catch (e) {}
+            }
+            if (typeof window._allRenderSorted === 'function') {
+                try { window._allRenderSorted(); } catch (e) {}
+            }
+            if (typeof window._dailyRenderSorted === 'function') {
+                try { window._dailyRenderSorted(); } catch (e) {}
+            }
+            if (typeof window._avRenderSorted === 'function') {
+                try { window._avRenderSorted(); } catch (e) {}
+            }
+        };
+        }
+
         // Initialize Notyf globally
         const notyf = new Notyf();
 
@@ -832,6 +1217,23 @@
             main.style.transition = 'opacity 0.1s';
             main.style.opacity = '0';
 
+            // Remember where the user is: row clicks resolve their playback
+            // context (queue source) from this, not from stale globals.
+            window._currentView = page;
+
+            // Keep sidebar active state in sync for programmatic navigation
+            // (e.g. home dashboard cards -> all_songs / daily_mix).
+            try {
+                const sidebarTarget = (page === "all_songs" || page === "daily_mix") ? "home" : page;
+                document.querySelectorAll(".nav-link").forEach(el => {
+                    if (el.getAttribute("data-target") === sidebarTarget) {
+                        el.classList.add("active-nav");
+                    } else {
+                        el.classList.remove("active-nav");
+                    }
+                });
+            } catch (e) {}
+
             setTimeout(async () => {
                 // Clear playlist context when navigating away from playlist_view
                 if (page !== "playlist_view") {
@@ -854,7 +1256,9 @@
                 }
                 main.style.opacity = '1';
 
-                if (page === "home") {
+                // Home is now a dashboard (cards); list views fetch their own data.
+                // Keep legacy send_song_list for any stale home.html still expecting it.
+                if (page === "home" && typeof window.song_list === 'function' && window._legacyHomeList) {
                     if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
                         window.pywebview.api.send_song_list();
                     } else {
@@ -865,6 +1269,25 @@
                 }
             }, 100);
         }
+        window.navigateTo = navigateTo;
+
+        // Playback context for the current view, persisted backend-side so a
+        // restart rebuilds the queue from the right place (playlist, daily
+        // mix, artist, album, ...). Null = playlist/general fallback logic.
+        window._sourceForCurrentView = function () {
+            const v = window._currentView || 'home';
+            if (v === 'all_songs') return { type: 'all_songs', id: null };
+            if (v === 'daily_mix') return { type: 'daily_mix', id: window._dailyMixDate || null };
+            if (v === 'artist') {
+                const a = (window.currentArtistName || '').trim();
+                return a ? { type: 'artist', id: a } : null;
+            }
+            if (v === 'album') {
+                const a = (window.currentAlbumName || '').trim();
+                return a ? { type: 'album', id: a } : null;
+            }
+            return null;
+        };
 
         // Open the artist page for the given artist name
         window.openArtistPage = function (artist) {
@@ -1234,7 +1657,7 @@
             }
         };
 
-        window.load_settings = function (volume, limit_downloads, background, path) {
+        window.load_settings = function (volume, limit_downloads, background, path, podcastsPath) {
             const volumeSlider = document.getElementById("volumeSlider");
             volumeSlider.value = parseFloat(volume);
             updateSliderProgress(volumeSlider);
@@ -1259,6 +1682,11 @@
             if (bgPathEl && background) {
                 bgPathEl.innerText = background;
                 bgPathEl.title = background;
+            }
+            const podPathEl = document.getElementById('current-podcasts-path');
+            if (podPathEl && podcastsPath) {
+                podPathEl.innerText = podcastsPath;
+                podPathEl.title = podcastsPath;
             }
         }
 
@@ -2121,6 +2549,73 @@
         // --- Global Song Row & Bento Context Menu Logic ---
         let contextMenuDataPath = null;
 
+        // Show the bento menu for a song at viewport coords (clamped on-screen)
+        window.openSongContextMenu = function (songData, x, y) {
+            const contextMenu = document.getElementById("bento-context-menu");
+            if (!contextMenu || !songData) return false;
+            contextMenuDataPath = songData;
+            contextMenu.classList.remove("hidden");
+            const w = contextMenu.offsetWidth || 192;
+            const h = contextMenu.offsetHeight || 300;
+            const pad = 8;
+            let left = x, top = y;
+            if (left + w > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - w - pad);
+            if (top + h > window.innerHeight - pad) top = Math.max(pad, window.innerHeight - h - pad);
+            contextMenu.style.left = left + "px";
+            contextMenu.style.top = top + "px";
+            return true;
+        };
+
+        window.closeSongContextMenu = function () {
+            const contextMenu = document.getElementById("bento-context-menu");
+            if (contextMenu) contextMenu.classList.add("hidden");
+        };
+
+        // Right-click a song anywhere (rows, home strips, queue) -> bento menu
+        document.addEventListener("contextmenu", function (e) {
+            const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+            const editable = (tag === "input" || tag === "textarea" || tag === "select")
+                || !!(e.target && e.target.isContentEditable);
+            if (editable) return; // keep the native menu for text fields
+
+            const songEl = (e.target && e.target.closest)
+                ? e.target.closest(".song-row, .home-strip-card, .queue-item")
+                : null;
+            if (!songEl) {
+                // Dismiss the menu when right-clicking elsewhere, and swallow
+                // the native menu for an app-like feel.
+                e.preventDefault();
+                window.closeSongContextMenu();
+                return;
+            }
+            e.preventDefault();
+
+            let songData = null;
+            try {
+                if (songEl.classList.contains("home-strip-card")) {
+                    songData = songEl._songData || null;
+                } else if (typeof window.songDataFromRow === 'function') {
+                    songData = window.songDataFromRow(songEl);
+                }
+            } catch (err) { console.error("contextmenu song lookup failed:", err); }
+            if (!songData) {
+                try {
+                    const row = songEl.closest ? songEl.closest(".song-row") : null;
+                    const raw = row && row.getAttribute ? row.getAttribute("data-path") : null;
+                    if (raw) songData = JSON.parse(raw.replace(/&quot;/g, '"').replace(/&apos;/g, "'"));
+                } catch (err) { console.error("contextmenu fallback parse failed:", err); }
+            }
+            if (songData) {
+                window.openSongContextMenu(songData, e.clientX, e.clientY);
+            } else {
+                window.closeSongContextMenu();
+            }
+        });
+
+        // A fixed menu would detach from its anchor on scroll/resize: hide it.
+        document.addEventListener("scroll", function () { window.closeSongContextMenu(); }, true);
+        window.addEventListener("resize", function () { window.closeSongContextMenu(); });
+
         document.addEventListener("click", async function (e) {
             const contextMenu = document.getElementById("bento-context-menu");
             if (!contextMenu) return;
@@ -2191,14 +2686,27 @@
                     window.current_playing_song = songPath;
                     window.set_active_song_ui(songPath);
 
-                    // Use playlist queue if we're in a playlist view with loaded songs
-                    if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
+                    // Prefer the actual view as playback context (album/artist
+                    // views reuse currentPlaylistSongs, which may carry a stale
+                    // playlist id) so restarts rebuild the right queue.
+                    const viewSource = typeof window._sourceForCurrentView === 'function' ? window._sourceForCurrentView() : null;
+                    if (viewSource) {
+                        const viewSongs = typeof window.get_current_list_view_songs === 'function' ? window.get_current_list_view_songs() : null;
+                        const viewList = (viewSongs && viewSongs.length > 0) ? viewSongs : (window.currentPlaylistSongs || []);
+                        if (viewList.length > 0) {
+                            if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+                                await window.pywebview.api.populate_queue_from_list(songPath, viewList, null, viewSource);
+                            }
+                        } else if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                            await window.pywebview.api.populate_queue(songPath);
+                        }
+                    } else if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
                         if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
                             const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
                             await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs, playlistId);
                         }
                     } else {
-                        const homeSongs = typeof window.get_current_home_view_songs === 'function' ? window.get_current_home_view_songs() : null;
+                        const homeSongs = typeof window.get_current_list_view_songs === 'function' ? window.get_current_list_view_songs() : null;
                         if (homeSongs && homeSongs.length > 0) {
                             if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
                                 await window.pywebview.api.populate_queue_from_list(songPath, homeSongs, null);
@@ -2425,14 +2933,27 @@
                             window.current_playing_song = songPath;
                             window.set_active_song_ui(songPath);
 
-                            // Use playlist queue if we're in a playlist view with loaded songs
-                            if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
+                            // Prefer the actual view as playback context (album/artist
+                            // views reuse currentPlaylistSongs, which may carry a stale
+                            // playlist id) so restarts rebuild the right queue.
+                            const rowViewSource = typeof window._sourceForCurrentView === 'function' ? window._sourceForCurrentView() : null;
+                            if (rowViewSource) {
+                                const rowViewSongs = typeof window.get_current_list_view_songs === 'function' ? window.get_current_list_view_songs() : null;
+                                const rowViewList = (rowViewSongs && rowViewSongs.length > 0) ? rowViewSongs : (window.currentPlaylistSongs || []);
+                                if (rowViewList.length > 0) {
+                                    if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+                                        await window.pywebview.api.populate_queue_from_list(songPath, rowViewList, null, rowViewSource);
+                                    }
+                                } else if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue) {
+                                    await window.pywebview.api.populate_queue(songPath);
+                                }
+                            } else if (window.currentPlaylistSongs && window.currentPlaylistSongs.length > 0) {
                                 if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
                                     const playlistId = window.currentPlaylist ? (window.currentPlaylist.id || window.currentPlaylist.Id) : null;
                                     await window.pywebview.api.populate_queue_from_list(songPath, window.currentPlaylistSongs, playlistId);
                                 }
                             } else {
-                                const homeSongs = typeof window.get_current_home_view_songs === 'function' ? window.get_current_home_view_songs() : null;
+                                const homeSongs = typeof window.get_current_list_view_songs === 'function' ? window.get_current_list_view_songs() : null;
                                 if (homeSongs && homeSongs.length > 0) {
                                     if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
                                         await window.pywebview.api.populate_queue_from_list(songPath, homeSongs, null);

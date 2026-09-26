@@ -4,6 +4,7 @@ import base64
 import hashlib
 import io
 import tempfile
+import settings
 import winsdk.windows.media as media
 import winsdk.windows.media.playback as playback
 from winsdk.windows.storage.streams import RandomAccessStreamReference
@@ -54,7 +55,7 @@ class WindowsMediaOverlay:
 
     @staticmethod
     def _save_cover(cover_art):
-        """Save a cover to a temp JPEG file suitable for SMTC, or return None."""
+        """Save a cover to a temp image file suitable for SMTC, or return None."""
         if not cover_art:
             return None
 
@@ -75,6 +76,7 @@ class WindowsMediaOverlay:
 
         # Normalize to JPEG so SMTC can render it regardless of the source format (PNG/WebP...)
         data = raw
+        ext = '.jpg'
         try:
             from PIL import Image
             img = Image.open(io.BytesIO(raw))
@@ -84,9 +86,16 @@ class WindowsMediaOverlay:
             data = buf.getvalue()
         except Exception as e:
             print(f" [Python] Failed to convert cover to JPEG, using raw (mime={mime}): {e}")
+            # Keep the correct extension so SMTC decodes the raw bytes properly
+            ext = {
+                'image/png': '.png',
+                'image/gif': '.gif',
+                'image/webp': '.webp',
+                'image/bmp': '.bmp',
+            }.get(mime.lower(), '.jpg')
 
         digest = hashlib.md5(data).hexdigest()[:16]
-        thumb_path = os.path.join(tempfile.gettempdir(), f'music_player_cover_{digest}.jpg')
+        thumb_path = os.path.join(tempfile.gettempdir(), f'music_player_cover_{digest}{ext}')
         if not os.path.exists(thumb_path):
             try:
                 with open(thumb_path, "wb") as f:
@@ -96,20 +105,65 @@ class WindowsMediaOverlay:
                 return None
         return thumb_path
 
+    @staticmethod
+    def _stream_from_file(thumb_path):
+        """Build a thumbnail stream via StorageFile (reliable for SMTC).
+
+        Returns None on failure so the caller can fall back to a file URI.
+        """
+        try:
+            import asyncio
+            from winsdk.windows.storage import StorageFile
+
+            async def _load():
+                return await StorageFile.get_file_from_path_async(thumb_path)
+
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None and loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    storage_file = pool.submit(asyncio.run, _load()).result(timeout=20)
+            else:
+                storage_file = asyncio.run(_load())
+            if storage_file is None:
+                return None
+            return RandomAccessStreamReference.create_from_file(storage_file)
+        except Exception as e:
+            print(f" [Python] SMTC StorageFile thumbnail failed: {e}")
+            return None
+
     def update_overlay(self, title, artist, cover_art=None):
         updater = self._smtc.display_updater
         updater.type = media.MediaPlaybackType.MUSIC
         updater.music_properties.title = str(title)
         updater.music_properties.artist = str(artist)
 
-        # Set Thumbnail
+        # update_overlay usually fires before the UI has lazy-loaded the cover,
+        # so fall back to the art embedded in the audio file itself.
+        if not cover_art:
+            try:
+                filename = getattr(self.api, 'current_filename', None)
+                last = getattr(self.api, 'last_song', None) or {}
+                base = settings.podcasts_path if last.get('IsPodcast') else None
+                if filename and hasattr(self.api, 'metadata'):
+                    if base is not None:
+                        cover_art = self.api.metadata.get_cover_art_base64(filename, base)
+                    else:
+                        cover_art = self.api.metadata.get_cover_art_base64(filename)
+            except Exception as e:
+                print(f" [Python] SMTC cover fallback failed: {e}")
+
+        # Set Thumbnail (StorageFile first, file URI as fallback)
         thumb_path = self._save_cover(cover_art)
         try:
-            if thumb_path:
+            stream = self._stream_from_file(thumb_path) if thumb_path else None
+            if stream is None and thumb_path:
                 file_uri = Uri(f"file:///{thumb_path.replace(os.sep, '/')}")
-                updater.thumbnail = RandomAccessStreamReference.create_from_uri(file_uri)
-            else:
-                updater.thumbnail = None
+                stream = RandomAccessStreamReference.create_from_uri(file_uri)
+            updater.thumbnail = stream
         except Exception as e:
             print(f" [Python] Failed to set SMTC thumbnail: {e}")
 

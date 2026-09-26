@@ -12,12 +12,16 @@ Loaded at startup by `settings.py` and kept current by `api.py` whenever you cha
 | Setting | Column | Default | Notes |
 | ------- | ------ | ------- | ----- |
 | Songs folder | `songs_path` | `%appdata%\musicPlayer` | Folder scanned for `.mp3` files |
+| Podcasts folder | `podcasts_path` | `%appdata%\musicPlayerPodcasts` | Separate non-music library |
 | Volume | `current_volume` | `0.7` | Applied to `pygame.mixer` on every change |
 | Window size | `window_width`, `window_height` | `1280 × 720` | Saved 0.4 s after each resize |
 | Download limit | `limit_downloads` | `3` | Max concurrent downloads |
 | Background | `background_path` | *(empty)* | Custom background image path |
+| Crossfade | `crossfade_enabled`, `crossfade_seconds` | off, `5.0` | 1–12 s equal-power overlap on auto-advance |
 | Current song | `current_song` | — | Resumed on next launch |
-| Current playlist | `current_playlist` | — | Playlist resumed on next launch |
+| Current playlist | `current_playlist` | — | Playlist resumed on next launch (legacy; superseded by `queue_source`) |
+| Queue source | `queue_source` | — | Playback-context JSON `{type, id}` rebuilt on launch |
+| Custom queue | `queue_songs`, `custom_queue` | — | Manually built queue restored verbatim |
 
 `api.py` exposes the corresponding setters to the JS UI:
 
@@ -25,6 +29,8 @@ Loaded at startup by `settings.py` and kept current by `api.py` whenever you cha
 - `update_download_limit(limit)`
 - `update_background(background)` / `remove_background()`
 - `update_songs_path(songs_path)` / `pick_folder()`
+- `update_podcasts_path(podcasts_path)` / `pick_podcasts_folder()`
+- `set_crossfade(enabled, seconds)` / `get_playback_settings()`
 - `pick_background()`
 
 ## Remote sync (`.env`)
@@ -67,9 +73,9 @@ DB_NAME=music_app
 
 ### Behavior when configured
 
-- On **first run** with sync configured, the app prompts the user to load the remote library (songs, playlists, lyrics, history) and queue missing song downloads.
-- After that, `DatabaseSync` starts a background thread that pushes local changes to the remote DB every **30 seconds** (see [Database & remote sync](DATABASE.md)).
-- Deletions are propagated via the `Sync_Deletions` tombstone table.
+- On **first run** with sync configured, the app prompts the user to load the remote library (songs, podcasts, playlists, lyrics, daily mix, history) and queue missing downloads into their respective folders.
+- After that, everything is manual: **Push to Remote** uploads one full cycle; **Sync Remote** pulls remote rows down (see [Database & remote sync](DATABASE.md)).
+- Deletions are propagated via the `Sync_Deletions` tombstone table (songs, podcasts, playlists, lyrics, history).
 
 ## Turning sync off
 

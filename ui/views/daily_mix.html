@@ -1,0 +1,318 @@
+<div class="flex flex-col xl:flex-row w-full h-full relative items-start">
+    <div class="flex-1 flex flex-col min-w-0 w-full h-full">
+        <!-- Header -->
+        <div class="max-w-5xl mx-auto w-full px-6 sm:px-8 pt-6">
+            <div class="flex items-center gap-4">
+                <button onclick="(window.navigateTo||navigateTo)('home')"
+                    class="flex items-center gap-2 text-zinc-400 hover:text-white transition-all duration-200 px-3 py-2 rounded-xl hover:bg-white/10 focus:outline-none cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m15 18-6-6 6-6" /></svg>
+                    <span class="text-xs font-semibold uppercase tracking-[0.2em] hidden sm:inline">Home</span>
+                </button>
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-2xl font-bold text-zinc-100 truncate">Daily Mix</h1>
+                            <span id="daily-date-badge" class="text-[11px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/30 flex-shrink-0">Today</span>
+                        </div>
+                        <p id="daily-mix-count" class="text-xs text-zinc-500 tracking-wide mt-0.5">Generating…</p>
+                    </div>
+                </div>
+                <div class="ml-auto flex items-center gap-2">
+                    <button id="daily-shuffle-btn" title="Shuffle play"
+                        class="flex items-center justify-center w-11 h-11 bg-white/5 text-zinc-300 rounded-full hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 border border-white/5 focus:outline-none cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M11.47 7.72a.75.75 0 0 1 1.06 0l7.5 7.5a.75.75 0 1 1-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 0 1-1.06-1.06l7.5-7.5Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <button id="daily-play-btn" title="Play mix"
+                        class="flex items-center justify-center w-11 h-11 bg-orange-500 text-white rounded-full hover:bg-orange-400 transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(249,115,22,0.3)] focus:outline-none cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 ml-0.5">
+                            <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.38 2.831-1.643L20.5 12 7.331 20.007c-1.302.737-2.831-.216-2.831-1.643V5.653Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Bar Header (Glassmorphism) -->
+        <div id="search-header"
+            class="sticky top-0 w-full z-50 backdrop-blur-2xl bg-zinc-900/20 rounded-2xl border-b border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] px-6 sm:px-8 py-4 mt-4 flex justify-end items-center">
+            <div class="relative max-w-5xl mx-auto w-full flex justify-end">
+                <div class="relative group">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-orange-400 transition-colors duration-300 pointer-events-none"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" placeholder="Search mix..." id="daily_txt_search" spellcheck="false"
+                        class="w-48 sm:w-64 focus:w-72 lg:focus:w-80 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-zinc-800/50 hover:bg-zinc-700/50 focus:bg-zinc-800/80 backdrop-blur-md border border-white/10 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-full py-2.5 pl-10 pr-10 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none shadow-inner">
+                    <button
+                        id="daily_clearBtn"
+                        class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors duration-200 hidden"
+                        onclick="window.clearDailySearch()"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="list" class="max-w-5xl w-full mx-auto px-6 sm:px-8 pb-10 pt-6">
+            <div id="table">
+                <div id="daily-table-header"
+                    class="grid grid-cols-[minmax(0,4fr)_minmax(0,2.5fr)_100px_150px_auto] gap-4 px-4 pb-3 mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase border-b border-white/5">
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                        data-sort-key="Title" onclick="window._dailySortColumn('Title')">Song <span
+                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors select-none flex items-center gap-1"
+                        data-sort-key="Album" onclick="window._dailySortColumn('Album')">Album <span
+                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                        data-sort-key="Duration" onclick="window._dailySortColumn('Duration')">Duration <span
+                            class="sort-arrow text-orange-400 text-[10px]"></span></div>
+                    <div class="cursor-pointer hover:text-zinc-300 transition-colors text-right select-none flex items-center justify-end gap-1"
+                        data-sort-key="DateDownload" onclick="window._dailySortColumn('DateDownload')">Downloaded
+                        <span class="sort-arrow text-orange-400 text-[10px]"></span>
+                    </div>
+                    <div></div>
+                </div>
+
+                <div id="daily-table-body" class="flex flex-col gap-1 pb-2">
+                    <div class="py-16 text-center text-zinc-500 text-sm animate-pulse">Mixing today's songs…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="edit-song-modal-container"></div>
+<div id="add-playlist-modal-container"></div>
+
+<script>
+    window._dailySortKey = null;
+    window._dailySortDir = 'asc';
+    window._dailySongsData = [];
+    window._dailyRenderedSongs = [];
+    window._dailyMixDate = null;
+
+    window._dailySortColumn = function (key) {
+        if (window._dailySortKey === key) {
+            window._dailySortDir = window._dailySortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            window._dailySortKey = key;
+            window._dailySortDir = 'asc';
+        }
+        document.querySelectorAll('#daily-table-header [data-sort-key] .sort-arrow').forEach(el => {
+            el.textContent = '';
+        });
+        const activeHeader = document.querySelector(`#daily-table-header [data-sort-key="${key}"] .sort-arrow`);
+        if (activeHeader) {
+            activeHeader.textContent = window._dailySortDir === 'asc' ? '▲' : '▼';
+        }
+        window._dailyRenderSorted();
+    };
+
+    window._dailyRenderSorted = function () {
+        let sorted = [...window._dailySongsData];
+        const key = window._dailySortKey;
+        const dir = window._dailySortDir;
+        if (key) {
+            sorted.sort((a, b) => {
+                let valA, valB;
+                if (key === 'Duration') {
+                    valA = a.Duration || 0;
+                    valB = b.Duration || 0;
+                } else if (key === 'DateDownload') {
+                    valA = a.DateDownload ? new Date(a.DateDownload).getTime() : 0;
+                    valB = b.DateDownload ? new Date(b.DateDownload).getTime() : 0;
+                } else {
+                    valA = (a[key] || '').toString().toLowerCase();
+                    valB = (b[key] || '').toString().toLowerCase();
+                }
+                if (valA < valB) return dir === 'asc' ? -1 : 1;
+                if (valA > valB) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        window._dailyRenderedSongs = sorted;
+
+        const tableBody = document.getElementById("daily-table-body");
+        if (!tableBody) return;
+        if (sorted.length === 0) {
+            tableBody.innerHTML = `<div class="py-16 flex flex-col items-center justify-center text-center opacity-70">
+                <p class="text-zinc-400 font-medium text-lg">Nothing mixed yet</p>
+                <p class="text-sm text-zinc-500 mt-2 max-w-md">Play some songs and download music — your mix needs listening history and library songs to work with.</p>
+            </div>`;
+            const countEl = document.getElementById("daily-mix-count");
+            if (countEl) countEl.textContent = "0 songs";
+            return;
+        }
+        let html = "";
+        sorted.forEach((song, idx) => {
+            if (!song._instanceId) song._instanceId = 'daily_' + idx + '_' + Date.now();
+            html += `<div class="song-row-container" style="min-height: 64px;" data-daily-idx="${idx}"></div>`;
+        });
+        tableBody.innerHTML = html;
+        const containers = tableBody.querySelectorAll(".song-row-container");
+        containers.forEach((container, i) => {
+            container._songData = sorted[i] || null;
+            if (window.lazyRowObserver) window.lazyRowObserver.observe(container);
+        });
+
+        const searchInput = document.getElementById("daily_txt_search");
+        if (searchInput && searchInput.value.trim()) {
+            window._dailyApplySearch(searchInput.value.toLowerCase());
+        }
+    };
+
+    window._dailyApplySearch = function (value) {
+        document.querySelectorAll("#daily-table-body .song-row-container").forEach(container => {
+            const songData = container._songData || {};
+            const title = (songData.Title || "").toLowerCase();
+            const artist = (songData.Artist || "").toLowerCase();
+            const album = (songData.Album || "").toLowerCase();
+            container.style.display = (title.indexOf(value) > -1 || artist.indexOf(value) > -1 || album.indexOf(value) > -1) ? "" : "none";
+        });
+    };
+
+    window.get_current_daily_view_songs = function () {
+        const list = [];
+        document.querySelectorAll("#daily-table-body .song-row-container").forEach(container => {
+            if (container.style.display !== "none") {
+                const songData = container._songData || (typeof window.songDataFromRow === 'function' ? window.songDataFromRow(container) : null);
+                if (songData) list.push(songData);
+            }
+        });
+        return list;
+    };
+
+    // Keep legacy getter working for the global queue builder.
+    window.get_current_home_view_songs = window.get_current_daily_view_songs;
+
+    if (!window.dailyEventHandlersAttached) {
+        window.dailyEventHandlersAttached = true;
+        let searchTimeout;
+        document.addEventListener("keyup", function (e) {
+            if (e.target && e.target.id === "daily_txt_search") {
+                clearTimeout(searchTimeout);
+                const value = e.target.value.toLowerCase();
+                const clearBtn = document.getElementById('daily_clearBtn');
+                if (clearBtn) clearBtn.classList.toggle('hidden', !(e.target.value.length > 0));
+                searchTimeout = setTimeout(() => window._dailyApplySearch(value), 150);
+            }
+        });
+    }
+
+    window.clearDailySearch = function () {
+        const input = document.getElementById("daily_txt_search");
+        if (input) {
+            input.value = "";
+            const clearBtn = document.getElementById("daily_clearBtn");
+            if (clearBtn) clearBtn.classList.add("hidden");
+            window._dailyApplySearch("");
+            input.focus();
+        }
+    };
+
+    async function _dailyStartPlayback(songs) {
+        if (!songs || songs.length === 0) return;
+        const currentFile = window.current_playing_song ? window.current_playing_song.File : null;
+        const isFromHere = currentFile && songs.some(s => s.File === currentFile);
+        if (isFromHere) {
+            await window.toggle_play_pause();
+            return;
+        }
+        const firstSong = songs[0];
+        window.current_playing_song = firstSong;
+        if (window.set_active_song_ui) window.set_active_song_ui(firstSong);
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+            await window.pywebview.api.populate_queue_from_list(firstSong, songs, null, { type: 'daily_mix', id: window._dailyMixDate || null });
+        }
+        await window.play_button(firstSong);
+    }
+
+    document.getElementById("daily-play-btn").addEventListener("click", async function () {
+        await _dailyStartPlayback(window.get_current_daily_view_songs());
+    });
+
+    document.getElementById("daily-shuffle-btn").addEventListener("click", async function () {
+        const songs = window.get_current_daily_view_songs();
+        if (!songs || songs.length === 0) return;
+        const shuffled = [...songs];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const firstSong = shuffled[0];
+        window.current_playing_song = firstSong;
+        if (window.set_active_song_ui) window.set_active_song_ui(firstSong);
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.populate_queue_from_list) {
+            await window.pywebview.api.populate_queue_from_list(firstSong, shuffled, null, { type: 'daily_mix', id: window._dailyMixDate || null });
+        }
+        await window.play_button(firstSong);
+    });
+
+    (async () => {
+        async function api() {
+            if (window.pywebview && window.pywebview.api) return window.pywebview.api;
+            await new Promise(resolve => window.addEventListener('pywebviewready', resolve, { once: true }));
+            return window.pywebview.api;
+        }
+        try {
+            const py = await api();
+            const mix = await py.get_daily_mix();
+            const songs = (mix && mix.songs) || [];
+            window._dailyMixDate = (mix && mix.date) || null;
+            if (window._coverCache) window._coverCache.clear();
+            window._dailySongsData = songs;
+            window._dailyRenderSorted();
+
+            const countEl = document.getElementById("daily-mix-count");
+            if (countEl) {
+                let dateStr = window._dailyMixDate || '';
+                try {
+                    if (dateStr) dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                } catch (err) {}
+                countEl.textContent = `${songs.length} songs${dateStr ? ' · ' + dateStr : ''}${mix && mix.cached ? '' : ' · fresh'}`;
+            }
+            const badge = document.getElementById("daily-date-badge");
+            if (badge && window._dailyMixDate) {
+                try {
+                    badge.textContent = new Date(window._dailyMixDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                } catch (err) {}
+            }
+        } catch (e) {
+            console.error("Failed to load daily mix:", e);
+            const body = document.getElementById("daily-table-body");
+            if (body) body.innerHTML = `<div class="py-16 text-center text-red-400 text-sm">Failed to load Daily Mix.</div>`;
+        }
+    })();
+
+    fetch('modals/edit_song.html')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('edit-song-modal-container').innerHTML = html;
+            const scripts = document.getElementById('edit-song-modal-container').getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                window.eval(scripts[i].innerText);
+            }
+        }).catch(err => console.error('Failed to load modal:', err));
+
+    fetch('modals/add_playlist.html')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('add-playlist-modal-container').innerHTML = html;
+            const scripts = document.getElementById('add-playlist-modal-container').getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                window.eval(scripts[i].innerText);
+            }
+        }).catch(err => console.error('Failed to load add_playlist modal:', err));
+</script>

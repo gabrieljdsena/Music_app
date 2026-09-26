@@ -12,6 +12,7 @@
         <form id="editSongForm" class="space-y-4 relative z-10">
             <input type="hidden" id="edit-file" name="File">
             <input type="hidden" id="edit-cover-art-data" name="CoverArt">
+            <input type="hidden" id="edit-is-podcast" name="IsPodcast" value="">
 
             <div>
                 <label for="edit-title" class="block text-sm font-semibold text-zinc-300">Title</label>
@@ -89,6 +90,7 @@
         document.getElementById('edit-album').value = song.Album !== 'Unknown' ? song.Album : '';
         document.getElementById('edit-year').value = song.Year !== 'Unknown' ? song.Year : '';
         document.getElementById('edit-cover-art-data').value = song.CoverArt || '';
+        document.getElementById('edit-is-podcast').value = song.IsPodcast ? '1' : '';
         document.getElementById('edit-cover').value = '';
 
         const previewImg = document.getElementById('edit-cover-preview');
@@ -177,6 +179,9 @@
             Album: document.getElementById('edit-album').value,
             Year: document.getElementById('edit-year').value
         };
+        if (document.getElementById('edit-is-podcast').value === '1') {
+            updatedData.IsPodcast = true;
+        }
 
         async function saveMetadata(data) {
             try {
@@ -191,6 +196,11 @@
                 // Refresh the main library view
                 if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.send_song_list === 'function') {
                     window.pywebview.api.send_song_list();
+                }
+
+                // Podcasts view keeps its own lightweight list: refresh the file
+                if (data.IsPodcast && typeof window._podRefreshFile === 'function') {
+                    try { await window._podRefreshFile(data.File); } catch (e) { console.error(e); }
                 }
                 
                 // If we are currently in the playlist view, refresh it as well
